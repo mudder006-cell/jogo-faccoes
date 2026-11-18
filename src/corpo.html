@@ -1,0 +1,72 @@
+<canvas id="cena"></canvas>
+<div id="rotulos"></div>
+<div id="selecao-caixa" class="oculto"></div>
+
+<div id="menu" class="painel">
+  <div class="rotulo-peq">Protótipo 17 · comida, obras e comércio</div>
+  <h1>Jogo de facções</h1>
+  <p>Cada partida gera uma região nova de 2,8 × 2,8 km, com morros, um rio, uma cidade grande e três vilas. O governo antigo controla cerca de 80% dela. Sua facção começa na periferia com um esquadrão de armamento básico.</p>
+  <label for="semente">Semente do mapa (a mesma semente gera o mesmo mapa)</label>
+  <div class="linha-form">
+    <input id="semente" type="text" maxlength="12">
+    <button id="sortear" type="button">Sortear</button>
+  </div>
+  <label>Facções rivais</label>
+  <div id="rivais" class="opcoes"></div>
+  <label>Tutorial</label>
+  <div id="op-tutorial" class="opcoes">
+    <button type="button" data-tu="1">Com tutorial</button>
+    <button type="button" data-tu="0">Sem tutorial</button>
+  </div>
+  <label>Começo</label>
+  <div id="inicio" class="opcoes">
+    <button type="button" data-modo="escolher" class="ativo">Escolher o edifício</button>
+    <button type="button" data-modo="sortear">Sortear</button>
+  </div>
+  <div style="margin-top:16px; text-align:right">
+    <button id="gerar" class="principal" type="button">Gerar região</button>
+  </div>
+</div>
+
+<header id="topo" class="oculto">
+  <div class="t-esq"><span class="ico">public</span><span id="nome-regiao"></span></div>
+  <div id="recursos"></div>
+  <button type="button" id="combates" class="oculto" title="Clique para ir até o combate"><span class="ico">local_fire_department</span><span>combate</span></button>
+  <div class="t-dir">
+    <div id="tempo">
+      <button type="button" data-v="0" title="Pausa (espaço)"><span class="ico">pause</span></button>
+      <button type="button" data-v="1" title="Velocidade normal"><span class="ico">play_arrow</span></button>
+      <button type="button" data-v="5" title="5 vezes mais rápido"><span class="ico">fast_forward</span></button>
+      <button type="button" data-v="20" title="20 vezes mais rápido"><span class="ico">keyboard_double_arrow_right</span></button>
+    </div>
+    <span id="relogio"></span>
+  </div>
+  <nav id="menu-jogo">
+  <button type="button" data-janela="gestao"><span class="ico">groups</span><span>Batalhões</span></button>
+  <button type="button" data-janela="recrutar"><span class="ico">person_add</span><span>Recrutar</span></button>
+  <button type="button" data-janela="armas"><span class="ico">inventory_2</span><span>Armas</span></button>
+  <button type="button" data-janela="faccoes"><span class="ico">handshake</span><span>Diplomacia</span></button>
+  <button type="button" data-janela="ajuda"><span class="ico">help</span><span>Ajuda</span></button>
+  <button type="button" id="bt-menu"><span class="ico">menu</span><span>Menu</span></button>
+</nav>
+</header>
+
+<div id="dica" class="oculto"></div>
+<div id="tutorial" class="oculto"></div>
+<div id="tutorial-anel" class="oculto"></div>
+<aside id="esquadroes" class="oculto"></aside>
+<aside id="contexto" class="painel oculto"></aside>
+<div id="ordens" class="painel oculto"></div>
+<div id="avisos" class="oculto">
+  <button type="button" id="av-recolhe" class="mini" title="Ver mais acontecimentos"><span class="ico">expand_more</span></button>
+  <div id="avisos-lista"></div>
+</div>
+<div id="modal" class="painel oculto"></div>
+<div id="cam" class="oculto">
+  <button type="button" data-cam="girE" title="Girar para a esquerda (Q)"><span class="ico">rotate_left</span></button>
+  <button type="button" data-cam="girD" title="Girar para a direita (E)"><span class="ico">rotate_right</span></button>
+  <button type="button" data-cam="mais" title="Aproximar"><span class="ico">add</span></button>
+  <button type="button" data-cam="menos" title="Afastar"><span class="ico">remove</span></button>
+</div>
+<div id="carregando" class="painel oculto">Gerando a região…</div>
+<div id="erro" class="painel oculto"></div>

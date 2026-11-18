@@ -1,0 +1,22 @@
+# nome usado no código (estilo Material Symbols) -> arquivo do Material Design Icons (Pictogrammers, Apache 2.0)
+MAPA = {
+ "3d_rotation": "rotate-3d-variant", "account_balance": "bank", "account_balance_wallet": "wallet", "add": "plus", "add_circle": "plus-circle-outline",
+ "agriculture": "tractor", "apartment": "office-building", "assignment": "clipboard-text", "block": "cancel", "bolt": "lightning-bolt", "build": "wrench",
+ "campaign": "bullhorn", "casino": "dice-5", "castle": "castle", "center_focus_strong": "image-filter-center-focus", "close": "close", "construction": "hammer-wrench",
+ "cottage": "home-variant", "crown": "crown", "directions_run": "run-fast", "directions_walk": "walk", "diversity_3": "account-group", "drag_pan": "cursor-move",
+ "expand_more": "chevron-down", "factory": "factory", "fast_forward": "fast-forward", "favorite": "heart", "flag": "flag", "gesture": "gesture", "grain": "barley",
+ "groups": "account-group", "handshake": "handshake", "healing": "bandage", "help": "help-circle", "home": "home", "home_pin": "home-map-marker",
+ "inventory_2": "package-variant-closed", "keyboard_arrow_up": "chevron-up", "keyboard_double_arrow_right": "chevron-triple-right", "landscape": "image-filter-hdr",
+ "left_click": "mouse-left-click", "local_fire_department": "fire", "local_gas_station": "gas-station", "local_hospital": "hospital-box", "local_police": "police-badge",
+ "local_shipping": "truck", "location_city": "city", "location_on": "map-marker", "lock_open": "lock-open-variant", "lock": "lock", "medical_services": "medical-bag",
+ "menu": "menu", "military_tech": "medal", "mosque": "mosque", "my_location": "crosshairs-gps", "paid": "cash-multiple", "pan_tool": "hand-back-right",
+ "pause": "pause", "pause_circle": "pause-circle", "payments": "cash", "person": "account", "person_add": "account-plus", "play_arrow": "play",
+ "precision_manufacturing": "robot-industrial", "public": "earth", "remove": "minus", "right_click": "mouse-right-click", "rotate_left": "rotate-left",
+ "rotate_right": "rotate-right", "rule": "format-list-checks", "schedule": "clock-outline", "school": "school", "select": "selection-drag", "shield": "shield",
+ "skull": "skull", "star": "star", "store": "store", "storefront": "storefront", "swap_horiz": "swap-horizontal", "swords": "sword-cross",
+ "volunteer_activism": "hand-heart", "warehouse": "warehouse", "warning": "alert", "water_drop": "water", "workspace_premium": "account-star", "zoom_in": "magnify-plus",
+ "info": "information", "u_turn_left": "undo-variant", "person_off": "account-cancel", "mood": "emoticon-happy-outline", "check_circle": "check-circle",
+ "turn_right": "arrow-right-top", "record_voice_over": "account-voice", "target": "target", "badge": "card-account-details", "layers": "layers", "mouse": "mouse",
+ "timeline": "chart-timeline-variant", "flag_plus": "flag-plus", "check": "check", "sentiment_dissatisfied": "emoticon-sad-outline", "toggle_off": "toggle-switch-off-outline", "toggle_on": "toggle-switch", "no_food": "food-off", "upgrade": "arrow-up-bold-box", "grass": "sprout", "format_list_bulleted": "format-list-bulleted", "garage": "garage", "route": "map-marker-path", "group_off": "account-group-outline", "expand_less": "chevron-up", "how_to_reg": "account-check", "chevron_right": "chevron-right", "chevron_left": "chevron-left", "move_down": "arrow-down-bold-box", "bullet": "bullet", "ammunition": "ammunition", "bomb": "bomb", "rocket": "rocket", "hourglass": "timer-sand", "school_t": "school", "shield_home": "shield-home", "target_account": "target-account",
+ "account_supervisor": "account-supervisor", "sword": "sword", "scale_balance": "scale-balance", "turtle": "turtle", "wall": "wall", "lifebuoy": "lifebuoy", "person_pin": "account-box", "eye": "eye",
+}
