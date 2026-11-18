@@ -18,7 +18,7 @@ function predioMaisPerto(lista, x, z) { let m = null, md = Infinity; for (const 
 
 /* ---------- rivais ---------- */
 function ofensivaRival(P) {
-  const rivais = P.faccoes.filter(f => !f.jogador && !f.governo && f.base && !f.eliminada);
+  const rivais = P.faccoes.filter(f => !f.jogador && !f.governo && !completa(f) && f.base && !f.eliminada);   // as rivais com exército completo atacam pelo comandante
   if (!rivais.length) return;
   const fac = P.r.de(rivais);
   const prontos = P.esquadroes.filter(q => q.faccao === fac && !q.combate && q.estado !== "andando" && ativos(q).length >= OFENSIVA.minimo && !semArma(q));

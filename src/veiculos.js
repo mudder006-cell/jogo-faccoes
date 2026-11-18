@@ -161,7 +161,7 @@ function chegouVeiculo(P, v) {
   v.estado = "parado";
   if (pl.para.dono !== fac) { v.plano = null; return; }
   v.em = pl.para;
-  if (!fac.jogador) {   // comboio rival: entrega na frente e volta ao QG
+  if (!completa(fac)) {   // comboio rival simples: entrega na frente e volta ao QG
     descarrega(v, fac);
     if (fac.base) { v.plano = { para: fac.base }; v.estado = "voltando"; rotaVeiculo(P, v, fac.base); } else v.plano = null;
     return;
@@ -173,7 +173,7 @@ function chegouVeiculo(P, v) {
 }
 function andaVeiculo(P, v, dt) {
   if (!v.rota) return;
-  if (v.faccao.jogador && (!v.motorista || P.tempo < (v.motoristaChega || 0))) return;
+  if (completa(v.faccao) && (!v.motorista || P.tempo < (v.motoristaChega || 0))) return;
   let passo = VEICULOS[v.nivel - 1].vel * dt;
   while (passo > 0 && v.rota) {
     const [tx, tz] = v.rota[v.i], dx = tx - v.x, dz = tz - v.z, d = Math.hypot(dx, dz);
@@ -217,7 +217,7 @@ function destroiVeiculo(P, v) {
   for (const [f, d] of v.danoDe) if (d > mx) { mx = d; por = f; }
   const txt = textoCarga(v.carga);
   if (por && !cargaVazia(v.carga)) {   // quem destruiu fica com a carga
-    const base = por.jogador ? baseMaisPerto(P, por, v.x, v.z) : null;
+    const base = completa(por) ? baseMaisPerto(P, por, v.x, v.z) : null;
     descarrega(v, base ? estoqueDoLugar(P, por, base) : por.municao ? por : criaEstoque());
   }
   const s = v.motorista;
@@ -232,7 +232,7 @@ function captura(P, v, nova) {
   v.faccao = nova; v.bat = null; v.plano = null; v.estado = "parado"; v.em = null; v.danoDe = new Map(); v.motorista = null;
   (nova.veiculos || (nova.veiculos = [])).push(v);
   const txt = textoCarga(v.carga);
-  if (!nova.jogador) { descarrega(v, nova.municao ? nova : criaEstoque()); if (nova.base) { v.plano = { para: nova.base }; v.estado = "voltando"; rotaVeiculo(P, v, nova.base); } }
+  if (!completa(nova)) { descarrega(v, nova.municao ? nova : criaEstoque()); if (nova.base) { v.plano = { para: nova.base }; v.estado = "voltando"; rotaVeiculo(P, v, nova.base); } }
   avisa(P, "veiculocapturado", { v, de: antiga, por: nova, txt });
 }
 
@@ -254,9 +254,9 @@ function veiculosDoSegundo(P) {
           for (const sq of P.esquadroes) { if (sq.combate || !ativos(sq).length || sq.faccao === fac || !hostis(P, sq.faccao, fac) || sq.faccao.governo) continue; const [x, z] = centroDoEsquadrao(sq), d = Math.hypot(x - v.x, z - v.z); if (d < mb) { mb = d; b = sq; } }
           if (b) { v.buscadoPor = b; const m = b.missao; ordenaPonto(P, b, v.x, v.z, "ataque"); b.missao = m; b.proximaMissao = P.tempo + 60; }
         }
-        if (!fac.jogador) continue;
+        if (!completa(fac)) continue;
       }
-      if (fac.jogador) {
+      if (completa(fac)) {
         if (!v.bat || v.bat.dissolvido) { const bs = porPrioridade(P, fac); v.bat = null; if (bs.length) { const nv = x => fac.veiculos.filter(o => o.bat === x).length, longe = x => x.base && x.base !== fac.base ? 0 : 1;
           const b = bs.slice().sort((x, y) => (longe(x) - longe(y)) || (nv(x) - nv(y)) || x.prioridade - y.prioridade)[0]; atribuiVeiculo(P, v, b); avisa(P, "veiculoatribuido", { v, b }); } continue; }
         if (!v.motorista || v.motorista.vida !== "motorista") { v.motorista = null; pegaMotorista(P, v); if (!v.motorista) continue; if (v.estado === "abandonado") v.estado = "parado"; }

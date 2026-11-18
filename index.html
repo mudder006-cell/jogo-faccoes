@@ -1729,6 +1729,8 @@ function geraRegiao(semente) {
 function criaFaccao(id, nome, cor, extra) {
   return Object.assign({ id, nome, cor, jogador: false, governo: false }, extra);
 }
+/* facção com o exército completo (batalhões, missões, estoque por base, logística): o jogador e as rivais */
+const completa = fac => !!fac && !fac.governo && (fac.jogador || !!fac.exercito);
 
 function controleDaZona(zn) {
   if (!zn.chaves.length) return null;
@@ -2114,7 +2116,7 @@ function precisaRecarregar(sq, P) {
   if (!sq.faccao.municao) return false;
   const l = ativos(sq).filter(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO);
   if (!l.length || l.length < Math.ceil(ativos(sq).length / 2)) return false;
-  if (sq.faccao.jogador && P) return !!baseParaRecarregar(P, sq);
+  if (completa(sq.faccao) && P) return !!baseParaRecarregar(P, sq);
   return l.some(s => sq.faccao.municao[MUNICAO_DA[s.arma]] > 0);
 }
 function municaoMedia(sq) { const l = ativos(sq).filter(s => s.arma); return l.length ? l.reduce((t, s) => t + Math.min(1, s.municao / cargaDe(s)), 0) / l.length : 1; }
@@ -2219,13 +2221,14 @@ function fundaFaccao(P, fac, e) {
   tomaEdificio(P, e, fac);
   criaLiderDaFaccao(P, fac);
   const sq = novoEsquadrao(P, fac, e, TIME_INICIAL, { nome: fac.jogador ? "1º Esquadrão" : "Esquadrão de " + fac.nome.split(" ")[0] });
-  if (fac.jogador) {   // o jogador comanda por batalhões: o 1º começa com o esquadrão inicial e o estoque inicial
+  if (!fac.jogador && !fac.governo) { fac.exercito = true; novoVeiculo(fac, 1); }   // as rivais começam com uma picape (como antes)
+  if (completa(fac)) {   // comanda por batalhões: o 1º começa com o esquadrão inicial e o estoque inicial
     const cmd = criaSoldado(P, fac, "lider", [50, 70]); cmd.atr.lideranca = Math.max(cmd.atr.lideranca, 64); cmd.xp = 120;
     const b = criaBatalhao(P, fac, cmd, e);
     sq.bat = b; for (const s of sq.membros) s.bat = b;
     for (const k of Object.keys(fac.arsenal)) passaItem(fac, b, k, fac.arsenal[k]);
     for (const t of Object.keys(fac.municao)) { b.municao[t] += fac.municao[t]; fac.municao[t] = 0; }
-  } else if (!fac.governo) novoVeiculo(fac, 1);   // as rivais têm uma picape para os comboios
+  }
   fac.veiculos = fac.veiculos || [];
   return sq;
 }
@@ -2234,12 +2237,12 @@ function tomaEdificio(P, e, fac, adesao) {
   const antes = e.dono; if (antes === fac) return;
   e.dono = fac; e.donoAnterior = antes; if (e.fortificado) e.fortificado *= .5;
   // o estoque guardado no prédio fica com quem tomou
-  if (antes && antes.jogador && fac) {
+  if (completa(antes) && fac) {
     const perdido = [];
     if (e.estoque && !cargaVazia(e.estoque)) perdido.push(e.estoque);
     for (const b of batalhoesDe(P, antes)) if (b.base === e && !cargaVazia(b)) perdido.push(b);
     for (const est of perdido) {
-      const txt = textoCarga(est), para = fac.jogador ? estoqueDaBase(e) : fac.arsenal && fac.municao ? fac : criaEstoque();
+      const txt = textoCarga(est), para = completa(fac) ? estoqueDaBase(e) : fac.arsenal && fac.municao ? fac : criaEstoque();
       if (para !== est) descarrega({ carga: est }, para);
       avisa(P, "estoqueperdido", { e, fac, antes, txt });
     }
@@ -2289,7 +2292,7 @@ function ordenaIr(P, sq, e) {
 }
 /* quem vai defender ou fazer ronda (jogador) dá a volta nas guarnições inimigas paradas */
 function evitaPara(P, sq) {
-  if (!sq.faccao.jogador || !sq.ordem || sq.ordem.tipo !== "defender") return null;
+  if (!completa(sq.faccao) || !sq.ordem || sq.ordem.tipo !== "defender") return null;
   return guarnicoesInimigas(P, sq.faccao);
 }
 function guarnicoesInimigas(P, fac) { const l = []; for (const q of P.esquadroes) if (q.guarda && ativos(q).length && hostis(P, q.faccao, fac)) l.push([q.guarda.x, q.guarda.z]); return l; }
@@ -2422,7 +2425,7 @@ function tratamentos(P) {
     if (s.vida !== "tratando" || P.tempo < s.fimTrat) continue;
     s.vida = "ok"; s.moral = s.atr.coragem + 20;
     anota(P, s, "Voltou do tratamento (" + s.ondeTrata + ")");
-    const fac = s.faccao, volta = s.sqAntes && ativos(s.sqAntes).length && !fac.jogador ? s.sqAntes : null;
+    const fac = s.faccao, volta = s.sqAntes && ativos(s.sqAntes).length && !completa(fac) ? s.sqAntes : null;
     if (volta) { entraNoEsquadrao(volta, s); const [x, z] = centroDoEsquadrao(volta); s.x = x; s.z = z; }
     else { fac.reserva.push(s); const e = fac.base || P.reg.edificios.find(b => b.tipo === "hospital" && b.dono === fac); if (e) { s.x = e.x; s.z = e.z; } s.vida = "reserva"; s.esperaEm = fac.base; }
     avisa(P, "tratado", { s });
@@ -2439,14 +2442,14 @@ function podeTrocarFuncao(P, s, funcao) {
   const precisaArma = f.arma !== s.arma && !(funcao === "lider" && s.arma), precisaItem = f.item && f.item !== s.item;
   if (!precisaArma && !precisaItem) return null;
   if (s.sq && !pertoDeBase(P, fac, s.sq)) return "precisa estar numa base";
-  const aqui = s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s)) : [s.faccao];
+  const aqui = completa(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s)) : [s.faccao];
   if (precisaArma && somaArsenal(aqui, f.arma) < 1) return "sem " + ARMAS[f.arma].n.toLowerCase() + " nesta base";
   if (precisaItem && somaArsenal(aqui, f.item) < 1) return "sem " + ITENS[f.item].toLowerCase() + " nesta base";
   return null;
 }
 function trocaFuncao(P, s, funcao) {
   if (podeTrocarFuncao(P, s, funcao)) return false;
-  const f = FUNCOES[funcao], fac = (s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s))[0] : null) || estoqueDe(s);
+  const f = FUNCOES[funcao], fac = (completa(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s))[0] : null) || estoqueDe(s);
   if (funcao === "lider") { if (s.sq) { s.sq.lider = s; anota(P, s, "Nomeado líder de " + s.sq.nome); } return true; }
   if (f.arma !== s.arma) devolveArma(fac, s);
   if (s.item !== (f.item || null)) devolveItem(fac, s);
@@ -2488,15 +2491,16 @@ function subpasso(P, dt) {
   }
   for (const s of P.soldados) if (s.vida === "ferido" && P.tempo - s.caiuEm > (s.sq && s.sq.combate !== undefined && temMedico(s.sq, s) ? 30 : 5)) evacua(P, s);
   if (P.tempo >= P.proximoContato) { P.proximoContato = P.tempo + 1; procuraContato(P); tratamentos(P); }
-  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
+  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); comandantesDoSegundo(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
   if (P.tempo >= P.proximaIA) {
     P.proximaIA = P.tempo + IA_PENSA_A_CADA;
-    for (const f of P.faccoes) if (!f.jogador && !f.governo) pensaRival(P, f);
+    for (const f of P.faccoes) if (!f.jogador && !f.governo && !completa(f)) pensaRival(P, f);
   }
   if (P.tempo >= P.proximaHora) {
     P.proximaHora += HORA;
     horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDaDiplomacia(P);
     for (const f of P.faccoes) if (!f.jogador && !f.governo && !f.eliminada) { economiaRival(P, f); recrutamentoRival(P, f); armasRival(P, f); }
+    comandantesDaHora(P);
     avisa(P, "hora", {});
   }
 }
@@ -2622,14 +2626,14 @@ function planoDoLider(P, sq) {
   const meu = vivos.length, deles = conhecidos.length;
   const moral = vivos.reduce((n, s) => n + s.moral, 0) / Math.max(1, meu);
   let plano;
-  const pos = sq.faccao.jogador ? postura(sq) : POSTURAS.equilibrado;
+  const pos = completa(sq.faccao) ? postura(sq) : POSTURAS.equilibrado;
   if (moral < pos.moralRecuo || (deles > 0 && meu < deles * pos.razaoRecuo && sq.perdasNoCombate >= pos.perdasRecuo)) plano = "recuar";
   else if (sq.ordem.tipo === "segurar" || (sq.ordem.tipo === "defender" && sq.guarda)) plano = "segurar";
   else if (!deles) plano = "avancar";
   else if (meu >= deles * pos.vantagem) plano = sq.lider && sq.lider.pref.flanco > .55 ? "flanquear" : "avancar";
   else plano = "cobrir";
   if (plano !== sq.plano) avisa(P, "plano", { sq, plano });
-  if (sq.faccao.jogador && (plano === "recuar" || (deles > meu && sq.perdasNoCombate >= 1))) pedeAjuda(P, sq);
+  if (completa(sq.faccao) && (plano === "recuar" || (deles > meu && sq.perdasNoCombate >= 1))) pedeAjuda(P, sq);
   sq.plano = plano;
   if (sq.lider && sq.tirosNoCombate > 0) aprende(P, sq.lider, "lideranca", .1);   // comandar sob fogo ensina
   if (plano === "recuar" && !sq.recuo) {
@@ -3233,11 +3237,11 @@ function chegadaMercenario(P, fac) {
 
 /* os recrutas que chegam no mesmo lugar se juntam num esquadrão de recrutas ali */
 function grupoDeChegada(P, fac, e, nome) {
-  let sq = P.esquadroes.find(q => q.faccao === fac && q.recrutas && q.guarda === e && !q.combate && ativos(q).length < 8 && (!fac.jogador || q.bat === (fac.batalhaoPadrao || null)));
+  let sq = P.esquadroes.find(q => q.faccao === fac && q.recrutas && q.guarda === e && !q.combate && ativos(q).length < 8 && (!completa(fac) || q.bat === (fac.batalhaoPadrao || null)));
   if (!sq) {
     const n = P.esquadroes.filter(q => q.faccao === fac).length + 1;
     sq = novoEsquadrao(P, fac, null, null, { nome: nome || n + "º Esquadrão", x: e.x, z: e.z });
-    sq.recrutas = true; sq.guarda = e; sq.estado = "guarnição"; sq.bat = fac.jogador ? fac.batalhaoPadrao || null : null;
+    sq.recrutas = true; sq.guarda = e; sq.estado = "guarnição"; sq.bat = completa(fac) ? fac.batalhaoPadrao || null : null;
     if (e.dono !== fac) tomaEdificio(P, e, fac);
   }
   return sq;
@@ -3342,10 +3346,11 @@ function semArma(sq) { return ativos(sq).filter(s => !s.arma).length; }
 /* ---------- IA das rivais ---------- */
 function recrutamentoRival(P, fac) {
   const R = fac.recursos; if (!R || !fac.base) return;
-  if (R.influencia >= 60) for (const { zona } of zonasComVoluntarios(fac)) { if (R.influencia < 60) break; const s = recrutaVoluntario(P, fac, zona); if (s && s.sq) mandaAoQG(P, s.sq); }
-  if (R.dinheiro > 2500) { const s = recrutaMercenario(P, fac); if (s && s.sq) s.sq.reforco = true; }
-  if (R.influencia >= 100) { const l = recrutaCla(P, fac); if (l && l[0].sq) l[0].sq.reforco = true; }
-  for (const s of fac.prisioneiros.slice()) if (R.influencia >= 70 && s.vida === "rendido") { if (convencePrisioneiro(P, fac, s) && s.sq) s.sq.reforco = true; }
+  const cheio = completa(fac);   // com exército completo, voluntários e mercenários vêm pelo mínimo dos batalhões; o comandante só chama o clã e os prisioneiros
+  if (!cheio && R.influencia >= 60) for (const { zona } of zonasComVoluntarios(fac)) { if (R.influencia < 60) break; const s = recrutaVoluntario(P, fac, zona); if (s && s.sq) mandaAoQG(P, s.sq); }
+  if (!cheio && R.dinheiro > 2500) { const s = recrutaMercenario(P, fac); if (s && s.sq) s.sq.reforco = true; }
+  if (R.influencia >= 100) { const l = recrutaCla(P, fac); if (!cheio && l && l[0].sq) l[0].sq.reforco = true; }
+  for (const s of fac.prisioneiros.slice()) if (R.influencia >= 70 && s.vida === "rendido") { if (convencePrisioneiro(P, fac, s) && s.sq && !cheio) s.sq.reforco = true; }
 }
 function mandaAoQG(P, sq) {
   if (!sq.faccao.base || pertoDoQG(sq.faccao, sq)) return;
@@ -3519,18 +3524,19 @@ function textoItens(l) { return Object.entries(l).map(([k, n]) => n + " " + nome
 function armasRival(P, fac) {
   const R = fac.recursos; if (!R) return;
   preparaPaises(P, fac);
-  const desarmados = P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && !s.arma).length;
+  const cheio = completa(fac);   // com exército completo, as armas e a munição do dia a dia vêm pelo mínimo dos batalhões
+  const desarmados = cheio ? 0 : P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && !s.arma).length;
   const fuzis = noArsenal(fac, "fuzil");
   if (desarmados > fuzis && fuzis < 6) {
     if (R.dinheiro > 2500) compra(P, fac, "fuzil", Math.min(desarmados - fuzis, 3));
     else if (R.dinheiro > 900 && !fac.cargas.length) encomenda(P, fac, "fuzil", 2);
   }
   // munição: mantém um estoque mínimo do que os soldados usam
-  for (const t of Object.keys(MUNICOES)) {
+  if (!cheio) for (const t of Object.keys(MUNICOES)) {
     const usam = P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && s.arma && MUNICAO_DA[s.arma] === t).length;
     if (usam && fac.municao[t] < MUNICOES[t].carga * usam * .5 && R.dinheiro > precoDe("cx-" + t) * 3) compra(P, fac, "cx-" + t, 1);
   }
-  if (R.dinheiro > 8000 && noArsenal(fac, "rpg") < 1) compra(P, fac, "rpg");
+  if (!cheio && R.dinheiro > 8000 && noArsenal(fac, "rpg") < 1) compra(P, fac, "rpg");
   if (R.dinheiro > 12000 && fac.arsenal.fuzil_2 < 2) compra(P, fac, "fuzil_2");
   if (!podeFabricar(P, fac, "cx-bala") && fac.producao.length < 2 && R.dinheiro > 400) fabrica(P, fac, fac.municao.bala < 400 ? "cx-bala" : "fuzil");
   if (R.influencia > 200) { const p = PAISES.reduce((a, b) => (fac.paises[b.id].relacao > fac.paises[a.id].relacao ? b : a)); mandaEmissario(P, fac, p.id); }
@@ -3556,7 +3562,7 @@ function predioMaisPerto(lista, x, z) { let m = null, md = Infinity; for (const 
 
 /* ---------- rivais ---------- */
 function ofensivaRival(P) {
-  const rivais = P.faccoes.filter(f => !f.jogador && !f.governo && f.base && !f.eliminada);
+  const rivais = P.faccoes.filter(f => !f.jogador && !f.governo && !completa(f) && f.base && !f.eliminada);   // as rivais com exército completo atacam pelo comandante
   if (!rivais.length) return;
   const fac = P.r.de(rivais);
   const prontos = P.esquadroes.filter(q => q.faccao === fac && !q.combate && q.estado !== "andando" && ativos(q).length >= OFENSIVA.minimo && !semArma(q));
@@ -3724,7 +3730,7 @@ function pensaMissao(P, sq) {
   const fac = sq.faccao, m = sq.missao;
   // 1) se refazer: perdeu muita gente, ficou pequeno ou tem gente sem arma → QG
   sq.maior = Math.max(sq.maior || 0, ativos(sq).length);
-  const recarregar = precisaRecarregar(sq, P), alvoRec = recarregar && fac.jogador ? baseParaRecarregar(P, sq) : null;
+  const recarregar = precisaRecarregar(sq, P), alvoRec = recarregar && completa(fac) ? baseParaRecarregar(P, sq) : null;
   if (!recarregar && poucaMunicao(sq) >= Math.ceil(ativos(sq).length / 2)) {
     if (!sq.avisouEstoque) { sq.avisouEstoque = true; const s = ativos(sq).find(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO); avisa(P, "semestoque", { sq, tipo: MUNICAO_DA[s.arma] }); }
   } else if (municaoMedia(sq) > .5) sq.avisouEstoque = false;
@@ -3879,10 +3885,10 @@ function pedeAjuda(P, sq) {
   }
 }
 
-/* chamado a cada segundo: só para as facções com missões (o jogador) */
+/* chamado a cada segundo: para as facções com missões (jogador e rivais com exército completo) */
 function missoesDoSegundo(P) {
   for (const sq of P.esquadroes) {
-    if (!sq.faccao.jogador || !ativos(sq).length) continue;
+    if (!completa(sq.faccao) || !ativos(sq).length) continue;
     if (P.tempo < (sq.proximaMissao || 0)) continue;
     sq.proximaMissao = P.tempo + PENSA_MISSAO;
     pensaMissao(P, sq);
@@ -3936,7 +3942,7 @@ function motivoFuncao(P, s, funcao) {
   const f = FUNCOES[funcao], fac = estoqueDe(s);
   if (s.vida !== "ok" && s.vida !== "reserva") return "fora de combate";
   if (funcao === "lider") return !s.sq ? "precisa estar num esquadrão" : !podeLiderar(s) ? "precisa ser Veterano ou ter liderança " + LIDERANCA_PARA_LIDERAR : null;
-  const tem = k => s.faccao.jogador ? !!baseComItem(P, s, k) : noArsenal(fac, k) > 0;
+  const tem = k => completa(s.faccao) ? !!baseComItem(P, s, k) : noArsenal(fac, k) > 0;
   if (f.arma !== s.arma && !tem(f.arma)) return "sem " + ARMAS[f.arma].n.toLowerCase() + " em nenhuma base";
   if (f.item && f.item !== s.item && !tem(f.item)) return "sem " + ITENS[f.item].toLowerCase() + " em nenhuma base";
   return null;
@@ -4429,10 +4435,10 @@ function batalhoesDoSegundo(P) {
   // reposição em ordem de prioridade: o primeiro pega antes do depósito e do caixa
   if (!P.proximaReposicao || P.tempo >= P.proximaReposicao) {
     P.proximaReposicao = P.tempo + BATALHAO.pensa;
-    for (const f of P.faccoes) if (f.jogador && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
+    for (const f of P.faccoes) if (completa(f) && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
   }
   for (const b of (P.batalhoes || [])) {
-    if (b.dissolvido || b.faccao.eliminada || !b.faccao.jogador) continue;
+    if (b.dissolvido || b.faccao.eliminada || !completa(b.faccao)) continue;
     if (P.tempo < b.proximo) continue;
     b.proximo = P.tempo + BATALHAO.pensa;
     pensaBatalhao(P, b);
@@ -4541,7 +4547,7 @@ function sugere(P, s, pedido) {
 
 "use strict";
 /* ============================================================
-   ESTOQUES POR BASE (só o jogador; as rivais usam um estoque único)
+   ESTOQUES POR BASE (jogador e rivais com exército completo)
    Três tipos de base:
    - QG da facção: o depósito geral. Compras, fábricas e doações chegam aqui.
    - Base do líder: onde está o líder de um batalhão. O estoque do
@@ -4557,7 +4563,7 @@ function criaEstoque() { return { arsenal: criaArsenal(), municao: { bala: 0, ci
 function estoqueDaBase(e) { return e.estoque || (e.estoque = criaEstoque()); }
 /* estoques que um soldado do batalhão "bat" pode usar nesta base, na ordem em que usa */
 function estoquesNaBase(P, fac, bat, base) {
-  if (!fac.jogador) return [fac];
+  if (!completa(fac)) return [fac];
   if (!base) return [];
   const l = [];
   if (bat && !bat.dissolvido && bat.base === base) l.push(bat);
@@ -4566,7 +4572,7 @@ function estoquesNaBase(P, fac, bat, base) {
 }
 /* o estoque "da base" (onde se descarrega): QG = depósito, base do líder = estoque do batalhão */
 function estoqueDoLugar(P, fac, base, bat) {
-  if (!fac.jogador || base === fac.base) return fac;
+  if (!completa(fac) || base === fac.base) return fac;
   const b = bat && bat.base === base ? bat : batalhoesDe(P, fac).find(o => o.base === base);
   return b || estoqueDaBase(base);
 }
@@ -4581,7 +4587,7 @@ function tiraMunicao(l, t, q) { let tirou = 0; for (const e of l) { if (!e.munic
 
 /* numa base: pega a melhor arma da função, o melhor kit e enche a munição (do estoque daquela base) */
 function equipaNaBase(P, s, base) {
-  const l = s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, base || baseDoSoldado(P, s)) : [s.faccao];
+  const l = completa(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, base || baseDoSoldado(P, s)) : [s.faccao];
   if (!l.length) return false;
   const dep = l[0], f = FUNCOES[s.funcao]; let mudou = false;
   const m = f.arma && melhorEm(l, f.arma);
@@ -4804,7 +4810,7 @@ function chegouVeiculo(P, v) {
   v.estado = "parado";
   if (pl.para.dono !== fac) { v.plano = null; return; }
   v.em = pl.para;
-  if (!fac.jogador) {   // comboio rival: entrega na frente e volta ao QG
+  if (!completa(fac)) {   // comboio rival simples: entrega na frente e volta ao QG
     descarrega(v, fac);
     if (fac.base) { v.plano = { para: fac.base }; v.estado = "voltando"; rotaVeiculo(P, v, fac.base); } else v.plano = null;
     return;
@@ -4816,7 +4822,7 @@ function chegouVeiculo(P, v) {
 }
 function andaVeiculo(P, v, dt) {
   if (!v.rota) return;
-  if (v.faccao.jogador && (!v.motorista || P.tempo < (v.motoristaChega || 0))) return;
+  if (completa(v.faccao) && (!v.motorista || P.tempo < (v.motoristaChega || 0))) return;
   let passo = VEICULOS[v.nivel - 1].vel * dt;
   while (passo > 0 && v.rota) {
     const [tx, tz] = v.rota[v.i], dx = tx - v.x, dz = tz - v.z, d = Math.hypot(dx, dz);
@@ -4860,7 +4866,7 @@ function destroiVeiculo(P, v) {
   for (const [f, d] of v.danoDe) if (d > mx) { mx = d; por = f; }
   const txt = textoCarga(v.carga);
   if (por && !cargaVazia(v.carga)) {   // quem destruiu fica com a carga
-    const base = por.jogador ? baseMaisPerto(P, por, v.x, v.z) : null;
+    const base = completa(por) ? baseMaisPerto(P, por, v.x, v.z) : null;
     descarrega(v, base ? estoqueDoLugar(P, por, base) : por.municao ? por : criaEstoque());
   }
   const s = v.motorista;
@@ -4875,7 +4881,7 @@ function captura(P, v, nova) {
   v.faccao = nova; v.bat = null; v.plano = null; v.estado = "parado"; v.em = null; v.danoDe = new Map(); v.motorista = null;
   (nova.veiculos || (nova.veiculos = [])).push(v);
   const txt = textoCarga(v.carga);
-  if (!nova.jogador) { descarrega(v, nova.municao ? nova : criaEstoque()); if (nova.base) { v.plano = { para: nova.base }; v.estado = "voltando"; rotaVeiculo(P, v, nova.base); } }
+  if (!completa(nova)) { descarrega(v, nova.municao ? nova : criaEstoque()); if (nova.base) { v.plano = { para: nova.base }; v.estado = "voltando"; rotaVeiculo(P, v, nova.base); } }
   avisa(P, "veiculocapturado", { v, de: antiga, por: nova, txt });
 }
 
@@ -4897,9 +4903,9 @@ function veiculosDoSegundo(P) {
           for (const sq of P.esquadroes) { if (sq.combate || !ativos(sq).length || sq.faccao === fac || !hostis(P, sq.faccao, fac) || sq.faccao.governo) continue; const [x, z] = centroDoEsquadrao(sq), d = Math.hypot(x - v.x, z - v.z); if (d < mb) { mb = d; b = sq; } }
           if (b) { v.buscadoPor = b; const m = b.missao; ordenaPonto(P, b, v.x, v.z, "ataque"); b.missao = m; b.proximaMissao = P.tempo + 60; }
         }
-        if (!fac.jogador) continue;
+        if (!completa(fac)) continue;
       }
-      if (fac.jogador) {
+      if (completa(fac)) {
         if (!v.bat || v.bat.dissolvido) { const bs = porPrioridade(P, fac); v.bat = null; if (bs.length) { const nv = x => fac.veiculos.filter(o => o.bat === x).length, longe = x => x.base && x.base !== fac.base ? 0 : 1;
           const b = bs.slice().sort((x, y) => (longe(x) - longe(y)) || (nv(x) - nv(y)) || x.prioridade - y.prioridade)[0]; atribuiVeiculo(P, v, b); avisa(P, "veiculoatribuido", { v, b }); } continue; }
         if (!v.motorista || v.motorista.vida !== "motorista") { v.motorista = null; pegaMotorista(P, v); if (!v.motorista) continue; if (v.estado === "abandonado") v.estado = "parado"; }
@@ -5170,6 +5176,148 @@ function missaoReacao(P, sq) {
 
 "use strict";
 /* ============================================================
+   COMANDANTE DAS RIVAIS (protótipo 18)
+   As rivais jogam com as mesmas regras do jogador: batalhões com líder,
+   sargentos, missões e postura, estoque por base, estoque mínimo,
+   veículos de logística e compra automática. Ninguém trapaceia: a IA
+   não ganha dinheiro, soldados nem armas de graça.
+   O comandante de cada rival faz o papel do jogador:
+   - abre batalhões quando o território deixa e há quem comande;
+   - define o mínimo de soldados, armas e munição de cada batalhão,
+     conforme o caixa e a renda (sem caixa, não cresce);
+   - escolhe as ordens: proteger o QG ameaçado, segurar a frente ou
+     avançar contra quem está em guerra com ela, tomar a zona mais
+     vantajosa perto da sua área;
+   - escolhe a postura (a dificuldade e o tamanho do batalhão mudam).
+   A dificuldade muda a rapidez com que o comandante reage, quanto ele
+   arrisca e o tamanho do exército que tenta manter.
+   (Números provisórios.)
+   ============================================================ */
+const DIFICULDADES = {
+  facil:   { n: "Fácil",   pensa: 90, postura: "cauteloso",   ordens: 2, soldados: 10, reserva: .6, ataque: 1.6, dica: "As rivais reagem devagar, arriscam pouco e mantêm exércitos menores" },
+  normal:  { n: "Normal",  pensa: 40, postura: "equilibrado", ordens: 3, soldados: 16, reserva: 1,  ataque: 1.2, dica: "As rivais jogam com as mesmas regras que você" },
+  dificil: { n: "Difícil", pensa: 15, postura: "agressivo",   ordens: 4, soldados: 22, reserva: 1.4, ataque: .9, dica: "As rivais reagem rápido, atacam mais cedo e mantêm exércitos maiores" }
+};
+const COMANDANTE = { fronteira: 160, ameacaQG: 420, ameacaMinima: 3, caixaParaCrescer: 1500, caixaParaSuporte: 3000, caixaParaRpg: 8000, caixaMinimo: 1000 };
+const dificuldade = P => DIFICULDADES[P.dificuldade] || DIFICULDADES.normal;
+const MAIS_CAUTELOSO = { agressivo: "equilibrado", equilibrado: "cauteloso", cauteloso: "cauteloso" };
+
+function comandantesDoSegundo(P) {
+  const d = dificuldade(P);
+  for (const fac of P.faccoes) {
+    if (fac.jogador || !completa(fac) || fac.eliminada || !fac.base) continue;
+    if (P.tempo < (fac.proximoComando || 0)) continue;
+    fac.proximoComando = P.tempo + d.pensa;
+    pensaComandante(P, fac, d);
+  }
+}
+function comandantesDaHora(P) { /* reservado: o comandante pensa pelo relógio da dificuldade */ }
+
+function pensaComandante(P, fac, d) {
+  abreBatalhao(P, fac);
+  const bats = batalhoesDe(P, fac); if (!bats.length) return;
+  const c = contas(P, fac);
+  for (const b of bats) {
+    ajustaMinimos(P, fac, b, d, c);
+    b.postura = soldadosDe(P, b).length < 6 ? MAIS_CAUTELOSO[d.postura] : d.postura;
+  }
+  planejaOrdens(P, fac, d, bats);
+}
+
+/* ---------- batalhões ---------- */
+function abreBatalhao(P, fac) {
+  if (batalhoesDe(P, fac).length >= limiteBatalhoes(P, fac)) return;
+  if (P.soldados.some(s => s.faccao === fac && s.pedido && s.pedido.tipo === "comandar")) return;   // já tem um a caminho da base
+  const c = candidatosACmd(P, fac).filter(s => !(s.sq && s.sq.lider === s && ativos(s.sq).length <= 3))   // não desmancha esquadrão pequeno
+    .sort((a, b) => b.atr.lideranca - a.atr.lideranca)[0];
+  if (c) pedeComando(P, c);
+}
+
+/* ---------- estoque mínimo: o que o batalhão tenta manter (a compra automática faz o resto) ---------- */
+function ajustaMinimos(P, fac, b, d, c) {
+  const R = fac.recursos, m = b.minimo || (b.minimo = {});
+  const sold = soldadosDe(P, b).length;
+  const apertado = R.dinheiro < COMANDANTE.caixaParaCrescer && c.total.dinheiro < 0;
+  const semComida = R.comida < 30 && c.total.comida < 0;
+  m.soldados = apertado || semComida ? Math.min(d.soldados, sold) : d.soldados;
+  const n = Math.max(sold, 6), nsq = Math.max(1, Math.ceil(n / BATALHAO.tamanhoEsquadrao));
+  const pobre = R.dinheiro < COMANDANTE.caixaMinimo;
+  m.fuzil = pobre ? 0 : Math.ceil(n * .2 * d.reserva);
+  m["cx-bala"] = Math.round(n * MUNICOES.bala.carga * .5 * d.reserva);
+  const suporte = R.dinheiro > COMANDANTE.caixaParaSuporte;
+  m.metralhadora = suporte ? nsq : 0;
+  m.kit = suporte ? nsq : pobre ? 0 : 1;
+  m["cx-cinta"] = noArsenal(b, "metralhadora") || ativos2(P, fac, "metralhadora") ? Math.round(nsq * MUNICOES.cinta.carga * .5 * d.reserva) : 0;
+  const rpg = R.dinheiro > COMANDANTE.caixaParaRpg;
+  m.rpg = rpg ? nsq : 0;
+  m["cx-foguete"] = noArsenal(b, "rpg") || ativos2(P, fac, "rpg") ? Math.round(nsq * MUNICOES.foguete.carga * d.reserva) : 0;
+}
+function ativos2(P, fac, arma) { return P.soldados.some(s => s.faccao === fac && s.vida === "ok" && s.arma === arma); }
+
+/* ---------- ordens ---------- */
+function planejaOrdens(P, fac, d, bats) {
+  const meus = P.reg.edificios.filter(e => e.dono === fac);
+  if (!meus.length) return;
+  const forcaDe = f => P.soldados.filter(s => s.faccao === f && s.vida === "ok" && s.arma).length;
+  const minha = forcaDe(fac);
+  const ordens = [];
+  // 1) QG ameaçado: protege a zona do QG
+  let ameaca = 0;
+  for (const q of P.esquadroes) {
+    if (!ativos(q).length || !hostis(P, q.faccao, fac) || (q.guarda && !q.combate && q.faccao.governo)) continue;
+    const [x, z] = centroDoEsquadrao(q);
+    if (Math.hypot(x - fac.base.x, z - fac.base.z) < COMANDANTE.ameacaQG) ameaca += ativos(q).length;
+  }
+  if (ameaca >= COMANDANTE.ameacaMinima) ordens.push({ tipo: "proteger", alvo: fac.base.zona, peso: 3 + ameaca });
+  // 2) facções em guerra com fronteira: segura ou avança
+  const vizinhas = new Map();
+  for (const e of meus) P.reg.oc.edificiosPerto(e.x, e.z, COMANDANTE.fronteira, o => { if (o.dono && o.dono !== fac && !o.dono.governo && hostis(P, fac, o.dono)) vizinhas.set(o.dono, (vizinhas.get(o.dono) || 0) + 1); });
+  for (const [outra, contato] of [...vizinhas.entries()].sort((a, b) => b[1] - a[1])) {
+    const forte = minha >= forcaDe(outra) * d.ataque;
+    ordens.push({ tipo: forte ? "avancar" : "frente", alvo: outra, peso: forte ? 2 : 2 + contato / 20 });
+  }
+  // 3) expansão: a zona mais vantajosa perto da sua área
+  const zona = melhorZona(P, fac, d, meus, minha);
+  if (zona) ordens.push({ tipo: "tomar", alvo: zona, peso: 1.5 });
+  ordens.sort((a, b) => b.peso - a.peso);
+  // divide entre os batalhões: o 1º (perto do QG) fica com a defesa; os outros com o que estiver mais perto da base deles
+  const porBat = new Map(bats.map(b => [b, []]));
+  const lugar = o => o.alvo.chaves ? [o.alvo.x, o.alvo.z] : o.alvo.base ? [o.alvo.base.x, o.alvo.base.z] : [fac.base.x, fac.base.z];
+  for (const o of ordens.slice(0, d.ordens * bats.length)) {
+    let b;
+    if (o.tipo === "proteger" || bats.length === 1) b = bats[0];
+    else { const [x, z] = lugar(o); b = bats.filter(k => porBat.get(k).length < d.ordens).sort((a, k) => (porBat.get(a).length - porBat.get(k).length) || Math.hypot(a.base.x - x, a.base.z - z) - Math.hypot(k.base.x - x, k.base.z - z))[0]; }
+    if (b && porBat.get(b).length < Math.min(d.ordens, MAX_ORDENS)) porBat.get(b).push(o);
+  }
+  for (const [b, l] of porBat) poeOrdens(P, b, l);
+}
+/* troca as ordens do batalhão sem desmanchar as que continuam iguais (o líder não reembaralha os esquadrões à toa) */
+function poeOrdens(P, b, l) {
+  const antes = b.ordens || [];
+  const novas = l.map(o => antes.find(a => a.tipo === o.tipo && a.alvo === o.alvo) || { tipo: o.tipo, alvo: o.alvo, desde: P.tempo, id: (b.nOrdem = (b.nOrdem || 0) + 1) });
+  const mudou = novas.length !== antes.length || novas.some((o, i) => o !== antes[i]);
+  b.ordens = novas;
+  if (mudou) { b.proximo = 0; avisa(P, "ordembatalhao", { b }); }
+}
+function melhorZona(P, fac, d, meus, minha) {
+  let melhor = null, nota = Infinity;
+  for (const zn of P.reg.zonas) {
+    if (zn.dono === fac || !zn.chaves.length) continue;
+    const toma = zn.chaves.filter(e => podeTomar(P, fac, e));
+    if (!toma.length) continue;
+    let dist = Infinity; for (const e of meus) dist = Math.min(dist, Math.hypot(e.x - zn.x, e.z - zn.z));
+    if (dist > 1200) continue;
+    const defesa = toma.reduce((n, e) => n + forcaDefesa(P, e, fac), 0) / toma.length;   // defesa média de um ponto
+    if (defesa * d.ataque > Math.max(minha, 3)) continue;   // nem o ponto médio dá para tomar
+    const ja = zn.chaves.filter(e => e.dono === fac).length / zn.chaves.length;
+    const n = dist + defesa * 60 - ja * 400 + (zn.tipo === "velha" ? 300 : 0);
+    if (n < nota) { nota = n; melhor = zn; }
+  }
+  return melhor;
+}
+
+"use strict";
+/* ============================================================
    ORDENS DO JOGADOR
    - Avançar até um ponto (ou prédio): no caminho o esquadrão toma as
      casas por onde passa e desvia para pegar os pontos importantes perto.
@@ -5277,7 +5425,7 @@ function varredura(P) {
     });
     if (o.tipo !== "avancar" || sq.sub || !o.destino) continue;
     const [dx, dz] = o.destino, falta = Math.hypot(dx - x, dz - z);
-    let melhor = null, md = sq.faccao.jogador ? postura(sq).desvio : RAIO_DESVIO;
+    let melhor = null, md = completa(sq.faccao) ? postura(sq).desvio : RAIO_DESVIO;
     for (const zn of P.reg.zonas) {
       if (Math.hypot(zn.x - x, zn.z - z) > 700) continue;
       for (const e of zn.chaves) {

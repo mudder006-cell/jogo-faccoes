@@ -11,6 +11,8 @@
 function criaFaccao(id, nome, cor, extra) {
   return Object.assign({ id, nome, cor, jogador: false, governo: false }, extra);
 }
+/* facção com o exército completo (batalhões, missões, estoque por base, logística): o jogador e as rivais */
+const completa = fac => !!fac && !fac.governo && (fac.jogador || !!fac.exercito);
 
 function controleDaZona(zn) {
   if (!zn.chaves.length) return null;

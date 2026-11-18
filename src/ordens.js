@@ -107,7 +107,7 @@ function varredura(P) {
     });
     if (o.tipo !== "avancar" || sq.sub || !o.destino) continue;
     const [dx, dz] = o.destino, falta = Math.hypot(dx - x, dz - z);
-    let melhor = null, md = sq.faccao.jogador ? postura(sq).desvio : RAIO_DESVIO;
+    let melhor = null, md = completa(sq.faccao) ? postura(sq).desvio : RAIO_DESVIO;
     for (const zn of P.reg.zonas) {
       if (Math.hypot(zn.x - x, zn.z - z) > 700) continue;
       for (const e of zn.chaves) {

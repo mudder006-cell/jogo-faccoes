@@ -54,11 +54,11 @@ function chegadaMercenario(P, fac) {
 
 /* os recrutas que chegam no mesmo lugar se juntam num esquadrão de recrutas ali */
 function grupoDeChegada(P, fac, e, nome) {
-  let sq = P.esquadroes.find(q => q.faccao === fac && q.recrutas && q.guarda === e && !q.combate && ativos(q).length < 8 && (!fac.jogador || q.bat === (fac.batalhaoPadrao || null)));
+  let sq = P.esquadroes.find(q => q.faccao === fac && q.recrutas && q.guarda === e && !q.combate && ativos(q).length < 8 && (!completa(fac) || q.bat === (fac.batalhaoPadrao || null)));
   if (!sq) {
     const n = P.esquadroes.filter(q => q.faccao === fac).length + 1;
     sq = novoEsquadrao(P, fac, null, null, { nome: nome || n + "º Esquadrão", x: e.x, z: e.z });
-    sq.recrutas = true; sq.guarda = e; sq.estado = "guarnição"; sq.bat = fac.jogador ? fac.batalhaoPadrao || null : null;
+    sq.recrutas = true; sq.guarda = e; sq.estado = "guarnição"; sq.bat = completa(fac) ? fac.batalhaoPadrao || null : null;
     if (e.dono !== fac) tomaEdificio(P, e, fac);
   }
   return sq;
@@ -163,10 +163,11 @@ function semArma(sq) { return ativos(sq).filter(s => !s.arma).length; }
 /* ---------- IA das rivais ---------- */
 function recrutamentoRival(P, fac) {
   const R = fac.recursos; if (!R || !fac.base) return;
-  if (R.influencia >= 60) for (const { zona } of zonasComVoluntarios(fac)) { if (R.influencia < 60) break; const s = recrutaVoluntario(P, fac, zona); if (s && s.sq) mandaAoQG(P, s.sq); }
-  if (R.dinheiro > 2500) { const s = recrutaMercenario(P, fac); if (s && s.sq) s.sq.reforco = true; }
-  if (R.influencia >= 100) { const l = recrutaCla(P, fac); if (l && l[0].sq) l[0].sq.reforco = true; }
-  for (const s of fac.prisioneiros.slice()) if (R.influencia >= 70 && s.vida === "rendido") { if (convencePrisioneiro(P, fac, s) && s.sq) s.sq.reforco = true; }
+  const cheio = completa(fac);   // com exército completo, voluntários e mercenários vêm pelo mínimo dos batalhões; o comandante só chama o clã e os prisioneiros
+  if (!cheio && R.influencia >= 60) for (const { zona } of zonasComVoluntarios(fac)) { if (R.influencia < 60) break; const s = recrutaVoluntario(P, fac, zona); if (s && s.sq) mandaAoQG(P, s.sq); }
+  if (!cheio && R.dinheiro > 2500) { const s = recrutaMercenario(P, fac); if (s && s.sq) s.sq.reforco = true; }
+  if (R.influencia >= 100) { const l = recrutaCla(P, fac); if (!cheio && l && l[0].sq) l[0].sq.reforco = true; }
+  for (const s of fac.prisioneiros.slice()) if (R.influencia >= 70 && s.vida === "rendido") { if (convencePrisioneiro(P, fac, s) && s.sq && !cheio) s.sq.reforco = true; }
 }
 function mandaAoQG(P, sq) {
   if (!sq.faccao.base || pertoDoQG(sq.faccao, sq)) return;

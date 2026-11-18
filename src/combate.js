@@ -106,14 +106,14 @@ function planoDoLider(P, sq) {
   const meu = vivos.length, deles = conhecidos.length;
   const moral = vivos.reduce((n, s) => n + s.moral, 0) / Math.max(1, meu);
   let plano;
-  const pos = sq.faccao.jogador ? postura(sq) : POSTURAS.equilibrado;
+  const pos = completa(sq.faccao) ? postura(sq) : POSTURAS.equilibrado;
   if (moral < pos.moralRecuo || (deles > 0 && meu < deles * pos.razaoRecuo && sq.perdasNoCombate >= pos.perdasRecuo)) plano = "recuar";
   else if (sq.ordem.tipo === "segurar" || (sq.ordem.tipo === "defender" && sq.guarda)) plano = "segurar";
   else if (!deles) plano = "avancar";
   else if (meu >= deles * pos.vantagem) plano = sq.lider && sq.lider.pref.flanco > .55 ? "flanquear" : "avancar";
   else plano = "cobrir";
   if (plano !== sq.plano) avisa(P, "plano", { sq, plano });
-  if (sq.faccao.jogador && (plano === "recuar" || (deles > meu && sq.perdasNoCombate >= 1))) pedeAjuda(P, sq);
+  if (completa(sq.faccao) && (plano === "recuar" || (deles > meu && sq.perdasNoCombate >= 1))) pedeAjuda(P, sq);
   sq.plano = plano;
   if (sq.lider && sq.tirosNoCombate > 0) aprende(P, sq.lider, "lideranca", .1);   // comandar sob fogo ensina
   if (plano === "recuar" && !sq.recuo) {

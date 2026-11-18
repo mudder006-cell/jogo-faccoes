@@ -67,7 +67,7 @@ function pensaMissao(P, sq) {
   const fac = sq.faccao, m = sq.missao;
   // 1) se refazer: perdeu muita gente, ficou pequeno ou tem gente sem arma → QG
   sq.maior = Math.max(sq.maior || 0, ativos(sq).length);
-  const recarregar = precisaRecarregar(sq, P), alvoRec = recarregar && fac.jogador ? baseParaRecarregar(P, sq) : null;
+  const recarregar = precisaRecarregar(sq, P), alvoRec = recarregar && completa(fac) ? baseParaRecarregar(P, sq) : null;
   if (!recarregar && poucaMunicao(sq) >= Math.ceil(ativos(sq).length / 2)) {
     if (!sq.avisouEstoque) { sq.avisouEstoque = true; const s = ativos(sq).find(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO); avisa(P, "semestoque", { sq, tipo: MUNICAO_DA[s.arma] }); }
   } else if (municaoMedia(sq) > .5) sq.avisouEstoque = false;
@@ -222,10 +222,10 @@ function pedeAjuda(P, sq) {
   }
 }
 
-/* chamado a cada segundo: só para as facções com missões (o jogador) */
+/* chamado a cada segundo: para as facções com missões (jogador e rivais com exército completo) */
 function missoesDoSegundo(P) {
   for (const sq of P.esquadroes) {
-    if (!sq.faccao.jogador || !ativos(sq).length) continue;
+    if (!completa(sq.faccao) || !ativos(sq).length) continue;
     if (P.tempo < (sq.proximaMissao || 0)) continue;
     sq.proximaMissao = P.tempo + PENSA_MISSAO;
     pensaMissao(P, sq);

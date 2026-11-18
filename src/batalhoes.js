@@ -151,10 +151,10 @@ function batalhoesDoSegundo(P) {
   // reposição em ordem de prioridade: o primeiro pega antes do depósito e do caixa
   if (!P.proximaReposicao || P.tempo >= P.proximaReposicao) {
     P.proximaReposicao = P.tempo + BATALHAO.pensa;
-    for (const f of P.faccoes) if (f.jogador && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
+    for (const f of P.faccoes) if (completa(f) && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
   }
   for (const b of (P.batalhoes || [])) {
-    if (b.dissolvido || b.faccao.eliminada || !b.faccao.jogador) continue;
+    if (b.dissolvido || b.faccao.eliminada || !completa(b.faccao)) continue;
     if (P.tempo < b.proximo) continue;
     b.proximo = P.tempo + BATALHAO.pensa;
     pensaBatalhao(P, b);

@@ -98,13 +98,14 @@ function fundaFaccao(P, fac, e) {
   tomaEdificio(P, e, fac);
   criaLiderDaFaccao(P, fac);
   const sq = novoEsquadrao(P, fac, e, TIME_INICIAL, { nome: fac.jogador ? "1º Esquadrão" : "Esquadrão de " + fac.nome.split(" ")[0] });
-  if (fac.jogador) {   // o jogador comanda por batalhões: o 1º começa com o esquadrão inicial e o estoque inicial
+  if (!fac.jogador && !fac.governo) { fac.exercito = true; novoVeiculo(fac, 1); }   // as rivais começam com uma picape (como antes)
+  if (completa(fac)) {   // comanda por batalhões: o 1º começa com o esquadrão inicial e o estoque inicial
     const cmd = criaSoldado(P, fac, "lider", [50, 70]); cmd.atr.lideranca = Math.max(cmd.atr.lideranca, 64); cmd.xp = 120;
     const b = criaBatalhao(P, fac, cmd, e);
     sq.bat = b; for (const s of sq.membros) s.bat = b;
     for (const k of Object.keys(fac.arsenal)) passaItem(fac, b, k, fac.arsenal[k]);
     for (const t of Object.keys(fac.municao)) { b.municao[t] += fac.municao[t]; fac.municao[t] = 0; }
-  } else if (!fac.governo) novoVeiculo(fac, 1);   // as rivais têm uma picape para os comboios
+  }
   fac.veiculos = fac.veiculos || [];
   return sq;
 }
@@ -113,12 +114,12 @@ function tomaEdificio(P, e, fac, adesao) {
   const antes = e.dono; if (antes === fac) return;
   e.dono = fac; e.donoAnterior = antes; if (e.fortificado) e.fortificado *= .5;
   // o estoque guardado no prédio fica com quem tomou
-  if (antes && antes.jogador && fac) {
+  if (completa(antes) && fac) {
     const perdido = [];
     if (e.estoque && !cargaVazia(e.estoque)) perdido.push(e.estoque);
     for (const b of batalhoesDe(P, antes)) if (b.base === e && !cargaVazia(b)) perdido.push(b);
     for (const est of perdido) {
-      const txt = textoCarga(est), para = fac.jogador ? estoqueDaBase(e) : fac.arsenal && fac.municao ? fac : criaEstoque();
+      const txt = textoCarga(est), para = completa(fac) ? estoqueDaBase(e) : fac.arsenal && fac.municao ? fac : criaEstoque();
       if (para !== est) descarrega({ carga: est }, para);
       avisa(P, "estoqueperdido", { e, fac, antes, txt });
     }
@@ -168,7 +169,7 @@ function ordenaIr(P, sq, e) {
 }
 /* quem vai defender ou fazer ronda (jogador) dá a volta nas guarnições inimigas paradas */
 function evitaPara(P, sq) {
-  if (!sq.faccao.jogador || !sq.ordem || sq.ordem.tipo !== "defender") return null;
+  if (!completa(sq.faccao) || !sq.ordem || sq.ordem.tipo !== "defender") return null;
   return guarnicoesInimigas(P, sq.faccao);
 }
 function guarnicoesInimigas(P, fac) { const l = []; for (const q of P.esquadroes) if (q.guarda && ativos(q).length && hostis(P, q.faccao, fac)) l.push([q.guarda.x, q.guarda.z]); return l; }
@@ -301,7 +302,7 @@ function tratamentos(P) {
     if (s.vida !== "tratando" || P.tempo < s.fimTrat) continue;
     s.vida = "ok"; s.moral = s.atr.coragem + 20;
     anota(P, s, "Voltou do tratamento (" + s.ondeTrata + ")");
-    const fac = s.faccao, volta = s.sqAntes && ativos(s.sqAntes).length && !fac.jogador ? s.sqAntes : null;
+    const fac = s.faccao, volta = s.sqAntes && ativos(s.sqAntes).length && !completa(fac) ? s.sqAntes : null;
     if (volta) { entraNoEsquadrao(volta, s); const [x, z] = centroDoEsquadrao(volta); s.x = x; s.z = z; }
     else { fac.reserva.push(s); const e = fac.base || P.reg.edificios.find(b => b.tipo === "hospital" && b.dono === fac); if (e) { s.x = e.x; s.z = e.z; } s.vida = "reserva"; s.esperaEm = fac.base; }
     avisa(P, "tratado", { s });
@@ -318,14 +319,14 @@ function podeTrocarFuncao(P, s, funcao) {
   const precisaArma = f.arma !== s.arma && !(funcao === "lider" && s.arma), precisaItem = f.item && f.item !== s.item;
   if (!precisaArma && !precisaItem) return null;
   if (s.sq && !pertoDeBase(P, fac, s.sq)) return "precisa estar numa base";
-  const aqui = s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s)) : [s.faccao];
+  const aqui = completa(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s)) : [s.faccao];
   if (precisaArma && somaArsenal(aqui, f.arma) < 1) return "sem " + ARMAS[f.arma].n.toLowerCase() + " nesta base";
   if (precisaItem && somaArsenal(aqui, f.item) < 1) return "sem " + ITENS[f.item].toLowerCase() + " nesta base";
   return null;
 }
 function trocaFuncao(P, s, funcao) {
   if (podeTrocarFuncao(P, s, funcao)) return false;
-  const f = FUNCOES[funcao], fac = (s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s))[0] : null) || estoqueDe(s);
+  const f = FUNCOES[funcao], fac = (completa(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, baseDoSoldado(P, s))[0] : null) || estoqueDe(s);
   if (funcao === "lider") { if (s.sq) { s.sq.lider = s; anota(P, s, "Nomeado líder de " + s.sq.nome); } return true; }
   if (f.arma !== s.arma) devolveArma(fac, s);
   if (s.item !== (f.item || null)) devolveItem(fac, s);
@@ -367,15 +368,16 @@ function subpasso(P, dt) {
   }
   for (const s of P.soldados) if (s.vida === "ferido" && P.tempo - s.caiuEm > (s.sq && s.sq.combate !== undefined && temMedico(s.sq, s) ? 30 : 5)) evacua(P, s);
   if (P.tempo >= P.proximoContato) { P.proximoContato = P.tempo + 1; procuraContato(P); tratamentos(P); }
-  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
+  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); comandantesDoSegundo(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
   if (P.tempo >= P.proximaIA) {
     P.proximaIA = P.tempo + IA_PENSA_A_CADA;
-    for (const f of P.faccoes) if (!f.jogador && !f.governo) pensaRival(P, f);
+    for (const f of P.faccoes) if (!f.jogador && !f.governo && !completa(f)) pensaRival(P, f);
   }
   if (P.tempo >= P.proximaHora) {
     P.proximaHora += HORA;
     horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDaDiplomacia(P);
     for (const f of P.faccoes) if (!f.jogador && !f.governo && !f.eliminada) { economiaRival(P, f); recrutamentoRival(P, f); armasRival(P, f); }
+    comandantesDaHora(P);
     avisa(P, "hora", {});
   }
 }

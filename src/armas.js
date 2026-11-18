@@ -165,18 +165,19 @@ function textoItens(l) { return Object.entries(l).map(([k, n]) => n + " " + nome
 function armasRival(P, fac) {
   const R = fac.recursos; if (!R) return;
   preparaPaises(P, fac);
-  const desarmados = P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && !s.arma).length;
+  const cheio = completa(fac);   // com exército completo, as armas e a munição do dia a dia vêm pelo mínimo dos batalhões
+  const desarmados = cheio ? 0 : P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && !s.arma).length;
   const fuzis = noArsenal(fac, "fuzil");
   if (desarmados > fuzis && fuzis < 6) {
     if (R.dinheiro > 2500) compra(P, fac, "fuzil", Math.min(desarmados - fuzis, 3));
     else if (R.dinheiro > 900 && !fac.cargas.length) encomenda(P, fac, "fuzil", 2);
   }
   // munição: mantém um estoque mínimo do que os soldados usam
-  for (const t of Object.keys(MUNICOES)) {
+  if (!cheio) for (const t of Object.keys(MUNICOES)) {
     const usam = P.soldados.filter(s => s.faccao === fac && s.vida === "ok" && s.arma && MUNICAO_DA[s.arma] === t).length;
     if (usam && fac.municao[t] < MUNICOES[t].carga * usam * .5 && R.dinheiro > precoDe("cx-" + t) * 3) compra(P, fac, "cx-" + t, 1);
   }
-  if (R.dinheiro > 8000 && noArsenal(fac, "rpg") < 1) compra(P, fac, "rpg");
+  if (!cheio && R.dinheiro > 8000 && noArsenal(fac, "rpg") < 1) compra(P, fac, "rpg");
   if (R.dinheiro > 12000 && fac.arsenal.fuzil_2 < 2) compra(P, fac, "fuzil_2");
   if (!podeFabricar(P, fac, "cx-bala") && fac.producao.length < 2 && R.dinheiro > 400) fabrica(P, fac, fac.municao.bala < 400 ? "cx-bala" : "fuzil");
   if (R.influencia > 200) { const p = PAISES.reduce((a, b) => (fac.paises[b.id].relacao > fac.paises[a.id].relacao ? b : a)); mandaEmissario(P, fac, p.id); }

@@ -31,7 +31,7 @@ function motivoFuncao(P, s, funcao) {
   const f = FUNCOES[funcao], fac = estoqueDe(s);
   if (s.vida !== "ok" && s.vida !== "reserva") return "fora de combate";
   if (funcao === "lider") return !s.sq ? "precisa estar num esquadrão" : !podeLiderar(s) ? "precisa ser Veterano ou ter liderança " + LIDERANCA_PARA_LIDERAR : null;
-  const tem = k => s.faccao.jogador ? !!baseComItem(P, s, k) : noArsenal(fac, k) > 0;
+  const tem = k => completa(s.faccao) ? !!baseComItem(P, s, k) : noArsenal(fac, k) > 0;
   if (f.arma !== s.arma && !tem(f.arma)) return "sem " + ARMAS[f.arma].n.toLowerCase() + " em nenhuma base";
   if (f.item && f.item !== s.item && !tem(f.item)) return "sem " + ITENS[f.item].toLowerCase() + " em nenhuma base";
   return null;
