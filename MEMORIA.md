@@ -9,7 +9,7 @@ Fonte: cópia da memória do projeto "joguinho" no outro site, atualizada em 17/
 - Tudo fica salvo na nuvem: repositório GitHub `mudder006-cell/jogo-faccoes` (público).
 
 ## Setor Jogo (agentes)
-Chefe `chefe-jogo` + fichas em `agentes/equipes-renan/skills/chefe-jogo/`. Pacote para instalar no PC: `agentes/PACOTE-SETOR-JOGO.md`.
+Chefe `chefe-jogo` + fichas em `agentes/equipes-renan/skills/chefe-jogo/`. Pacote para instalar no PC: `agentes/PACOTE-SETOR-JOGO.md`. Sincronia com o Renan OS: `agentes/PONTE.md` (o jogo propõe na caixa de saída, o PC instala).
 
 ## Design
 Todas as decisões e números estão em `design.md` (protótipo 17, 18/11/2026).
