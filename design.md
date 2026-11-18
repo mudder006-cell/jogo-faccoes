@@ -1,4 +1,4 @@
-# Jogo de facções (sem nome ainda): decisões de design
+# Salam Aleikum (nome provisório, decidido pelo Renan em 18/11/2026): decisões de design
 
 Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 18/11/2026 (protótipo 17).
 
@@ -165,7 +165,7 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Combate muito letal para os esquadrões iniciais; a metralhadora mata 3x mais que o fuzil em campo aberto (medido no protótipo 11). A Ana ainda não decidiu se quer menos letal.
 - Conserto de prédios danificados.
 - Escolher quem recebe a arma melhor (hoje o soldado troca sozinho na base).
-- Nome do jogo e nomes das facções (ainda em português).
+- Nomes das facções (ainda em português).
 
 ## Provisório (Claude escolheu só para o protótipo funcionar; a Ana ainda não aprovou)
 - Zonas: 4 quarteirões da cidade velha, 7 a 9 bairros, 3 vilas e até 8 setores rurais. Cada zona tem pelo menos uma caixa d'água e uma casa de líder.
