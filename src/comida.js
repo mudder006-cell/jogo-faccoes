@@ -89,7 +89,7 @@ function horaDasObras(P, fac) {
 /* rivais: com dinheiro sobrando e comida faltando, constroem e melhoram fazendas */
 function obrasRival(P, fac) {
   const c = contas(P, fac);
-  if (c.total.comida > 4 || fac.recursos.dinheiro < 4000 || (fac.obras || []).length) return;
+  if (c.total.comida > 4 || fac.recursos.dinheiro < (pers(fac).obras || 4000) || (fac.obras || []).length) return;
   const meus = P.reg.edificios.filter(e => e.dono === fac && ZONAS_DE_CAMPO.includes(e.zona.tipo));
   const f = meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "plantacao")) || meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "melhorar"));
   if (f) { comecaObra(P, fac, f, (f.plantacao || 0) < 3 ? "plantacao" : "melhorar"); return; }
@@ -102,8 +102,8 @@ function vendedores(P) {
   const l = [];
   for (const f of P.faccoes) {
     if (f.governo || f.eliminada || !f.recursos) continue;
-    const acima = f.jogador ? (f.vendeComida ? f.vendaAcima : Infinity) : MERCADO_COMIDA.rivalVendeAcima;
-    const guarda = f.jogador ? f.vendaAcima : MERCADO_COMIDA.rivalGuarda;
+    const acima = f.jogador ? (f.vendeComida ? f.vendaAcima : Infinity) : pers(f).vendeAcima || MERCADO_COMIDA.rivalVendeAcima;
+    const guarda = f.jogador ? f.vendaAcima : pers(f).guarda || MERCADO_COMIDA.rivalGuarda;
     if (f.recursos.comida > acima) l.push({ f, tem: f.recursos.comida - guarda });
   }
   return l;

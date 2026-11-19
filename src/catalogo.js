@@ -75,7 +75,7 @@ function precisaRecarregar(sq, P) {
   if (!sq.faccao.municao) return false;
   const l = ativos(sq).filter(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO);
   if (!l.length || l.length < Math.ceil(ativos(sq).length / 2)) return false;
-  if (sq.faccao.jogador && P) return !!baseParaRecarregar(P, sq);
+  if (organizada(sq.faccao) && P) return !!baseParaRecarregar(P, sq);
   return l.some(s => sq.faccao.municao[MUNICAO_DA[s.arma]] > 0);
 }
 function municaoMedia(sq) { const l = ativos(sq).filter(s => s.arma); return l.length ? l.reduce((t, s) => t + Math.min(1, s.municao / cargaDe(s)), 0) / l.length : 1; }

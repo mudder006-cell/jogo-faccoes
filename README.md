@@ -1,4 +1,4 @@
-# Jogo de facções (protótipo 17)
+# Jogo de facções (protótipo 18)
 
 Jogo de estratégia em tempo real para o navegador: você comanda uma facção numa zona de guerra gerada a cada partida, com batalhões, diplomacia, logística, economia (dinheiro, influência e comida) e combate soldado por soldado. Feito com three.js r128.
 

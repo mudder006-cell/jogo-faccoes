@@ -88,6 +88,8 @@ function horaDaEconomia(P) {
       for (const s of meus) s.moral -= 10;
       avisa(P, "falta", { fac, rec: "comida" });
     }
+    // difícil: as rivais recebem mais renda
+    if (!fac.jogador && dificuldade(P).renda > 1 && c.total.dinheiro > 0) R.dinheiro += c.total.dinheiro * (dificuldade(P).renda - 1);
     horaDaConfianca(P, fac, faltou);
     horaDasObras(P, fac);
     if (!fac.jogador) obrasRival(P, fac);

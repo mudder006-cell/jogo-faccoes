@@ -292,9 +292,9 @@ function ouveA(P) {
     else if (tipo === "eliminada") { aviso(meu(d.fac) ? "Sua facção caiu." : d.fac.nome + " foi eliminada", "skull", meu(d.fac) ? "perigo" : "seu"); camada.sujo = true; for (const e of regiao.edificios) if (!e.dono) repinta(e); }
     else if (tipo === "vitoria") aviso("Vitória! Todas as facções rivais foram eliminadas.", "star", "bom");
     else if (tipo === "novobatalhao" && meu(d.b.faccao)) { aviso(d.b.nome + " criado: " + d.b.lider.nome + " comanda da base", "groups", "bom", [d.b.base.x, d.b.base.z]); rotuloDoBatalhao(d.b); }
-    else if (tipo === "ordemcumprida" && meu(d.b.faccao)) aviso(d.b.nome + " tomou " + d.b.ordem.alvo.nome + "; agora protege a área", "flag", "bom");
+    else if (tipo === "ordemcumprida" && meu(d.b.faccao)) aviso(d.b.nome + " tomou " + d.o.alvo.nome + "; agora protege a área", "flag", "bom");
     else if (tipo === "ataqueconjunto" && meu(d.b.faccao)) aviso(d.b.nome + ": o líder juntou os esquadrões contra " + nm(d.e) + " em " + d.e.zona.nome, "swords", "seu", onde(d.e));
-    else if (tipo === "semfrente" && meu(d.b.faccao)) aviso(d.b.nome + ": você não tem fronteira com " + d.b.ordem.alvo.nome + " ainda", "wall", "info");
+    else if (tipo === "semfrente" && meu(d.b.faccao)) aviso(d.b.nome + ": você não tem fronteira com " + d.o.alvo.nome + " ainda; segura os prédios mais perto dela", "wall", "info");
     else if (tipo === "semguerra" && meu(d.b.faccao)) aviso(d.b.nome + ": a guerra acabou, passou a segurar a frente", "handshake", "info");
     else if (tipo === "sugestaorecusada" && meu(d.s.faccao)) aviso("Líder do " + d.b.nome + " não aceitou a troca de " + d.s.nome + ": " + d.motivo, "record_voice_over", "info");
     else if (tipo === "sugestaoaceita" && meu(d.s.faccao)) aviso("Líder do " + d.b.nome + " aceitou a sugestão para " + d.s.nome, "record_voice_over", "bom");
@@ -342,6 +342,7 @@ function atualizaEmBreve() {
 }
 
 /* ---------- fluxo da partida ---------- */
+let dificuldadeEscolhida = "normal";
 function fundar(e, nome) {
   estado = "rivais"; dica(null);
   const f = criaFaccao(partida.faccoes.length, nome, COR_JOGADOR, { jogador: true });
@@ -372,7 +373,7 @@ function trocaRegiao(reg) {
   limpa($("avisos-lista")); soldadoNaJanela = null;
   regiao = reg;
   grupoMapa = montaMapa(reg); cena.add(grupoMapa);
-  partida = criaPartida(reg); partida.pausado = true; ouveA(partida);
+  partida = criaPartida(reg); partida.pausado = true; partida.dificuldade = dificuldadeEscolhida; ouveA(partida);
   camada = criaCamadaTerritorio(reg, geoTerreno); grupoMapa.add(camada.malha); camada.atualiza();
   tropas = criaTropas(); grupoMapa.add(tropas.grupo); atualizaTropas(tropas, partida, reg, performance.now() / 1000);
   linhaRota = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: COR_JOGADOR, depthTest: false, transparent: true, opacity: .9 }));
@@ -446,6 +447,7 @@ function inicia() {
     modoInicio = b.dataset.modo; document.querySelectorAll("#inicio button").forEach(o => o.classList.toggle("ativo", o === b));
   }));
   comTutorial = !tutorialJaVisto();
+  document.querySelectorAll("#op-dificuldade button").forEach(b => b.addEventListener("click", () => { dificuldadeEscolhida = b.dataset.dif; document.querySelectorAll("#op-dificuldade button").forEach(o => o.classList.toggle("ativo", o === b)); }));
   const marcaTu = () => document.querySelectorAll("#op-tutorial button").forEach(o => o.classList.toggle("ativo", (o.dataset.tu === "1") === comTutorial));
   document.querySelectorAll("#op-tutorial button").forEach(b => b.addEventListener("click", () => { comTutorial = b.dataset.tu === "1"; marcaTu(); }));
   marcaTu();

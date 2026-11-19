@@ -76,6 +76,8 @@ function passaSoldado(P, s, b) {   // muda de batalhão (ou para "sem batalhão"
 }
 
 /* ---------- ordens do jogador ---------- */
+/* facções organizadas (jogador e rivais) usam batalhões, estoques por base e logística; o governo antigo não */
+const organizada = f => !!f && !f.governo && !!f.recursos;
 const MAX_ORDENS = 4;
 /* acrescenta uma ordem ao batalhão (a mesma ordem de novo tira); tipo null tira todas */
 function ordenaBatalhao(P, b, tipo, alvo) {
@@ -151,10 +153,10 @@ function batalhoesDoSegundo(P) {
   // reposição em ordem de prioridade: o primeiro pega antes do depósito e do caixa
   if (!P.proximaReposicao || P.tempo >= P.proximaReposicao) {
     P.proximaReposicao = P.tempo + BATALHAO.pensa;
-    for (const f of P.faccoes) if (f.jogador && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
+    for (const f of P.faccoes) if (organizada(f) && !f.eliminada) { const reservado = {}; for (const b of porPrioridade(P, f)) repoeBatalhao(P, b, reservado); }
   }
   for (const b of (P.batalhoes || [])) {
-    if (b.dissolvido || b.faccao.eliminada || !b.faccao.jogador) continue;
+    if (b.dissolvido || b.faccao.eliminada || !organizada(b.faccao)) continue;
     if (P.tempo < b.proximo) continue;
     b.proximo = P.tempo + BATALHAO.pensa;
     pensaBatalhao(P, b);

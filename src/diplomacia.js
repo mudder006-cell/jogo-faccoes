@@ -85,7 +85,7 @@ function respondeProposta(P, p, aceita) {
 }
 /* o jogador propõe a uma facção da IA: ela aceita se a relação deixar */
 function jogadorPropoe(P, eu, fac, tipo) {
-  const r = rel(P, eu, fac), lim = { pacto: DIPLO.aceitaPacto, alianca: DIPLO.aceitaAlianca, paz: DIPLO.aceitaPaz }[tipo];
+  const pf = pers(fac), r = rel(P, eu, fac), lim = { pacto: DIPLO.aceitaPacto + pf.acordo, alianca: DIPLO.aceitaAlianca + pf.acordo, paz: DIPLO.aceitaPaz + pf.guerra }[tipo];
   const pode = { pacto: r.estado === "neutro", alianca: r.estado === "pacto", paz: r.estado === "guerra" }[tipo];
   if (!pode) return { ok: false, motivo: "não faz sentido agora" };
   if (r.valor < lim) { r.recusouEm = P.tempo; return { ok: false, motivo: "relação baixa demais (" + Math.round(r.valor) + ", precisa " + lim + ")" }; }
@@ -162,13 +162,18 @@ function horaDaDiplomacia(P) {
 function decideDiplomacia(P, a, b) {
   const r = rel(P, a, b), ia = !a.jogador && !b.jogador, outro = a.jogador ? b : a, eu = a.jogador ? a : b.jogador ? b : null;
   const podeProporAoJogador = eu && !(r.recusouEm > P.tempo - DIPLO.esperaDepoisDeRecusa * HORA) && !propostaPendente(P, outro, eu);
-  const quer = r.estado === "neutro" && r.valor >= DIPLO.propoePacto ? "pacto"
-    : r.estado === "pacto" && r.valor >= DIPLO.propoeAlianca ? "alianca"
-    : r.estado === "guerra" && r.valor >= DIPLO.propoePaz && P.tempo - r.desde > 6 * HORA ? "paz" : null;
-  if (quer) { if (ia) mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); else if (podeProporAoJogador) propoe(P, outro, eu, quer); return; }
+  // personalidade: quem é agressivo entra em guerra mais fácil e aceita acordo mais difícil
   const [quem, contra] = ia ? (P.r() < .5 ? [a, b] : [b, a]) : [outro, eu];
-  if (r.estado === "neutro" && r.valor <= DIPLO.declaraGuerra) declaraGuerra(P, quem, contra);
-  else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto) declaraGuerra(P, quem, contra);
+  const pq = pers(quem), acordo = pq.acordo, guerra = pq.guerra;
+  // oportunista: com quem é bem mais forte quer acordo; com quem é bem mais fraco, guerra
+  let opo = 0;
+  if (pq.fracos && !contra.governo) { const razao = forcaDaFaccao(P, contra) / Math.max(1, forcaDaFaccao(P, quem)); opo = razao > 1.5 ? -15 : razao < .6 ? 20 : 0; }
+  const quer = r.estado === "neutro" && r.valor >= DIPLO.propoePacto + acordo + Math.min(0, opo) ? "pacto"
+    : r.estado === "pacto" && r.valor >= DIPLO.propoeAlianca + acordo + Math.min(0, opo) ? "alianca"
+    : r.estado === "guerra" && r.valor >= DIPLO.propoePaz + guerra + opo && P.tempo - r.desde > 6 * HORA ? "paz" : null;
+  if (quer) { if (ia) mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); else if (podeProporAoJogador) propoe(P, outro, eu, quer); return; }
+  if (r.estado === "neutro" && r.valor <= DIPLO.declaraGuerra + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
+  else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "alianca" && r.valor <= DIPLO.rompeAlianca) mudaEstado(P, a, b, "pacto", ia ? a : outro);
 }
 

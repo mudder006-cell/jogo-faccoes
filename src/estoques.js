@@ -16,7 +16,7 @@ function criaEstoque() { return { arsenal: criaArsenal(), municao: { bala: 0, ci
 function estoqueDaBase(e) { return e.estoque || (e.estoque = criaEstoque()); }
 /* estoques que um soldado do batalhão "bat" pode usar nesta base, na ordem em que usa */
 function estoquesNaBase(P, fac, bat, base) {
-  if (!fac.jogador) return [fac];
+  if (!organizada(fac)) return [fac];
   if (!base) return [];
   const l = [];
   if (bat && !bat.dissolvido && bat.base === base) l.push(bat);
@@ -25,7 +25,7 @@ function estoquesNaBase(P, fac, bat, base) {
 }
 /* o estoque "da base" (onde se descarrega): QG = depósito, base do líder = estoque do batalhão */
 function estoqueDoLugar(P, fac, base, bat) {
-  if (!fac.jogador || base === fac.base) return fac;
+  if (!organizada(fac) || base === fac.base) return fac;
   const b = bat && bat.base === base ? bat : batalhoesDe(P, fac).find(o => o.base === base);
   return b || estoqueDaBase(base);
 }
@@ -40,7 +40,7 @@ function tiraMunicao(l, t, q) { let tirou = 0; for (const e of l) { if (!e.munic
 
 /* numa base: pega a melhor arma da função, o melhor kit e enche a munição (do estoque daquela base) */
 function equipaNaBase(P, s, base) {
-  const l = s.faccao.jogador ? estoquesNaBase(P, s.faccao, s.bat, base || baseDoSoldado(P, s)) : [s.faccao];
+  const l = organizada(s.faccao) ? estoquesNaBase(P, s.faccao, s.bat, base || baseDoSoldado(P, s)) : [s.faccao];
   if (!l.length) return false;
   const dep = l[0], f = FUNCOES[s.funcao]; let mudou = false;
   const m = f.arma && melhorEm(l, f.arma);

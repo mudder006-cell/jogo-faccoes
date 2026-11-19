@@ -1,6 +1,6 @@
 # Salam Aleikum (nome provisório, decidido pelo Renan em 18/11/2026): decisões de design
 
-Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 18/11/2026 (protótipo 17).
+Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 19/11/2026 (protótipo 18).
 
 ## Ideia
 O jogador comanda uma facção numa zona de guerra. Administra a região que controla (leis, construções, população, modos de produção como fábricas e fazendas) e o exército (recrutamento, squads, arsenal). As tropas agem sozinhas; o jogador dá missões e ordens gerais. A IA rival deve ser esperta. Terá drones, mísseis e blindados.
@@ -154,12 +154,18 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Países doam comida.
 - Caminhos das tropas: não precisam sempre andar nas estradas; podem fazer caminhos alternativos.
 
+### IA das rivais (19/11/2026)
+- Passar todas as mecânicas do jogador para as IAs inimigas.
+- Mesmas regras do jogador, mais nível de dificuldade no menu: fácil (IA erra mais), normal, difícil (IA recebe bônus de renda).
+- Cada facção rival tem um jeito próprio de jogar, sorteado: agressiva, defensiva, comerciante, oportunista.
+- O governo antigo ganha batalhões também (organiza as guarnições, com rondas e reação rápida), mas continua sem dinheiro.
+- O jogador não vê nada além do mapa (a personalidade e os planos das rivais não aparecem).
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
 - Outros usos para prisioneiros (troca, resgate).
 - Doação de facção aliada: hoje o jogador pode mandar armas ao aliado, e o aliado às vezes ajuda; falta decidir se rivais aliadas doam armas ao jogador e quanto.
-- Facções rivais usarem batalhões e estoque por base também.
 - Balanço da economia nova: começa com dinheiro negativo por hora até expandir; ver se agrada.
 - Eventos com escolha do jogador (hoje acontecem sozinhos).
 - Combate muito letal para os esquadrões iniciais; a metralhadora mata 3x mais que o fuzil em campo aberto (medido no protótipo 11). A Ana ainda não decidiu se quer menos letal.
@@ -217,6 +223,9 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Obras (protótipo 17): só em vilas e setores rurais, em prédio seu que não seja base. Fazenda (casa → fazenda) $ 1.200, 6 h; armazém (casa ou loja) $ 900, 4 h; expandir plantação $ 600, 4 h, +5/h, até 3 vezes por fazenda; melhorar fazenda para II $ 2.400 / 8 h (1,7x) e para III $ 6.000 / 12 h (2,6x). O prédio pronto fica esverdeado (fazenda) ou marrom (armazém). Rivais constroem e melhoram fazendas quando falta comida e sobram $ 4.000.
 - Mercado de comida (protótipo 17): preço = $ 2 × (procura + 60) / (oferta + 60), entre $ 1 e $ 6 (teto = importar dos países). Quem está abaixo de 40 (mais 3 h do que falta por hora) compra sozinho, primeiro de quem vende e não está em guerra com ele, depois importa. Rivais vendem o que passa de 180 (guardam 120) e só distribuem comida acima de 450. O jogador tem Comprar 100, Vender 100 e venda automática acima de um valor (começa desligada, 400). Cada 100 negociados melhora a relação em +1 (até +3 por vez). Gráfico do preço das últimas 48 h na janela de economia. Países doam comida em cada entrega: 40 (relação 40+), 80 (60+), 150 (85+).
 - Caminhos a pé (protótipo 17): grade do terreno de 8 m; não passa por prédio ou muro nem em subida acima de 45%; estrada custa 15% menos, morro custa mais; desvia de guarnições inimigas (para quem vai defender); depois liga direto os pontos com linha livre. Medido: rotas 16% mais curtas em média. Veículos continuam nas ruas.
+- IA das rivais (protótipo 18): as rivais começam como o jogador (1º batalhão com comandante e o estoque inicial; sem veículo) e usam batalhões, várias ordens, rondas e reação rápida, estoque mínimo com compra automática, estoque por base, veículos, alimentar por bairro, obras e comércio. O "general" de cada rival pensa a cada 20 s (fácil 45 s com 30% de chance de não fazer nada; difícil 12 s e +25% da renda positiva). Ele: abre batalhão novo quando o território deixa; põe a postura da personalidade; manda os recrutas para o batalhão mais vazio; define o mínimo de cada batalhão (soldados conforme a personalidade, mas só cresce se a renda aguenta o salário; balas para os fuzileiros + 2; 2 fuzis de reserva; 1 kit; metralhadora e cintas com 8+ soldados; foguetes se tiver RPG); compra veículo com mais de $ 4.000 quando um batalhão fica longe do QG; para de alimentar o bairro que mais come quando falta comida e dinheiro, e volta quando sobra; compra RPG e fuzil II quando sobra dinheiro; a cada 3 min (ou quando um inimigo chega perto de um bairro sem defesa) escolhe até 3 ordens por batalhão: proteger a zona da base e a mais ameaçada, segurar ou avançar contra quem está em guerra, e tomar as zonas perto com mais pontos importantes e menos defesa. Mantém as ordens que continuam, para não embaralhar os esquadrões. As ofensivas sorteadas antigas saíram.
+- Personalidades (protótipo 18): agressiva (ataque 1,5x, 2 ordens de ataque, postura agressiva, guerra 15 pontos de relação antes, acordo 12 depois, 12 soldados por batalhão); defensiva (ataque 0,7x, defesa 1,5x, cautelosa, guerra 15 depois, acordo 8 antes, 10 soldados); comerciante (vende comida acima de 120, constrói fazendas com $ 2.500, guerra 20 depois, acordo 15 antes, 9 soldados); oportunista (prefere alvos de quem tem menos de 70% da força dela, propõe acordo a quem tem 1,5x a força dela e guerra a quem tem menos de 60%).
+- Governo (protótipo 18): um batalhão por tipo de área (cidade velha, bairros, vilas, campo). Ronda: 2 soldados de cada uma das maiores guarnições (até 3, que ficam com 4+) formam um esquadrão que anda entre os pontos importantes da região, parando 15 a 30 s. Reação rápida: inimigo a até 320 m de um ponto do governo faz a guarnição mais perto (3+ soldados, não a cidadela nem a sede) sair para atacar, no máximo 3 ao mesmo tempo; quando não há mais inimigo a 380 m, ela volta ao posto. O contra-ataque para retomar pontos continua como antes. Veículo capturado pelo governo é queimado.
 - Janela de batalhões: à esquerda a lista de batalhões, "Sem batalhão" e "Novo batalhão" com os candidatos a comandante; à direita líder, base, ordem, a tabela Depósito ⇄ Batalhão com setas, e os esquadrões (arrastar = sugerir troca, clicar = sugerir função). Janela de diplomacia: propostas com Aceitar/Recusar, e para cada facção o estado, a barra de relação e os botões possíveis. Contador vermelho no botão Diplomacia quando há proposta.
 - Ícones: desenhos do Material Design Icons (licença Apache 2.0) embutidos na página, sem depender de fonte da internet. Armas com silhuetas próprias.
 
@@ -234,6 +243,7 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - 13: munição (4 tipos, carregada por soldado, recarga na base) e armas e kits com níveis I, II e III; preços novos bem mais altos.
 - 14: evolução corrigida (só combate com tiros conta), bônus de patente, veteranos morrem menos, promoção a líder e esquadrão novo só com líder.
 - 15: batalhões (ordens ao líder, orçamento de armas, munição e soldados, sargentos, sugestões) e diplomacia (neutro, pacto, aliança, guerra; propostas, relação, presentes, fuga do líder da facção).
+- 18: rivais com as mesmas mecânicas do jogador, personalidades sorteadas, dificuldade no menu, governo com batalhões (rondas e reação rápida).
 - 17: comida (campo produz mais, alimentar por bairro, confiança), obras (fazenda, armazém, plantação, níveis), mercado de comida com preço dinâmico, países doam comida, caminhos a pé fora da estrada.
 - 16: compra automática, economia nova (salários, manutenção, comida comprada, influência 3x), estoque por base, veículos de logística nível I a III (atacar, destruir, capturar), várias ordens por batalhão, rondas na fronteira e reação rápida.
 - 15.2: estoque mínimo dos batalhões, reposição sozinha do depósito, prioridade entre batalhões e recrutamento sozinho.
@@ -247,4 +257,4 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 5. Drones, mísseis e blindados.
 
 ## Código
-Uma página HTML só, com three.js r128 (cdnjs). O código fica em arquivos separados (dados, base, relevo, caminhos, ocupação, região, território, rotas, soldados, catálogo, simulação, combate, economia, comida, recrutamento, armas, ação, missões, logística, diplomacia, batalhões, estoques, veículos, comando, ordens; tela: retratos, edifícios, terreno, território, tropas, cena, painéis, janelas, tutorial, principal) e é juntado por um script, que também embute os ícones. O documento de design também fica salvo em design.md na pasta do código. Artefato: https://claude.ai/artifact/LeMqJJtyxpGtTkQ3ZWSyA8
+Uma página HTML só, com three.js r128 (cdnjs). O código fica em arquivos separados (dados, base, relevo, caminhos, ocupação, região, território, rotas, soldados, catálogo, simulação, combate, economia, comida, recrutamento, armas, ação, missões, logística, diplomacia, batalhões, estoques, veículos, comando, ia, ordens; tela: retratos, edifícios, terreno, território, tropas, cena, painéis, janelas, tutorial, principal) e é juntado por um script, que também embute os ícones. O documento de design também fica salvo em design.md na pasta do código. Artefato: https://claude.ai/artifact/LeMqJJtyxpGtTkQ3ZWSyA8

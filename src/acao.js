@@ -112,7 +112,6 @@ function eventoAleatorio(P) {
 
 /* chamado a cada segundo de simulação */
 function acaoNoMapa(P) {
-  if (P.tempo >= P.proximaOfensiva) { P.proximaOfensiva = P.tempo + horasEntre(P, OFENSIVA.aCada); ofensivaRival(P); }
   if (P.tempo >= P.proximoContra) { P.proximoContra = P.tempo + horasEntre(P, CONTRA.aCada); contraAtaqueGoverno(P); }
   if (P.tempo >= P.proximoEvento) { P.proximoEvento = P.tempo + horasEntre(P, EVENTO.aCada); eventoAleatorio(P); }
 }
