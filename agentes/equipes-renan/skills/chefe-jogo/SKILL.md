@@ -7,7 +7,6 @@ description: "Chefe do Setor Jogo (jogo Salam Aleikum, nome provisório): use em
 - Leia só o `setor/Mapa — Jogo Salam Aleikum.md`. Não abra as fichas antes de escolher.
 - O material do jogo fica no GitHub: `mudder006-cell/jogo-faccoes` (público). A fonte das decisões é o `design.md` de lá; o `MEMORIA.md` guarda as regras de trabalho e as pendências.
 - Quem aprova as decisões do jogo é o Renan (desde 18/11/2026). O que a Ana decidiu antes continua valendo.
-- A confirmar: alinhar os passos abaixo com o chefe da Faculdade (DEC-021), que não estava disponível quando este arquivo foi escrito.
 
 ## 1. Achar o setor
 É do Setor Jogo quando o pedido fala do jogo, de protótipo, de regra do jogo, de facção, mapa, combate, economia, exército, diplomacia, IA rival, tela, tutorial ou dos testes do jogo. Se não for, devolva ao Leitor.
@@ -17,6 +16,7 @@ description: "Chefe do Setor Jogo (jogo Salam Aleikum, nome provisório): use em
 - Regra de jogo nova ou mudada: sempre inclua Game design.
 - Mudança de código: inclua Código e Testes e balanço (quem muda não testa sozinho).
 - Mudança de tela: inclua Interface e visual.
+- Tema que não está no Mapa: siga sem ficha e anote "tema novo: <nome>" para atualizar o Mapa no fim.
 - Falta algo que só o Renan sabe e muda o resultado: faça **uma** pergunta, com opções e uma recomendação. Na dúvida, pergunte; não decida.
 
 ## 3. Chamar quem executa
@@ -35,9 +35,7 @@ description: "Chefe do Setor Jogo (jogo Salam Aleikum, nome provisório): use em
 - Entregue ao Renan: a próxima ação com tempo estimado, o que mudou e o link para jogar.
 
 ## 5. Registrar
-Uma linha no Livro de Ocorrências por trabalho de equipe:
-`| AAAA-MM-DD | Jogo — <Tema> | tarefa em até 6 palavras | quem fez (agente · modelo) | ok, parcial ou falhou | atrito ou — |`
-Registre só o tipo de tarefa, nunca conteúdo pessoal.
+Registre no Livro de Ocorrências como manda o `leitor`, com a equipe `Jogo · <Tema>`. Na sessão da nuvem, a linha vai para `agentes/LIVRO-PENDENTE.md` (ver `agentes/PONTE.md`).
 
 ## Regras fixas
 - Nada sai sem o OK do Renan: publicar, enviar, apagar, instalar, gastar dinheiro.
