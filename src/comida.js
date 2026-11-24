@@ -5,7 +5,8 @@
      alimentado não come, mas a confiança cai aos poucos e o bairro
      paga menos imposto (e não dá voluntários).
    - Obras (paga e espera): fazenda nova, armazém, expandir plantação
-     e melhorar fazenda (nível I, II, III). Só em vilas e setores rurais.
+     e melhorar fazenda (nível I, II, III). 19.4: obras mais baratas e que rendem mais;
+     a rival constrói sempre que o caixa passa do custo mais uma reserva. Só em vilas e setores rurais.
    - Comércio: quem tem comida sobrando vende para quem está faltando,
      entre facções que não estão em guerra. O preço sobe quando falta
      comida no mapa e cai quando sobra. Se não houver quem venda,
@@ -14,13 +15,13 @@
    ============================================================ */
 const CONFIANCA = { inicial: 100, sobeAlimentado: 3, caiSemComida: 4, caiFome: 6, minImposto: .3, voluntarios: 50 };
 const OBRAS = {
-  fazenda:   { n: "Construir fazenda", icone: "agriculture", custo: 1200, horas: 6, em: ["casa"], txt: "A casa vira fazenda (+20 de comida por hora)" },
-  armazem:   { n: "Construir armazém", icone: "warehouse", custo: 900, horas: 4, em: ["casa", "loja"], txt: "Vira armazém (+6 de comida por hora)" },
-  plantacao: { n: "Expandir plantação", icone: "grass", custo: 600, horas: 4, em: ["fazenda"], max: 3, txt: "+10 roças na fazenda (+5 de comida por hora)" },
-  melhorar:  { n: "Melhorar fazenda", icone: "upgrade", custo: [0, 2400, 6000], horas: [0, 8, 12], em: ["fazenda"], txt: "Nível II: 1,7x a produção; nível III: 2,6x" }
+  fazenda:   { n: "Construir fazenda", icone: "agriculture", custo: 800, horas: 6, em: ["casa"], txt: "A casa vira fazenda (+30 de comida por hora)" },
+  armazem:   { n: "Construir armazém", icone: "warehouse", custo: 600, horas: 4, em: ["casa", "loja"], txt: "Vira armazém (+10 de comida por hora)" },
+  plantacao: { n: "Expandir plantação", icone: "grass", custo: 400, horas: 4, em: ["fazenda"], max: 3, txt: "+10 roças na fazenda (+8 de comida por hora)" },
+  melhorar:  { n: "Melhorar fazenda", icone: "upgrade", custo: [0, 1500, 3500], horas: [0, 8, 12], em: ["fazenda"], txt: "Nível II: 1,8x a produção; nível III: 2,8x" }
 };
-const FAZENDA_NIVEL = [1, 1.7, 2.6];
-const POR_PLANTACAO = 5;                 // comida por hora de cada expansão de plantação
+const FAZENDA_NIVEL = [1, 1.8, 2.8];
+const POR_PLANTACAO = 8;                 // comida por hora de cada expansão de plantação
 const ZONAS_DE_CAMPO = ["vila", "rural"];
 const MERCADO_COMIDA = { base: 2, minimo: 1, importa: 6, reserva: 40, horasDeFolga: 3, rivalVendeAcima: 180, rivalGuarda: 120, relacaoPor100: 1, colchao: 60 };
 
@@ -86,15 +87,21 @@ function horaDasObras(P, fac) {
     avisa(P, "obrapronta", { fac, e, tipo: o.tipo });
   }
 }
-/* rivais: com dinheiro sobrando e comida faltando, constroem e melhoram fazendas */
+/* rivais (19.4): constroem quando o caixa passa do custo mais uma reserva da personalidade (agressiva 1000, oportunista 700,
+   defensiva 500, comerciante 300), sem precisar faltar comida; 1 obra por vez (comerciante 2). Ordem: o que rende mais por dólar
+   (fazenda nova, plantação, armazém, melhorar). */
+const ORDEM_OBRAS_RIVAL = ["fazenda", "plantacao", "armazem", "melhorar"];
 function obrasRival(P, fac) {
-  const c = contas(P, fac);
-  if (c.total.comida > 4 || fac.recursos.dinheiro < (pers(fac).obras || 4000) || (fac.obras || []).length) return;
+  const pe = pers(fac), reserva = pe.reservaObras == null ? 700 : pe.reservaObras, juntas = pe.obrasJuntas || 1;
   const meus = P.reg.edificios.filter(e => e.dono === fac && ZONAS_DE_CAMPO.includes(e.zona.tipo));
-  const f = meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "plantacao")) || meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "melhorar"));
-  if (f) { comecaObra(P, fac, f, (f.plantacao || 0) < 3 ? "plantacao" : "melhorar"); return; }
-  const casa = meus.find(e => !motivoObra(P, fac, e, "fazenda"));
-  if (casa) comecaObra(P, fac, casa, "fazenda");
+  while ((fac.obras || []).length < juntas) {
+    let feito = false;
+    for (const tipo of ORDEM_OBRAS_RIVAL) {
+      const e = meus.find(x => OBRAS[tipo].em.includes(x.tipo) && !motivoObra(P, fac, x, tipo) && fac.recursos.dinheiro >= custoObra(tipo, x) + reserva);
+      if (e && comecaObra(P, fac, e, tipo)) { feito = true; break; }
+    }
+    if (!feito) return;
+  }
 }
 
 /* ---------- mercado de comida ---------- */

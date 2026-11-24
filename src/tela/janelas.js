@@ -80,6 +80,19 @@ function estadoVeiculo(v) {
   if (v.rota && v.estado === "levando") return ["local_shipping", "Levando para a " + nomeBase(partida, v.plano.para), "anda"];
   return ["garage", v.em ? "Parado na " + nomeBase(partida, v.em) : "Parado na estrada", "calmo"];
 }
+/* 19.4: engenheiros de obras do batalhão (fora dos esquadrões) e o que cada um faz agora */
+function painelEquipeObras(dir, b) {
+  const eq = b.equipeObras || [], alvo = tamanhoDaEquipe(esquadroesDe(partida, b).length);
+  dir.appendChild(cria("div", "rotulo-peq", "Equipe de obras: " + eq.length + " de " + alvo + " engenheiros (fora dos esquadrões; salário $ " + SALARIO + "/h e kit $ " + PRECO.explosivo + "). Prioridade: bases, fronteira, prédios danificados"));
+  for (const u of eq) {
+    const l = cria("div", "caminho"); l.appendChild(ico("construction"));
+    l.appendChild(cria("span", null, u.nome + ": " + textoDoEngenheiroDeObras(partida, u) + " · " + Math.floor(u.suprimentos || 0) + " suprimentos"));
+    if (u.alvo) l.appendChild(botao("my_location", null, "mini", () => vaiPara(u.alvo.x, u.alvo.z, 180), "Ir até o prédio"));
+    dir.appendChild(l);
+  }
+  if (!eq.length) dir.appendChild(cria("div", "nota", "Sem engenheiros de obras ainda: precisa de $ " + PRECO.explosivo + " em caixa para cada um."));
+  if (eq.length < alvo) dir.appendChild(cria("div", "nota", "Faltam " + (alvo - eq.length) + ": entram sozinhos quando o caixa paga o kit."));
+}
 function painelLogistica(p, f, b) {
   const vs = (f.veiculos || []).filter(v => v.bat === b);
   p.appendChild(cria("div", "rotulo-peq", "Veículos de logística do batalhão"));
@@ -203,6 +216,7 @@ function janelaGestao(p) {
   dir.appendChild(tab);
   dir.appendChild(cria("div", "nota", "O que faltar para o mínimo é fabricado (se tiver oficina com fila curta) ou comprado no mercado negro, e chega ao QG. " + (b.base === f.base ? "Este batalhão fica no QG: pega direto do depósito." : "Este batalhão fica na " + nomeBase(partida, b.base) + ": um veículo de logística leva do QG até lá.") + " Com pouco no QG, o batalhão de prioridade mais alta pega antes."));
   painelLogistica(dir, f, b);
+  painelEquipeObras(dir, b);
   // esquadrões (você sugere; o líder decide)
   dir.appendChild(cria("div", "rotulo-peq", "Esquadrões: arraste para sugerir uma troca, clique para sugerir função"));
   for (const sq of esquadroesDe(partida, b)) {

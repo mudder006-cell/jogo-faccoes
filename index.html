@@ -2529,7 +2529,7 @@ function subpasso(P, dt) {
   for (const s of P.soldados) if (s.vida === "ferido" && P.tempo - s.caiuEm > (s.sq && s.sq.combate !== undefined && temMedico(s.sq, s) ? 30 : 5)) evacua(P, s);
   if (PERCEPCAO.ligada && P.tempo >= (P.proximaPoda || 0)) { P.proximaPoda = P.tempo + 5; podaMemorias(P); }
   if (P.tempo >= P.proximoContato) { P.proximoContato = P.tempo + 1; procuraContato(P); tratamentos(P); }
-  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
+  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); equipesDeObras(P, 1); }
   if (P.tempo >= P.proximaIA) {
     P.proximaIA = P.tempo + IA_PENSA_A_CADA;
     for (const f of P.faccoes) if (!f.jogador && organizada(f)) generalRival(P, f);
@@ -3141,7 +3141,7 @@ const RECURSOS_INICIAIS = { dinheiro: 3000, influencia: 20, comida: 200 };
 const IMPOSTO = { casa: 2, predio: 0, loja: 8, mercado: 14, posto: 20, oficina: 6, armazem: 10, fabrica: 18, fazenda: 3, lider: 4, mesquita: 0, escola: 0, hospital: 0, delegacia: 0, governo: 0, quartel: 0, cidadela: 0, caixadagua: 0 };
 const IMPOSTO_POR_ANDAR = 1.5;           // prédio residencial: por andar
 // comida produzida por hora
-const COMIDA = { fazenda: 20, armazem: 6, mercado: 4 };
+const COMIDA = { fazenda: 30, armazem: 10, mercado: 4 };   // 19.4: fazenda 20 → 30, armazém 6 → 10
 const COMIDA_POR_CAMPO = .4;             // cada roça, pomar ou olival numa zona com controle total
 // influência por hora
 const INFLUENCIA = { mesquita: 1, lider: 2, escola: .5, hospital: .5 };
@@ -3151,6 +3151,8 @@ const SALARIO = 5;                       // $ por soldado por hora
 const MANUTENCAO = { qg: 15, lider: 8, avancada: 4 };   // $ por hora por base
 const COME_SOLDADO = .1, COME_MORADOR = .04;   // comida por pessoa por hora
 const DISTRIBUIR = { comida: 50, influencia: 8 };
+/* facção "zumbi" (19.4): com menos de 5 prédios e caixa negativo por 12 h seguidas, ela se desfaz (desertam os soldados, os prédios ficam sem dono) */
+const ZUMBI = { predios: 5, horas: 12, avisoFaltando: 1 };
 const CONVENCER = { casa: 24, predio: 36, chave: 120, governo: 1.5 };   // custo em influência (×1,5 se for do governo)
 
 function moradoresDe(e) {
@@ -3182,6 +3184,8 @@ function contas(P, fac) {
   add("influencia", "Zonas com controle total (" + zonasMinhas.size + ")", zonasMinhas.size * INFLUENCIA_ZONA);
   const tropa = P.soldados.filter(s => s.faccao === fac && ["ok", "ferido", "tratando", "fila", "reserva", "motorista"].includes(s.vida)), soldados = tropa.length;
   add("dinheiro", "Salário de " + soldados + " soldados", -tropa.reduce((n, s) => n + salarioDe(s), 0));
+  const equipe = totalEquipeDeObras(P, fac);   // 19.4: engenheiros das equipes de obras (fora dos esquadrões)
+  if (equipe) { add("dinheiro", "Salário da equipe de obras (" + equipe + ")", -equipe * SALARIO); add("comida", "Equipe de obras come (" + equipe + ")", -equipe * COME_SOLDADO); }
   if (fac.base) {
     add("dinheiro", "Manutenção do QG", -MANUTENCAO.qg);
     const bl = new Set(batalhoesDe(P, fac).map(b => b.base).filter(e => e && e !== fac.base));
@@ -3222,11 +3226,27 @@ function horaDaEconomia(P) {
     }
     // difícil: as rivais recebem mais renda
     if (!fac.jogador && dificuldade(P).renda > 1 && c.total.dinheiro > 0) R.dinheiro += c.total.dinheiro * (dificuldade(P).renda - 1);
+    verificaZumbi(P, fac);
     horaDaConfianca(P, fac, faltou);
     horaDasObras(P, fac);
     if (!fac.jogador) obrasRival(P, fac);
     R.influencia = Math.max(0, R.influencia);
   }
+}
+
+/* a cada hora: a contagem de 12 h começa quando a facção tem menos de 5 prédios e caixa negativo; sai se uma das duas coisas melhora.
+   Avisa quando a contagem começa e 1 h antes do fim. Vale para o jogador (derrota) e para as rivais, nunca para o governo antigo. */
+function verificaZumbi(P, fac) {
+  if (fac.governo || fac.eliminada) return;
+  let predios = 0; for (const e of P.reg.edificios) if (e.dono === fac) predios++;
+  if (predios >= ZUMBI.predios || fac.recursos.dinheiro >= 0) {
+    if (fac.zumbiDesde != null) { fac.zumbiDesde = null; fac.zumbiAvisou = false; avisa(P, "zumbialivio", { fac }); }
+    return;
+  }
+  if (fac.zumbiDesde == null) { fac.zumbiDesde = P.tempo; fac.zumbiAvisou = false; avisa(P, "zumbi", { fac, horas: ZUMBI.horas, predios }); return; }
+  const falta = ZUMBI.horas - (P.tempo - fac.zumbiDesde) / HORA;
+  if (falta <= 1e-9) { eliminaFaccao(P, fac, null, "zumbi"); return; }
+  if (falta <= ZUMBI.avisoFaltando + 1e-9 && !fac.zumbiAvisou) { fac.zumbiAvisou = true; avisa(P, "zumbifim", { fac, horas: ZUMBI.avisoFaltando }); }
 }
 
 /* ---------- ações ---------- */
@@ -3285,7 +3305,8 @@ function convenceAlgo(P, fac) {
      alimentado não come, mas a confiança cai aos poucos e o bairro
      paga menos imposto (e não dá voluntários).
    - Obras (paga e espera): fazenda nova, armazém, expandir plantação
-     e melhorar fazenda (nível I, II, III). Só em vilas e setores rurais.
+     e melhorar fazenda (nível I, II, III). 19.4: obras mais baratas e que rendem mais;
+     a rival constrói sempre que o caixa passa do custo mais uma reserva. Só em vilas e setores rurais.
    - Comércio: quem tem comida sobrando vende para quem está faltando,
      entre facções que não estão em guerra. O preço sobe quando falta
      comida no mapa e cai quando sobra. Se não houver quem venda,
@@ -3294,13 +3315,13 @@ function convenceAlgo(P, fac) {
    ============================================================ */
 const CONFIANCA = { inicial: 100, sobeAlimentado: 3, caiSemComida: 4, caiFome: 6, minImposto: .3, voluntarios: 50 };
 const OBRAS = {
-  fazenda:   { n: "Construir fazenda", icone: "agriculture", custo: 1200, horas: 6, em: ["casa"], txt: "A casa vira fazenda (+20 de comida por hora)" },
-  armazem:   { n: "Construir armazém", icone: "warehouse", custo: 900, horas: 4, em: ["casa", "loja"], txt: "Vira armazém (+6 de comida por hora)" },
-  plantacao: { n: "Expandir plantação", icone: "grass", custo: 600, horas: 4, em: ["fazenda"], max: 3, txt: "+10 roças na fazenda (+5 de comida por hora)" },
-  melhorar:  { n: "Melhorar fazenda", icone: "upgrade", custo: [0, 2400, 6000], horas: [0, 8, 12], em: ["fazenda"], txt: "Nível II: 1,7x a produção; nível III: 2,6x" }
+  fazenda:   { n: "Construir fazenda", icone: "agriculture", custo: 800, horas: 6, em: ["casa"], txt: "A casa vira fazenda (+30 de comida por hora)" },
+  armazem:   { n: "Construir armazém", icone: "warehouse", custo: 600, horas: 4, em: ["casa", "loja"], txt: "Vira armazém (+10 de comida por hora)" },
+  plantacao: { n: "Expandir plantação", icone: "grass", custo: 400, horas: 4, em: ["fazenda"], max: 3, txt: "+10 roças na fazenda (+8 de comida por hora)" },
+  melhorar:  { n: "Melhorar fazenda", icone: "upgrade", custo: [0, 1500, 3500], horas: [0, 8, 12], em: ["fazenda"], txt: "Nível II: 1,8x a produção; nível III: 2,8x" }
 };
-const FAZENDA_NIVEL = [1, 1.7, 2.6];
-const POR_PLANTACAO = 5;                 // comida por hora de cada expansão de plantação
+const FAZENDA_NIVEL = [1, 1.8, 2.8];
+const POR_PLANTACAO = 8;                 // comida por hora de cada expansão de plantação
 const ZONAS_DE_CAMPO = ["vila", "rural"];
 const MERCADO_COMIDA = { base: 2, minimo: 1, importa: 6, reserva: 40, horasDeFolga: 3, rivalVendeAcima: 180, rivalGuarda: 120, relacaoPor100: 1, colchao: 60 };
 
@@ -3366,15 +3387,21 @@ function horaDasObras(P, fac) {
     avisa(P, "obrapronta", { fac, e, tipo: o.tipo });
   }
 }
-/* rivais: com dinheiro sobrando e comida faltando, constroem e melhoram fazendas */
+/* rivais (19.4): constroem quando o caixa passa do custo mais uma reserva da personalidade (agressiva 1000, oportunista 700,
+   defensiva 500, comerciante 300), sem precisar faltar comida; 1 obra por vez (comerciante 2). Ordem: o que rende mais por dólar
+   (fazenda nova, plantação, armazém, melhorar). */
+const ORDEM_OBRAS_RIVAL = ["fazenda", "plantacao", "armazem", "melhorar"];
 function obrasRival(P, fac) {
-  const c = contas(P, fac);
-  if (c.total.comida > 4 || fac.recursos.dinheiro < (pers(fac).obras || 4000) || (fac.obras || []).length) return;
+  const pe = pers(fac), reserva = pe.reservaObras == null ? 700 : pe.reservaObras, juntas = pe.obrasJuntas || 1;
   const meus = P.reg.edificios.filter(e => e.dono === fac && ZONAS_DE_CAMPO.includes(e.zona.tipo));
-  const f = meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "plantacao")) || meus.find(e => e.tipo === "fazenda" && !motivoObra(P, fac, e, "melhorar"));
-  if (f) { comecaObra(P, fac, f, (f.plantacao || 0) < 3 ? "plantacao" : "melhorar"); return; }
-  const casa = meus.find(e => !motivoObra(P, fac, e, "fazenda"));
-  if (casa) comecaObra(P, fac, casa, "fazenda");
+  while ((fac.obras || []).length < juntas) {
+    let feito = false;
+    for (const tipo of ORDEM_OBRAS_RIVAL) {
+      const e = meus.find(x => OBRAS[tipo].em.includes(x.tipo) && !motivoObra(P, fac, x, tipo) && fac.recursos.dinheiro >= custoObra(tipo, x) + reserva);
+      if (e && comecaObra(P, fac, e, tipo)) { feito = true; break; }
+    }
+    if (!feito) return;
+  }
 }
 
 /* ---------- mercado de comida ---------- */
@@ -4332,7 +4359,9 @@ function aplicaNaBase(P, sq, base) {
      descansa em paz. Cansada, busca cessar-fogo; muito cansada, perde
      moral e voluntários.
    - Coalizão (19.3): quando uma facção cresce demais, as outras se
-     aproximam entre si, pioram com ela e podem declarar guerra juntas.
+     aproximam entre si, pioram com ela e podem declarar guerra juntas
+     (19.4: não dentro das 24 h de paz recente com ela).
+   - Facção "zumbi" (19.4, ver economia.js): se desfaz com eliminaFaccao.
    - Líder da facção: fica no QG. Se o QG cair, foge para outra base
      (perde influência e moral); sem outra base, a facção cai.
    (Números provisórios.)
@@ -4562,7 +4591,7 @@ function horaDaDiplomacia(P) {
   if (alvoCo) for (const m of vivas) {
     if (m === alvoCo || m.jogador) continue;
     const r = rel(P, m, alvoCo);
-    if (r.estado === "neutro" && r.valor <= COALIZAO.guerraAte + pers(m).guerra * .5 && exaustaoDe(P, m) < COALIZAO.cansaco) declaraGuerra(P, m, alvoCo);
+    if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= COALIZAO.guerraAte + pers(m).guerra * .5 && exaustaoDe(P, m) < COALIZAO.cansaco) declaraGuerra(P, m, alvoCo);   // 19.4: a paz recente (24 h) vale também contra a coalizão
   }
   // decisões dos líderes da IA
   for (let i = 0; i < vivas.length; i++) for (let j = i + 1; j < vivas.length; j++) decideDiplomacia(P, vivas[i], vivas[j]);
@@ -4603,7 +4632,7 @@ function decideDiplomacia(P, a, b) {
     : r.estado === "guerra" && r.valor >= DIPLO.propoePaz + guerra + opo && P.tempo - r.desde > 6 * HORA ? "paz" : null;
   if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador && cooldownOk(quer)) propoe(P, outro, eu, quer); return; }
   if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.declaraGuerra + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
-  else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
+  else if (r.estado === "pacto" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "alianca" && r.valor <= DIPLO.rompeAlianca) mudaEstado(P, a, b, "pacto", ia ? a : outro);
 }
 
@@ -4636,16 +4665,18 @@ function baseCaiu(P, e, antes) {
   }
   for (const s of (antes.reserva || []).slice()) if (s.esperaEm === e) { s.esperaEm = destino || antes.base; }
 }
-function eliminaFaccao(P, fac, ondeCaiu) {
+function eliminaFaccao(P, fac, ondeCaiu, motivo) {   // motivo: "zumbi" quando ela se desfaz sozinha (19.4)
   if (fac.eliminada) return;
   fac.eliminada = true; fac.exaustao = 0; fac.alvoDoGoverno = false;   // limpa exaustão, alvo do governo e cessar-fogos
+  fac.zumbiDesde = null; fac.obras = [];
+  for (const b of (P.batalhoes || [])) if (b.faccao === fac) b.equipeObras = [];   // a equipe de obras também se dispersa
   for (const [k, r] of (P.diplo || [])) if (k.split("-").includes(String(fac.id))) { r.exaustao = {}; if (r.estado === "cessarfogo") r.estado = "neutro"; }
   for (const e of P.reg.edificios) if (e.dono === fac) { e.dono = null; e.donoAnterior = fac; }
   for (const z of P.reg.zonas) atualizaZona(z);
   for (const s of P.soldados) if (s.faccao === fac && ["ok", "ferido", "reserva", "comando", "fila", "tratando"].includes(s.vida)) { if (s.sq) tiraDoEsquadrao(P, s); s.vida = "desertou"; }
   fac.reserva = [];
   P.propostas = (P.propostas || []).filter(p => p.de !== fac && p.para !== fac);
-  avisa(P, "eliminada", { fac, e: ondeCaiu });
+  avisa(P, "eliminada", { fac, e: ondeCaiu, motivo });
   const vivas = rivaisVivas(P), eu = vivas.find(f => f.jogador);
   if (fac.jogador) avisa(P, "derrota", { fac });
   else if (eu && vivas.length === 1) avisa(P, "vitoria", { fac: eu });
@@ -4666,6 +4697,8 @@ function eliminaFaccao(P, fac, ondeCaiu) {
      (armas, kits e munição). Compras chegam ao depósito geral da
      facção; dali o jogador passa para cada batalhão.
    - O jogador pode sugerir trocas nos esquadrões; o líder decide.
+   - Cada batalhão tem uma equipe de obras (2 a 4 engenheiros fora dos esquadrões,
+     ver equipeobras.js) além do engenheiro de combate dos esquadrões com 4+ soldados.
    - Começa com 1 batalhão; abre mais conforme o território cresce.
      O líder precisa poder comandar (Veterano ou liderança 60+).
    (Números provisórios.)
@@ -4690,8 +4723,10 @@ function criaBatalhao(P, fac, lider, base) {
   const b = { id: P.batalhoes.length, nome: n + "º Batalhão", faccao: fac, lider, base, ordem: null, postura: "equilibrado",
     arsenal: criaArsenal(), municao: criaMunicao(), proximo: 0,
     minimo: fac.jogador ? { "cx-suprimento": BATALHAO.minimoSuprimento } : {}, prioridade: (P.batalhoes.filter(o => o.faccao === fac).length) + 1, proximoRecruta: 0 };
+  b.equipeObras = [];   // 19.4: equipe de obras do batalhão (equipeobras.js)
   P.batalhoes.push(b);
   viraLiderDeBatalhao(P, lider, b, base);
+  contrataEquipeDeObras(P, b);
   if (!fac.batalhaoPadrao) fac.batalhaoPadrao = b;
   avisa(P, "novobatalhao", { b });
   return b;
@@ -4842,11 +4877,11 @@ function formaEsquadrao(P, b, l, base) {
   anota(P, chefe, "Virou sargento do " + sq.nome + " (" + b.nome + ")");
   avisa(P, "novoesquadrao", { sq, base, b });
 }
-/* composição ideal: 1 sargento, 1 AR, 1 médico; AT, granadeiro e engenheiro se houver equipamento */
+/* composição ideal: 1 sargento, 1 AR, 1 médico; AT, granadeiro e engenheiro se houver equipamento (19.4: engenheiro de combate com 4 ou mais soldados) */
 function distribuiFuncoes(P, b, sq) {
   const l = ativos(sq); if (l.length < 3 || l.some(s => s.pedido)) return;
   const tem = f => l.some(s => s.funcao === f || (s.pedido && s.pedido.funcao === f));
-  const querer = [["metralhador", "metralhadora", 4], ["medico", "kit", 3], ["antitanque", "rpg", 5], ["granadeiro", "lancagranadas", 6], ["engenheiro", "explosivo", 5]];
+  const querer = [["metralhador", "metralhadora", 4], ["medico", "kit", 3], ["antitanque", "rpg", 5], ["granadeiro", "lancagranadas", 6], ["engenheiro", "explosivo", 4]];
   for (const [f, item, minimo] of querer) {
     if (l.length < minimo || tem(f) || noArsenal(b, item) < 1) continue;
     const s = l.filter(o => o.funcao === "fuzileiro" && o !== sq.lider && !o.pedido).sort((x, y) => (f === "metralhador" || f === "antitanque" ? y.atr.pontaria - x.atr.pontaria : y.atr.disciplina - x.atr.disciplina))[0];
@@ -5038,6 +5073,9 @@ function compraAutomatica(P, fac, b, k, quantos, reservado) {
      suprimentos e tempo. Esquadrão parado ou em guarnição, fora de combate,
      com engenheiro conserta os prédios seus a até 45 m; esquadrão parado sem
      missão vai até um prédio seu danificado a até 220 m.
+   - Engenheiro de combate (19.4): 1 por esquadrão com 4 ou mais soldados. Fortifica
+     o prédio onde o esquadrão fica parado ou de guarnição por mais de 2 minutos,
+     só até 50; o resto da fortificação é da equipe de obras (equipeobras.js).
    - Governo antigo (sem dinheiro): sem estoque. Médico e engenheiro dele nascem
      com a mochila cheia (x1,5), nunca repõem, e o hospital dele trata sempre no
      dobro do tempo.
@@ -5051,7 +5089,8 @@ const SUPRIMENTO = {
   fortificarPorPonto: .15,                // fortificação de 0 a 100: 15 suprimentos para chegar a 100
   alcanceObra: 45, procuraObra: 220,      // metros: obra sem sair do lugar / ir até o prédio danificado
   reconstruir: { custoDestruido: 20, horasDestruido: 4, danoAoReerguer: .5, custoDano: 10, horasDano: 2, tamMin: .6, tamMax: 3 },   // custos de uma casa de 120 m², vezes o fator de tamanho
-  avisaACada: 90                          // segundos entre avisos repetidos de "sem suprimentos"
+  avisaACada: 90,                         // segundos entre avisos repetidos de "sem suprimentos"
+  paradoMin: 120, tetoCombate: .5         // 19.4: o engenheiro do esquadrão só fortifica depois de 2 min parado, e só até 50 de 100
 };
 const cargaSuprimento = s => (SUPRIMENTO.carga[s.funcao] || 0) * (s.faccao && s.faccao.governo ? CARGA_GOVERNO : 1);
 const temSuprimento = (s, q) => (s.suprimentos || 0) >= (q || 1) - 1e-9;
@@ -5100,14 +5139,16 @@ function precisaSuprimentos(P, sq) {
 const fatorTamanhoObra = e => limita(tamanhoDoPredio(e) / PREDIO.tamanhoRef, SUPRIMENTO.reconstruir.tamMin, SUPRIMENTO.reconstruir.tamMax);
 const precisaDeConserto = e => !!e.destruido || (e.dano || 0) > 1e-9;
 /* uma etapa de obra em "e" durante dt segundos: reconstrói se destruído, conserta se danificado, senão fortifica.
-   Devolve "reconstruir", "consertar" ou "fortificar" quando trabalhou, "semsuprimentos" se faltou material, ou null se não há o que fazer. */
-function trabalhaNoPredio(P, sq, engs, e, dt, soConserto) {
+   Devolve "reconstruir", "consertar" ou "fortificar" quando trabalhou, "semsuprimentos" se faltou material, ou null se não há o que fazer.
+   teto (0 a 1, padrão 1): até onde fortifica (19.4: engenheiro de esquadrão 0,5; equipe de obras 1 nas bases e 0,6 na fronteira). */
+function trabalhaNoPredio(P, sq, engs, e, dt, soConserto, teto) {
+  teto = teto == null ? 1 : teto;
   const R = SUPRIMENTO.reconstruir, tf = fatorTamanhoObra(e);
   const nv = Math.max(...engs.map(s => (s.item === "explosivo" ? s.nivelItem || 1 : 1))) - 1;   // explosivos melhores, fortificação mais rápida
   let fase, taxa, custo, falta;
   if (e.destruido) { fase = "reconstruir"; taxa = 1 / (R.horasDestruido * HORA); custo = R.custoDestruido * tf; falta = 1 - (e.reconstrucao || 0); }
   else if ((e.dano || 0) > 1e-9) { fase = "consertar"; taxa = 1 / (R.horasDano * HORA); custo = R.custoDano * tf; falta = e.dano; }
-  else if (!soConserto && (e.fortificado || 0) < 1) { fase = "fortificar"; taxa = 1 / (NIVEL.fortificaHoras[nv] * HORA); custo = SUPRIMENTO.fortificarPorPonto * 100; falta = 1 - (e.fortificado || 0); }
+  else if (!soConserto && (e.fortificado || 0) < teto - 1e-9) { fase = "fortificar"; taxa = 1 / (NIVEL.fortificaHoras[nv] * HORA); custo = SUPRIMENTO.fortificarPorPonto * 100; falta = teto - (e.fortificado || 0); }
   else return null;
   const quer = Math.min(taxa * dt, falta), precisa = quer * custo;
   let feito = quer;
@@ -5129,8 +5170,8 @@ function trabalhaNoPredio(P, sq, engs, e, dt, soConserto) {
     if (e.dano <= 1e-9) { e.dano = 0; avisa(P, "consertado", { sq, e }); }
   } else {
     const antes = e.fortificado || 0;
-    e.fortificado = Math.min(1, antes + feito);
-    if (antes < 1 && e.fortificado >= 1 - 1e-9) { e.fortificado = 1; avisa(P, "fortificado", { sq, e }); }
+    e.fortificado = Math.min(teto, antes + feito);
+    if (antes < teto - 1e-9 && e.fortificado >= teto - 1e-9) { e.fortificado = teto; avisa(P, "fortificado", { sq, e }); }
   }
   return fase;
 }
@@ -5146,23 +5187,38 @@ function predioPerto(P, sq, raio, soAqui) {
   else for (const e of P.reg.edificios) if (e.dono === fac) confere(e);
   return melhor && md <= raio ? melhor : null;
 }
-/* chamado a cada segundo: esquadrões com engenheiro, fora de combate, parados ou em guarnição, fazem obra */
+/* prédio seu onde o esquadrão está (a até alcanceObra) e que ainda não chegou ao teto de fortificação */
+function predioParaFortificar(P, sq, raio, teto) {
+  const fac = sq.faccao, [x, z] = centroDoEsquadrao(sq); let melhor = null, md = Infinity;
+  P.reg.oc.edificiosPerto(x, z, raio, e => {
+    if (e.dono !== fac || e.destruido || (e.fortificado || 0) >= teto - 1e-9) return;
+    const d = Math.hypot(e.x - x, e.z - z); if (d < md) { md = d; melhor = e; }
+  });
+  return melhor;
+}
+/* chamado a cada segundo: esquadrões com engenheiro, fora de combate, parados ou em guarnição, fazem obra.
+   Conserto e reconstrução na hora; fortificar só depois de 2 min no mesmo estado e só até o teto de 50 (19.4). */
 function fortificacoes(P, dt) {
+  const teto = SUPRIMENTO.tetoCombate;
   for (const sq of P.esquadroes) {
-    if (sq.combate || (sq.estado !== "guarnição" && sq.estado !== "parado") || !ativos(sq).length) continue;
+    if (sq.combate || (sq.estado !== "guarnição" && sq.estado !== "parado") || !ativos(sq).length) { sq.quietoDesde = null; continue; }
+    if (sq.quietoDesde == null || sq.quietoEstado !== sq.estado) { sq.quietoDesde = P.tempo; sq.quietoEstado = sq.estado; }
     const engs = ativos(sq).filter(s => s.funcao === "engenheiro"); if (!engs.length) continue;
+    const quieto = P.tempo - sq.quietoDesde >= SUPRIMENTO.paradoMin;
     const g = sq.estado === "guarnição" && sq.guarda && sq.guarda.dono === sq.faccao ? sq.guarda : null;
-    let e = g, soConserto = false;
-    if (!g || (!precisaDeConserto(g) && (g.fortificado || 0) >= 1)) { e = predioPerto(P, sq, SUPRIMENTO.alcanceObra, true); soConserto = !!e; }
+    let e = g, soConserto = !quieto;
+    if (!g || (!precisaDeConserto(g) && (g.fortificado || 0) >= teto - 1e-9)) { e = predioPerto(P, sq, SUPRIMENTO.alcanceObra, true); soConserto = true; }
+    let foi = false;
     if (!e && sq.estado === "parado" && !sq.fixo && !sq.missao && P.tempo >= (sq.proximaObra || 0)) {   // parado sem missão: vai até um prédio seu danificado
       sq.proximaObra = P.tempo + 10;
       if (engs.some(s => temSuprimento(s, 1))) {
         const alvo = predioPerto(P, sq, SUPRIMENTO.procuraObra, false);
-        if (alvo && !guarnicaoDe(P, alvo).some(o => o !== sq)) ordenaPredio(P, sq, alvo, "defesa");
+        if (alvo && !guarnicaoDe(P, alvo).some(o => o !== sq)) { ordenaPredio(P, sq, alvo, "defesa"); foi = true; }
       }
     }
+    if (!e && !g && quieto && !foi) { e = predioParaFortificar(P, sq, SUPRIMENTO.alcanceObra, teto); soConserto = false; }
     if (!e) continue;
-    const r = trabalhaNoPredio(P, sq, engs, e, dt, soConserto || e !== g);
+    const r = trabalhaNoPredio(P, sq, engs, e, dt, soConserto, teto);
     if (r && r !== "semsuprimentos") sq.obraAte = P.tempo + 3;
   }
 }
@@ -5189,6 +5245,195 @@ function reconstroi(P, fac, e) {
   ordenaPredio(P, sq, e, "defesa"); ordemDireta(sq, true);
   avisa(P, "ordem", { sq, e });
   return true;
+}
+
+"use strict";
+/* ============================================================
+   EQUIPE DE OBRAS (protótipo 19.4): engenheiros de cada batalhão, fora dos esquadrões
+   - Cada batalhão (do jogador e das rivais; o governo antigo não) tem uma equipe:
+     2 engenheiros quando o batalhão nasce, +1 a cada 2 esquadrões além do 2º,
+     no máximo 4. Cada um custa salário de soldado ($ 5/h) mais um kit de explosivos
+     ($ 300, pago uma vez quando entra). Não entram em esquadrão, não lutam e não
+     atiram primeiro; só fortificam, consertam e reconstruem.
+   - Prioridade: 1) as bases (QG e bases avançadas) até fortificação 100;
+     2) prédios de fronteira (a até 150 m de prédio de quem está em guerra com a
+     facção) até 60; 3) consertar e reconstruir prédios danificados.
+   - Cada engenheiro trabalha num prédio diferente (nenhum outro da facção no mesmo).
+     Velocidade (a pé) e gasto de suprimentos são os do engenheiro de esquadrão
+     (trabalhaNoPredio, em suprimentos.js): leva 30, enche e repõe nas bases.
+   - Segurança: não vai a prédio com inimigo a menos de 150 m; se um esquadrão
+     inimigo em combate chega a menos de 100 m, foge para a base mais perto e
+     descansa 1 minuto.
+   - Não são soldados do jogo: ficam em b.equipeObras (posição, estado, suprimentos).
+   (Números provisórios.)
+   ============================================================ */
+const EQUIPE_OBRAS = {
+  inicial: 2, maximo: 4, esquadroesBase: 2, esquadroesPorExtra: 2,   // 2 ao nascer; +1 a cada 2 esquadrões além do 2º; máximo 4
+  tetoBase: 1, tetoFronteira: .6,                                     // fortificação (0 a 1) que cada prioridade busca
+  raioFronteira: 150, raioInimigo: 150,                               // metros: o que conta como fronteira; inimigo perto do prédio que impede a obra
+  raioTiro: 100, descansa: 60,                                        // esquadrão inimigo em combate a menos de 100 m = "levou tiro" (foge); segundos parado na base depois da fuga
+  raioBusca: 500,                                                     // só escolhe prédios a até 500 m da base do batalhão
+  pensa: 5, chega: 12, minimoParaSair: 3                              // segundos entre decisões; chegou a menos de 12 m; só sai da base com 3 suprimentos ou mais
+};
+const tamanhoDaEquipe = nEsquadroes => Math.min(EQUIPE_OBRAS.maximo, EQUIPE_OBRAS.inicial + Math.floor(Math.max(0, nEsquadroes - EQUIPE_OBRAS.esquadroesBase) / EQUIPE_OBRAS.esquadroesPorExtra));
+const totalEquipeDeObras = (P, fac) => batalhoesDe(P, fac).reduce((n, b) => n + (b.equipeObras || []).length, 0);
+
+/* ---------- contratação ---------- */
+function novoEngenheiroDeObras(P, b) {
+  const n = (b.nEngObras = (b.nEngObras || 0) + 1);
+  const u = { nome: "Engenheiro de obras " + n, faccao: b.faccao, bat: b, funcao: "engenheiro", item: "explosivo", nivelItem: 1, suprimentos: 0, sq: null, obras: true,
+    x: b.base.x, z: b.base.z, estado: "espera", alvo: null, tarefa: null, destino: null, proxima: 0, descansaAte: 0 };
+  abasteceSuprimentos(u, estoquesNaBase(P, b.faccao, b, b.base));
+  return u;
+}
+/* completa a equipe até o tamanho que o batalhão pede, enquanto o caixa paga o kit ($ 300 cada) */
+function contrataEquipeDeObras(P, b) {
+  const fac = b.faccao; if (!organizada(fac) || fac.eliminada || !b.base) return;
+  b.equipeObras = b.equipeObras || [];
+  if (b.equipeObras.length >= EQUIPE_OBRAS.maximo) return;
+  const alvo = tamanhoDaEquipe(esquadroesDe(P, b).length);
+  while (b.equipeObras.length < alvo && fac.recursos.dinheiro >= PRECO.explosivo) {
+    fac.recursos.dinheiro -= PRECO.explosivo;
+    b.equipeObras.push(novoEngenheiroDeObras(P, b));
+  }
+}
+
+/* ---------- onde há perigo ---------- */
+/* esquadrão inimigo (em combate, se soCombate) com o centro a menos de "raio" metros */
+function inimigoPerto(P, fac, x, z, raio, soCombate) {
+  for (const q of P.esquadroes) {
+    if (soCombate && !q.combate) continue;
+    if (q.faccao === fac || !hostis(P, fac, q.faccao) || !ativos(q).length) continue;
+    const [cx, cz] = centroDoEsquadrao(q);
+    if (Math.hypot(cx - x, cz - z) < raio) return q;
+  }
+  return null;
+}
+function ehFronteira(P, fac, e) {
+  let sim = false;
+  P.reg.oc.edificiosPerto(e.x, e.z, EQUIPE_OBRAS.raioFronteira, o => { if (!sim && o.dono && o.dono !== fac && hostis(P, fac, o.dono)) sim = true; });
+  return sim;
+}
+
+/* ---------- escolha do prédio ---------- */
+/* devolve { e, teto, soConserto, classe } ou null */
+function escolheObraDaEquipe(P, b, u) {
+  const fac = b.faccao, E = EQUIPE_OBRAS;
+  const ocupados = new Set();
+  for (const o of batalhoesDe(P, fac)) for (const x of o.equipeObras || []) if (x !== u && x.alvo) ocupados.add(x.alvo);   // cada um num prédio diferente
+  const distancia = e => Math.hypot(e.x - u.x, e.z - u.z);
+  const primeiro = (lista, extra) => {   // o mais perto que está livre, sem inimigo por perto (e que passa na conta "extra")
+    for (const e of lista.slice().sort((x, y) => distancia(x) - distancia(y))) {
+      if (ocupados.has(e) || (extra && !extra(e)) || inimigoPerto(P, fac, e.x, e.z, E.raioInimigo, false)) continue;
+      return e;
+    }
+    return null;
+  };
+  const falta = (e, teto) => precisaDeConserto(e) || (e.fortificado || 0) < teto - 1e-9;
+  // 1) bases até fortificação 100
+  let e = primeiro(basesDe(P, fac).filter(x => falta(x, E.tetoBase)));
+  if (e) return { e, teto: E.tetoBase, soConserto: false, classe: "base" };
+  const perto = P.reg.edificios.filter(x => x.dono === fac && Math.hypot(x.x - b.base.x, x.z - b.base.z) <= E.raioBusca);
+  // 2) fronteira até 60
+  e = primeiro(perto.filter(x => falta(x, E.tetoFronteira)), x => ehFronteira(P, fac, x));
+  if (e) return { e, teto: E.tetoFronteira, soConserto: false, classe: "fronteira" };
+  // 3) consertar e reconstruir
+  e = primeiro(perto.filter(x => precisaDeConserto(x)));
+  if (e) return { e, teto: 0, soConserto: true, classe: "conserto" };
+  return null;
+}
+
+/* ---------- movimento e rotina (chamado a cada segundo) ---------- */
+function andaAte(u, x, z, dt) {   // a pé, em linha reta, na velocidade do esquadrão a pé; devolve se já chegou
+  const d = Math.hypot(x - u.x, z - u.z), p = VELOCIDADE_A_PE * dt;
+  if (d <= p) { u.x = x; u.z = z; return true; }
+  u.x += (x - u.x) / d * p; u.z += (z - u.z) / d * p;
+  return d - p <= EQUIPE_OBRAS.chega;
+}
+function baseComEstoqueDeSuprimento(P, b, u) {
+  const fac = b.faccao; let m = null, md = Infinity;
+  for (const base of basesDe(P, fac)) {
+    if (!somaMunicao(estoquesNaBase(P, fac, b, base), "suprimento")) continue;
+    const d = Math.hypot(base.x - u.x, base.z - u.z); if (d < md) { md = d; m = base; }
+  }
+  return m;
+}
+function voltaParaBase(P, b, u, estado) {
+  u.alvo = null; u.tarefa = null; u.estado = estado || "volta";
+  u.destino = baseMaisPerto(P, b.faccao, u.x, u.z) || b.faccao.base || b.base;
+}
+function passoDoEngenheiroDeObras(P, b, u, dt) {
+  const fac = b.faccao, E = EQUIPE_OBRAS;
+  if (u.alvo && u.alvo.dono !== fac) { u.alvo = null; if (u.estado === "indo" || u.estado === "obra") u.estado = "espera"; }
+  const base = baseEm(P, fac, u.x, u.z);
+  // levou tiro: um esquadrão inimigo está lutando por perto, foge para a base mais perto
+  if ((u.estado === "indo" || u.estado === "obra" || (u.estado === "espera" && !base)) && inimigoPerto(P, fac, u.x, u.z, E.raioTiro, true)) {
+    voltaParaBase(P, b, u, "foge"); u.descansaAte = P.tempo + E.descansa;
+    if (fac.jogador && P.tempo - (b.avisouFuga || -1e9) > 60) { b.avisouFuga = P.tempo; avisa(P, "equipeobrasfugiu", { b, u }); }
+    return;
+  }
+  if (u.estado === "foge" || u.estado === "volta" || u.estado === "reabastece") {
+    const d = u.destino;
+    if (!d || d.dono !== fac) { u.destino = baseMaisPerto(P, fac, u.x, u.z) || fac.base; return; }
+    if (andaAte(u, d.x, d.z, dt)) { abasteceSuprimentos(u, estoquesNaBase(P, fac, b, d)); u.estado = "espera"; u.destino = null; u.proxima = 0; }
+    return;
+  }
+  if (u.estado === "indo") {
+    const e = u.alvo;
+    if (!e || inimigoPerto(P, fac, e.x, e.z, E.raioInimigo, false)) { u.alvo = null; u.tarefa = null; u.estado = "espera"; u.proxima = P.tempo + E.pensa; return; }
+    const [ex, ez] = entradaDe(e);
+    if (andaAte(u, ex, ez, dt)) u.estado = "obra";
+    return;
+  }
+  if (u.estado === "obra") {
+    const e = u.alvo;
+    if (!e || inimigoPerto(P, fac, e.x, e.z, E.raioInimigo, false)) { u.alvo = null; u.tarefa = null; u.estado = "espera"; u.proxima = P.tempo + E.pensa; return; }
+    if (!b.equipeSq) b.equipeSq = { faccao: fac, nome: "Equipe de obras do " + b.nome };
+    const r = trabalhaNoPredio(P, b.equipeSq, [u], e, dt, u.tarefa.soConserto, u.tarefa.teto);
+    if (r === null || r === "semsuprimentos") { u.alvo = null; u.tarefa = null; u.estado = "espera"; u.proxima = 0; }
+    return;
+  }
+  // espera: na base enche a mochila; com material, escolhe o próximo prédio
+  if (P.tempo < u.proxima || P.tempo < u.descansaAte) return;
+  u.proxima = P.tempo + E.pensa;
+  if (base) abasteceSuprimentos(u, estoquesNaBase(P, fac, b, base));
+  if (u.suprimentos < E.minimoParaSair) {
+    const comEstoque = baseComEstoqueDeSuprimento(P, b, u);
+    if (comEstoque && comEstoque !== base) { u.destino = comEstoque; u.estado = "reabastece"; }
+    else if (!base) voltaParaBase(P, b, u);
+    return;
+  }
+  const t = escolheObraDaEquipe(P, b, u);
+  if (t) { u.alvo = t.e; u.tarefa = t; u.estado = "indo"; }
+  else if (!base) voltaParaBase(P, b, u);
+}
+function equipesDeObras(P, dt) {
+  for (const b of (P.batalhoes || [])) {
+    const fac = b.faccao;
+    if (b.dissolvido || fac.eliminada || !organizada(fac)) continue;
+    if (!b.base || b.base.dono !== fac) b.base = fac.base;
+    contrataEquipeDeObras(P, b);
+    for (const u of b.equipeObras || []) passoDoEngenheiroDeObras(P, b, u, dt);
+  }
+}
+
+/* ---------- para a tela (janela de Batalhões) ---------- */
+const NOME_CLASSE_OBRA = { base: "base", fronteira: "fronteira", conserto: "conserto" };
+function textoDoEngenheiroDeObras(P, u) {
+  const nm = e => TIPOS[e.tipo].n.toLowerCase() + " em " + e.zona.nome;
+  const base = baseEm(P, u.faccao, u.x, u.z), sup = Math.floor(u.suprimentos || 0);
+  if (u.estado === "obra" && u.alvo) {
+    const e = u.alvo, t = u.tarefa;
+    if (e.destruido) return "reconstruindo " + nm(e);
+    if ((e.dano || 0) > 1e-9) return "consertando " + nm(e);
+    return "fortificando " + nm(e) + ": " + fortificacaoDe(e) + " de " + Math.round((t ? t.teto : 1) * 100);
+  }
+  if (u.estado === "indo" && u.alvo) return "a caminho de " + nm(u.alvo) + " (" + NOME_CLASSE_OBRA[u.tarefa ? u.tarefa.classe : "base"] + ")";
+  if (u.estado === "foge") return "fugiu de tiro, voltando à base";
+  if (u.estado === "volta") return "voltando à base";
+  if (u.estado === "reabastece") return "indo buscar suprimentos";
+  if (u.suprimentos < EQUIPE_OBRAS.minimoParaSair) return "esperando suprimentos" + (base ? " na base" : "");
+  return base ? "esperando na base: nada a fazer agora" : "sem obra por perto";
 }
 
 "use strict";
@@ -5727,13 +5972,15 @@ function missaoReacao(P, sq) {
    Protótipo 19.3: o governo enfraquece aos poucos (solta os bairros mais
    distantes do centro e corta guarnições) e reage a quem cresce demais
    (facção grande vira alvo: reação rápida de mais longe e contra-ataques).
+   Protótipo 19.4: o estoque mínimo guarda 1 explosivo por esquadrão com 4+ soldados;
+   obras de comida com reserva de caixa por personalidade (reservaObras, obrasJuntas).
    (Números provisórios.)
    ============================================================ */
 const PERSONALIDADES = {
-  agressiva:   { n: "Agressiva", ataque: 1.5, defesa: .8, ordensAtaque: 2, postura: "agressivo", guerra: 15, acordo: 12, soldados: 12, armasPesadas: 5000 },
-  defensiva:   { n: "Defensiva", ataque: .7, defesa: 1.5, ordensAtaque: 1, postura: "cauteloso", guerra: -15, acordo: -8, soldados: 10, armasPesadas: 9000 },
-  comerciante: { n: "Comerciante", ataque: .85, defesa: 1.1, ordensAtaque: 1, postura: "equilibrado", guerra: -20, acordo: -15, soldados: 9, armasPesadas: 10000, vendeAcima: 120, guarda: 80, obras: 2500 },
-  oportunista: { n: "Oportunista", ataque: 1.1, defesa: 1, ordensAtaque: 2, postura: "equilibrado", guerra: 0, acordo: 0, soldados: 10, armasPesadas: 7000, fracos: true }
+  agressiva:   { n: "Agressiva", ataque: 1.5, defesa: .8, ordensAtaque: 2, postura: "agressivo", guerra: 15, acordo: 12, soldados: 12, armasPesadas: 5000, reservaObras: 1000 },
+  defensiva:   { n: "Defensiva", ataque: .7, defesa: 1.5, ordensAtaque: 1, postura: "cauteloso", guerra: -15, acordo: -8, soldados: 10, armasPesadas: 9000, reservaObras: 500 },
+  comerciante: { n: "Comerciante", ataque: .85, defesa: 1.1, ordensAtaque: 1, postura: "equilibrado", guerra: -20, acordo: -15, soldados: 9, armasPesadas: 10000, vendeAcima: 120, guarda: 80, reservaObras: 300, obrasJuntas: 2 },
+  oportunista: { n: "Oportunista", ataque: 1.1, defesa: 1, ordensAtaque: 2, postura: "equilibrado", guerra: 0, acordo: 0, soldados: 10, armasPesadas: 7000, fracos: true, reservaObras: 700 }
 };
 const DIFICULDADES = {
   facil:   { n: "Fácil", pensa: 45, erra: .3, renda: 1 },
@@ -5791,7 +6038,8 @@ function minimoDaIA(P, fac, b) {
     fuzil: dinheiro > 1200 ? 2 : 1,
     kit: 1
   };
-  if (sold.length >= 5) b.minimo.explosivo = 1;   // 19.2: com 5 ou mais o líder põe um engenheiro (fortifica e conserta) se houver explosivos no estoque
+  const grandes = esquadroesDe(P, b).filter(q => ativos(q).length >= 4).length;
+  if (grandes) b.minimo.explosivo = grandes;   // 19.4: 1 explosivo por esquadrão com 4 ou mais soldados (o líder põe um engenheiro de combate em cada)
   if (ar || sold.length >= 8) { b.minimo.metralhadora = 1; b.minimo["cx-cinta"] = Math.max(1, ar) * 400 * fator; }
   if (noArsenal(b, "rpg") || sold.some(s => s.arma === "rpg")) b.minimo["cx-foguete"] = 3;
   // suprimentos (19.2): mesma regra do jogador: o suficiente para encher a mochila de cada médico e engenheiro, mais uma folga de 20
@@ -7834,6 +8082,19 @@ function estadoVeiculo(v) {
   if (v.rota && v.estado === "levando") return ["local_shipping", "Levando para a " + nomeBase(partida, v.plano.para), "anda"];
   return ["garage", v.em ? "Parado na " + nomeBase(partida, v.em) : "Parado na estrada", "calmo"];
 }
+/* 19.4: engenheiros de obras do batalhão (fora dos esquadrões) e o que cada um faz agora */
+function painelEquipeObras(dir, b) {
+  const eq = b.equipeObras || [], alvo = tamanhoDaEquipe(esquadroesDe(partida, b).length);
+  dir.appendChild(cria("div", "rotulo-peq", "Equipe de obras: " + eq.length + " de " + alvo + " engenheiros (fora dos esquadrões; salário $ " + SALARIO + "/h e kit $ " + PRECO.explosivo + "). Prioridade: bases, fronteira, prédios danificados"));
+  for (const u of eq) {
+    const l = cria("div", "caminho"); l.appendChild(ico("construction"));
+    l.appendChild(cria("span", null, u.nome + ": " + textoDoEngenheiroDeObras(partida, u) + " · " + Math.floor(u.suprimentos || 0) + " suprimentos"));
+    if (u.alvo) l.appendChild(botao("my_location", null, "mini", () => vaiPara(u.alvo.x, u.alvo.z, 180), "Ir até o prédio"));
+    dir.appendChild(l);
+  }
+  if (!eq.length) dir.appendChild(cria("div", "nota", "Sem engenheiros de obras ainda: precisa de $ " + PRECO.explosivo + " em caixa para cada um."));
+  if (eq.length < alvo) dir.appendChild(cria("div", "nota", "Faltam " + (alvo - eq.length) + ": entram sozinhos quando o caixa paga o kit."));
+}
 function painelLogistica(p, f, b) {
   const vs = (f.veiculos || []).filter(v => v.bat === b);
   p.appendChild(cria("div", "rotulo-peq", "Veículos de logística do batalhão"));
@@ -7957,6 +8218,7 @@ function janelaGestao(p) {
   dir.appendChild(tab);
   dir.appendChild(cria("div", "nota", "O que faltar para o mínimo é fabricado (se tiver oficina com fila curta) ou comprado no mercado negro, e chega ao QG. " + (b.base === f.base ? "Este batalhão fica no QG: pega direto do depósito." : "Este batalhão fica na " + nomeBase(partida, b.base) + ": um veículo de logística leva do QG até lá.") + " Com pouco no QG, o batalhão de prioridade mais alta pega antes."));
   painelLogistica(dir, f, b);
+  painelEquipeObras(dir, b);
   // esquadrões (você sugere; o líder decide)
   dir.appendChild(cria("div", "rotulo-peq", "Esquadrões: arraste para sugerir uma troca, clique para sugerir função"));
   for (const sq of esquadroesDe(partida, b)) {
@@ -8664,7 +8926,11 @@ function ouveA(P) {
     else if (tipo === "incidente" && (meu(d.a) || meu(d.b))) aviso("Incidente com " + (meu(d.a) ? d.b : d.a).nome + ": " + d.texto + " (" + (d.valor > 0 ? "+" : "") + d.valor + ")", "campaign", d.valor > 0 ? "bom" : "perigo");
     else if (tipo === "liderfugiu" && meu(d.fac)) aviso("O QG caiu! O líder da facção fugiu para a base de " + d.para.zona.nome, "directions_run", "perigo", [d.para.x, d.para.z]);
     else if (tipo === "liderfugiu") aviso("O QG de " + d.fac.nome + " caiu; o líder fugiu", "directions_run", "info");
-    else if (tipo === "eliminada") { aviso(meu(d.fac) ? "Sua facção caiu." : d.fac.nome + " foi eliminada", "skull", meu(d.fac) ? "perigo" : "seu"); camada.sujo = true; for (const e of regiao.edificios) if (!e.dono) repinta(e); }
+    else if (tipo === "zumbi" && meu(d.fac)) aviso("Cuidado: menos de " + ZUMBI.predios + " prédios e caixa negativo. Se continuar assim por " + d.horas + " h, sua facção se desfaz. Tome prédios ou volte a ter dinheiro", "warning", "perigo");
+    else if (tipo === "zumbifim" && meu(d.fac)) aviso("Falta " + d.horas + " h: sua facção se desfaz se não tiver " + ZUMBI.predios + " prédios ou caixa positivo", "warning", "perigo");
+    else if (tipo === "zumbialivio" && meu(d.fac)) aviso("Sua facção saiu do risco de se desfazer (prédios ou caixa recuperados)", "check_circle", "bom");
+    else if (tipo === "equipeobrasfugiu" && meu(d.b.faccao)) aviso("A equipe de obras do " + d.b.nome + " fugiu de tiros e voltou para a base", "construction", "info");
+    else if (tipo === "eliminada") { aviso(meu(d.fac) ? (d.motivo === "zumbi" ? "Sua facção se desfez: sem prédios e sem dinheiro por tempo demais." : "Sua facção caiu.") : d.fac.nome + " foi eliminada", "skull", meu(d.fac) ? "perigo" : "seu"); camada.sujo = true; for (const e of regiao.edificios) if (!e.dono) repinta(e); }
     else if (tipo === "vitoria") aviso("Vitória! Todas as facções rivais foram eliminadas.", "star", "bom");
     else if (tipo === "novobatalhao" && meu(d.b.faccao)) { aviso(d.b.nome + " criado: " + d.b.lider.nome + " comanda da base", "groups", "bom", [d.b.base.x, d.b.base.z]); rotuloDoBatalhao(d.b); }
     else if (tipo === "ordemcumprida" && meu(d.b.faccao)) aviso(d.b.nome + " tomou " + d.o.alvo.nome + "; agora protege a área", "flag", "bom");

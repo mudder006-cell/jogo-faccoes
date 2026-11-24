@@ -375,7 +375,7 @@ function subpasso(P, dt) {
   for (const s of P.soldados) if (s.vida === "ferido" && P.tempo - s.caiuEm > (s.sq && s.sq.combate !== undefined && temMedico(s.sq, s) ? 30 : 5)) evacua(P, s);
   if (PERCEPCAO.ligada && P.tempo >= (P.proximaPoda || 0)) { P.proximaPoda = P.tempo + 5; podaMemorias(P); }
   if (P.tempo >= P.proximoContato) { P.proximoContato = P.tempo + 1; procuraContato(P); tratamentos(P); }
-  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
+  if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); equipesDeObras(P, 1); }
   if (P.tempo >= P.proximaIA) {
     P.proximaIA = P.tempo + IA_PENSA_A_CADA;
     for (const f of P.faccoes) if (!f.jogador && organizada(f)) generalRival(P, f);

@@ -4,7 +4,7 @@ from pathlib import Path
 aqui = Path(__file__).parent
 src = aqui / "src"
 ORDEM = ["dados.js", "base.js", "relevo.js", "caminhos.js", "ocupacao.js", "regiao.js", "territorio.js",
-         "rotas.js", "soldados.js", "catalogo.js", "simulacao.js", "combate.js", "percepcao.js", "economia.js", "comida.js", "recrutamento.js", "armas.js", "acao.js", "missoes.js", "logistica.js", "diplomacia.js", "batalhoes.js", "estoques.js", "suprimentos.js", "veiculos.js", "comando.js", "ia.js", "ordens.js",
+         "rotas.js", "soldados.js", "catalogo.js", "simulacao.js", "combate.js", "percepcao.js", "economia.js", "comida.js", "recrutamento.js", "armas.js", "acao.js", "missoes.js", "logistica.js", "diplomacia.js", "batalhoes.js", "estoques.js", "suprimentos.js", "equipeobras.js", "veiculos.js", "comando.js", "ia.js", "ordens.js",
          "tela/retratos.js", "tela/edificios.js", "tela/terreno.js", "tela/territorio.js", "tela/tropas.js", "tela/marcas.js", "tela/cena.js", "tela/paineis.js", "tela/janelas.js", "tela/tutorial.js", "tela/principal.js"]
 js = "\n".join((src / f).read_text(encoding="utf-8") for f in ORDEM)
 

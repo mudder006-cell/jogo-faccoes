@@ -13,6 +13,8 @@
      (armas, kits e munição). Compras chegam ao depósito geral da
      facção; dali o jogador passa para cada batalhão.
    - O jogador pode sugerir trocas nos esquadrões; o líder decide.
+   - Cada batalhão tem uma equipe de obras (2 a 4 engenheiros fora dos esquadrões,
+     ver equipeobras.js) além do engenheiro de combate dos esquadrões com 4+ soldados.
    - Começa com 1 batalhão; abre mais conforme o território cresce.
      O líder precisa poder comandar (Veterano ou liderança 60+).
    (Números provisórios.)
@@ -37,8 +39,10 @@ function criaBatalhao(P, fac, lider, base) {
   const b = { id: P.batalhoes.length, nome: n + "º Batalhão", faccao: fac, lider, base, ordem: null, postura: "equilibrado",
     arsenal: criaArsenal(), municao: criaMunicao(), proximo: 0,
     minimo: fac.jogador ? { "cx-suprimento": BATALHAO.minimoSuprimento } : {}, prioridade: (P.batalhoes.filter(o => o.faccao === fac).length) + 1, proximoRecruta: 0 };
+  b.equipeObras = [];   // 19.4: equipe de obras do batalhão (equipeobras.js)
   P.batalhoes.push(b);
   viraLiderDeBatalhao(P, lider, b, base);
+  contrataEquipeDeObras(P, b);
   if (!fac.batalhaoPadrao) fac.batalhaoPadrao = b;
   avisa(P, "novobatalhao", { b });
   return b;
@@ -189,11 +193,11 @@ function formaEsquadrao(P, b, l, base) {
   anota(P, chefe, "Virou sargento do " + sq.nome + " (" + b.nome + ")");
   avisa(P, "novoesquadrao", { sq, base, b });
 }
-/* composição ideal: 1 sargento, 1 AR, 1 médico; AT, granadeiro e engenheiro se houver equipamento */
+/* composição ideal: 1 sargento, 1 AR, 1 médico; AT, granadeiro e engenheiro se houver equipamento (19.4: engenheiro de combate com 4 ou mais soldados) */
 function distribuiFuncoes(P, b, sq) {
   const l = ativos(sq); if (l.length < 3 || l.some(s => s.pedido)) return;
   const tem = f => l.some(s => s.funcao === f || (s.pedido && s.pedido.funcao === f));
-  const querer = [["metralhador", "metralhadora", 4], ["medico", "kit", 3], ["antitanque", "rpg", 5], ["granadeiro", "lancagranadas", 6], ["engenheiro", "explosivo", 5]];
+  const querer = [["metralhador", "metralhadora", 4], ["medico", "kit", 3], ["antitanque", "rpg", 5], ["granadeiro", "lancagranadas", 6], ["engenheiro", "explosivo", 4]];
   for (const [f, item, minimo] of querer) {
     if (l.length < minimo || tem(f) || noArsenal(b, item) < 1) continue;
     const s = l.filter(o => o.funcao === "fuzileiro" && o !== sq.lider && !o.pedido).sort((x, y) => (f === "metralhador" || f === "antitanque" ? y.atr.pontaria - x.atr.pontaria : y.atr.disciplina - x.atr.disciplina))[0];

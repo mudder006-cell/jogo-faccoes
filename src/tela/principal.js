@@ -291,7 +291,11 @@ function ouveA(P) {
     else if (tipo === "incidente" && (meu(d.a) || meu(d.b))) aviso("Incidente com " + (meu(d.a) ? d.b : d.a).nome + ": " + d.texto + " (" + (d.valor > 0 ? "+" : "") + d.valor + ")", "campaign", d.valor > 0 ? "bom" : "perigo");
     else if (tipo === "liderfugiu" && meu(d.fac)) aviso("O QG caiu! O líder da facção fugiu para a base de " + d.para.zona.nome, "directions_run", "perigo", [d.para.x, d.para.z]);
     else if (tipo === "liderfugiu") aviso("O QG de " + d.fac.nome + " caiu; o líder fugiu", "directions_run", "info");
-    else if (tipo === "eliminada") { aviso(meu(d.fac) ? "Sua facção caiu." : d.fac.nome + " foi eliminada", "skull", meu(d.fac) ? "perigo" : "seu"); camada.sujo = true; for (const e of regiao.edificios) if (!e.dono) repinta(e); }
+    else if (tipo === "zumbi" && meu(d.fac)) aviso("Cuidado: menos de " + ZUMBI.predios + " prédios e caixa negativo. Se continuar assim por " + d.horas + " h, sua facção se desfaz. Tome prédios ou volte a ter dinheiro", "warning", "perigo");
+    else if (tipo === "zumbifim" && meu(d.fac)) aviso("Falta " + d.horas + " h: sua facção se desfaz se não tiver " + ZUMBI.predios + " prédios ou caixa positivo", "warning", "perigo");
+    else if (tipo === "zumbialivio" && meu(d.fac)) aviso("Sua facção saiu do risco de se desfazer (prédios ou caixa recuperados)", "check_circle", "bom");
+    else if (tipo === "equipeobrasfugiu" && meu(d.b.faccao)) aviso("A equipe de obras do " + d.b.nome + " fugiu de tiros e voltou para a base", "construction", "info");
+    else if (tipo === "eliminada") { aviso(meu(d.fac) ? (d.motivo === "zumbi" ? "Sua facção se desfez: sem prédios e sem dinheiro por tempo demais." : "Sua facção caiu.") : d.fac.nome + " foi eliminada", "skull", meu(d.fac) ? "perigo" : "seu"); camada.sujo = true; for (const e of regiao.edificios) if (!e.dono) repinta(e); }
     else if (tipo === "vitoria") aviso("Vitória! Todas as facções rivais foram eliminadas.", "star", "bom");
     else if (tipo === "novobatalhao" && meu(d.b.faccao)) { aviso(d.b.nome + " criado: " + d.b.lider.nome + " comanda da base", "groups", "bom", [d.b.base.x, d.b.base.z]); rotuloDoBatalhao(d.b); }
     else if (tipo === "ordemcumprida" && meu(d.b.faccao)) aviso(d.b.nome + " tomou " + d.o.alvo.nome + "; agora protege a área", "flag", "bom");

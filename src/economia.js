@@ -11,7 +11,7 @@ const RECURSOS_INICIAIS = { dinheiro: 3000, influencia: 20, comida: 200 };
 const IMPOSTO = { casa: 2, predio: 0, loja: 8, mercado: 14, posto: 20, oficina: 6, armazem: 10, fabrica: 18, fazenda: 3, lider: 4, mesquita: 0, escola: 0, hospital: 0, delegacia: 0, governo: 0, quartel: 0, cidadela: 0, caixadagua: 0 };
 const IMPOSTO_POR_ANDAR = 1.5;           // prédio residencial: por andar
 // comida produzida por hora
-const COMIDA = { fazenda: 20, armazem: 6, mercado: 4 };
+const COMIDA = { fazenda: 30, armazem: 10, mercado: 4 };   // 19.4: fazenda 20 → 30, armazém 6 → 10
 const COMIDA_POR_CAMPO = .4;             // cada roça, pomar ou olival numa zona com controle total
 // influência por hora
 const INFLUENCIA = { mesquita: 1, lider: 2, escola: .5, hospital: .5 };
@@ -21,6 +21,8 @@ const SALARIO = 5;                       // $ por soldado por hora
 const MANUTENCAO = { qg: 15, lider: 8, avancada: 4 };   // $ por hora por base
 const COME_SOLDADO = .1, COME_MORADOR = .04;   // comida por pessoa por hora
 const DISTRIBUIR = { comida: 50, influencia: 8 };
+/* facção "zumbi" (19.4): com menos de 5 prédios e caixa negativo por 12 h seguidas, ela se desfaz (desertam os soldados, os prédios ficam sem dono) */
+const ZUMBI = { predios: 5, horas: 12, avisoFaltando: 1 };
 const CONVENCER = { casa: 24, predio: 36, chave: 120, governo: 1.5 };   // custo em influência (×1,5 se for do governo)
 
 function moradoresDe(e) {
@@ -52,6 +54,8 @@ function contas(P, fac) {
   add("influencia", "Zonas com controle total (" + zonasMinhas.size + ")", zonasMinhas.size * INFLUENCIA_ZONA);
   const tropa = P.soldados.filter(s => s.faccao === fac && ["ok", "ferido", "tratando", "fila", "reserva", "motorista"].includes(s.vida)), soldados = tropa.length;
   add("dinheiro", "Salário de " + soldados + " soldados", -tropa.reduce((n, s) => n + salarioDe(s), 0));
+  const equipe = totalEquipeDeObras(P, fac);   // 19.4: engenheiros das equipes de obras (fora dos esquadrões)
+  if (equipe) { add("dinheiro", "Salário da equipe de obras (" + equipe + ")", -equipe * SALARIO); add("comida", "Equipe de obras come (" + equipe + ")", -equipe * COME_SOLDADO); }
   if (fac.base) {
     add("dinheiro", "Manutenção do QG", -MANUTENCAO.qg);
     const bl = new Set(batalhoesDe(P, fac).map(b => b.base).filter(e => e && e !== fac.base));
@@ -92,11 +96,27 @@ function horaDaEconomia(P) {
     }
     // difícil: as rivais recebem mais renda
     if (!fac.jogador && dificuldade(P).renda > 1 && c.total.dinheiro > 0) R.dinheiro += c.total.dinheiro * (dificuldade(P).renda - 1);
+    verificaZumbi(P, fac);
     horaDaConfianca(P, fac, faltou);
     horaDasObras(P, fac);
     if (!fac.jogador) obrasRival(P, fac);
     R.influencia = Math.max(0, R.influencia);
   }
+}
+
+/* a cada hora: a contagem de 12 h começa quando a facção tem menos de 5 prédios e caixa negativo; sai se uma das duas coisas melhora.
+   Avisa quando a contagem começa e 1 h antes do fim. Vale para o jogador (derrota) e para as rivais, nunca para o governo antigo. */
+function verificaZumbi(P, fac) {
+  if (fac.governo || fac.eliminada) return;
+  let predios = 0; for (const e of P.reg.edificios) if (e.dono === fac) predios++;
+  if (predios >= ZUMBI.predios || fac.recursos.dinheiro >= 0) {
+    if (fac.zumbiDesde != null) { fac.zumbiDesde = null; fac.zumbiAvisou = false; avisa(P, "zumbialivio", { fac }); }
+    return;
+  }
+  if (fac.zumbiDesde == null) { fac.zumbiDesde = P.tempo; fac.zumbiAvisou = false; avisa(P, "zumbi", { fac, horas: ZUMBI.horas, predios }); return; }
+  const falta = ZUMBI.horas - (P.tempo - fac.zumbiDesde) / HORA;
+  if (falta <= 1e-9) { eliminaFaccao(P, fac, null, "zumbi"); return; }
+  if (falta <= ZUMBI.avisoFaltando + 1e-9 && !fac.zumbiAvisou) { fac.zumbiAvisou = true; avisa(P, "zumbifim", { fac, horas: ZUMBI.avisoFaltando }); }
 }
 
 /* ---------- ações ---------- */

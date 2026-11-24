@@ -113,6 +113,7 @@ console.log('4b) Jogador: esquadrão com engenheiro parado perto de prédio seu 
   confere('conserta o prédio vizinho sem sair do lugar', e.dano === 0 && eng.suprimentos < 30, 'dano ' + e.dano + ', mochila ' + eng.suprimentos.toFixed(1));
   // a 150 m: vai até ele
   const e2 = reg.edificios.filter(x => x.tipo === 'casa' && !x.dono && Math.hypot(x.x - sq.x, x.z - sq.z) > 90 && Math.hypot(x.x - sq.x, x.z - sq.z) < 200)[0];
+  eng.suprimentos = 30;   // 19.4: depois de 2 min parado o engenheiro também fortifica (até 50) e gasta a mochila; enche de novo para testar a ida ao prédio danificado
   if (e2) { G.tomaEdificio(P, e2, eu); e2.dano = .5; P.tempo += 20; G.fortificacoes(P, 1); confere('parado sem missão, vai até prédio seu danificado a até 220 m', sq.estado === 'andando' || sq.estado === 'guarnição'); }
 }
 

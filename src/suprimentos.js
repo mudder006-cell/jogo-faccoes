@@ -17,6 +17,9 @@
      suprimentos e tempo. Esquadrão parado ou em guarnição, fora de combate,
      com engenheiro conserta os prédios seus a até 45 m; esquadrão parado sem
      missão vai até um prédio seu danificado a até 220 m.
+   - Engenheiro de combate (19.4): 1 por esquadrão com 4 ou mais soldados. Fortifica
+     o prédio onde o esquadrão fica parado ou de guarnição por mais de 2 minutos,
+     só até 50; o resto da fortificação é da equipe de obras (equipeobras.js).
    - Governo antigo (sem dinheiro): sem estoque. Médico e engenheiro dele nascem
      com a mochila cheia (x1,5), nunca repõem, e o hospital dele trata sempre no
      dobro do tempo.
@@ -30,7 +33,8 @@ const SUPRIMENTO = {
   fortificarPorPonto: .15,                // fortificação de 0 a 100: 15 suprimentos para chegar a 100
   alcanceObra: 45, procuraObra: 220,      // metros: obra sem sair do lugar / ir até o prédio danificado
   reconstruir: { custoDestruido: 20, horasDestruido: 4, danoAoReerguer: .5, custoDano: 10, horasDano: 2, tamMin: .6, tamMax: 3 },   // custos de uma casa de 120 m², vezes o fator de tamanho
-  avisaACada: 90                          // segundos entre avisos repetidos de "sem suprimentos"
+  avisaACada: 90,                         // segundos entre avisos repetidos de "sem suprimentos"
+  paradoMin: 120, tetoCombate: .5         // 19.4: o engenheiro do esquadrão só fortifica depois de 2 min parado, e só até 50 de 100
 };
 const cargaSuprimento = s => (SUPRIMENTO.carga[s.funcao] || 0) * (s.faccao && s.faccao.governo ? CARGA_GOVERNO : 1);
 const temSuprimento = (s, q) => (s.suprimentos || 0) >= (q || 1) - 1e-9;
@@ -79,14 +83,16 @@ function precisaSuprimentos(P, sq) {
 const fatorTamanhoObra = e => limita(tamanhoDoPredio(e) / PREDIO.tamanhoRef, SUPRIMENTO.reconstruir.tamMin, SUPRIMENTO.reconstruir.tamMax);
 const precisaDeConserto = e => !!e.destruido || (e.dano || 0) > 1e-9;
 /* uma etapa de obra em "e" durante dt segundos: reconstrói se destruído, conserta se danificado, senão fortifica.
-   Devolve "reconstruir", "consertar" ou "fortificar" quando trabalhou, "semsuprimentos" se faltou material, ou null se não há o que fazer. */
-function trabalhaNoPredio(P, sq, engs, e, dt, soConserto) {
+   Devolve "reconstruir", "consertar" ou "fortificar" quando trabalhou, "semsuprimentos" se faltou material, ou null se não há o que fazer.
+   teto (0 a 1, padrão 1): até onde fortifica (19.4: engenheiro de esquadrão 0,5; equipe de obras 1 nas bases e 0,6 na fronteira). */
+function trabalhaNoPredio(P, sq, engs, e, dt, soConserto, teto) {
+  teto = teto == null ? 1 : teto;
   const R = SUPRIMENTO.reconstruir, tf = fatorTamanhoObra(e);
   const nv = Math.max(...engs.map(s => (s.item === "explosivo" ? s.nivelItem || 1 : 1))) - 1;   // explosivos melhores, fortificação mais rápida
   let fase, taxa, custo, falta;
   if (e.destruido) { fase = "reconstruir"; taxa = 1 / (R.horasDestruido * HORA); custo = R.custoDestruido * tf; falta = 1 - (e.reconstrucao || 0); }
   else if ((e.dano || 0) > 1e-9) { fase = "consertar"; taxa = 1 / (R.horasDano * HORA); custo = R.custoDano * tf; falta = e.dano; }
-  else if (!soConserto && (e.fortificado || 0) < 1) { fase = "fortificar"; taxa = 1 / (NIVEL.fortificaHoras[nv] * HORA); custo = SUPRIMENTO.fortificarPorPonto * 100; falta = 1 - (e.fortificado || 0); }
+  else if (!soConserto && (e.fortificado || 0) < teto - 1e-9) { fase = "fortificar"; taxa = 1 / (NIVEL.fortificaHoras[nv] * HORA); custo = SUPRIMENTO.fortificarPorPonto * 100; falta = teto - (e.fortificado || 0); }
   else return null;
   const quer = Math.min(taxa * dt, falta), precisa = quer * custo;
   let feito = quer;
@@ -108,8 +114,8 @@ function trabalhaNoPredio(P, sq, engs, e, dt, soConserto) {
     if (e.dano <= 1e-9) { e.dano = 0; avisa(P, "consertado", { sq, e }); }
   } else {
     const antes = e.fortificado || 0;
-    e.fortificado = Math.min(1, antes + feito);
-    if (antes < 1 && e.fortificado >= 1 - 1e-9) { e.fortificado = 1; avisa(P, "fortificado", { sq, e }); }
+    e.fortificado = Math.min(teto, antes + feito);
+    if (antes < teto - 1e-9 && e.fortificado >= teto - 1e-9) { e.fortificado = teto; avisa(P, "fortificado", { sq, e }); }
   }
   return fase;
 }
@@ -125,23 +131,38 @@ function predioPerto(P, sq, raio, soAqui) {
   else for (const e of P.reg.edificios) if (e.dono === fac) confere(e);
   return melhor && md <= raio ? melhor : null;
 }
-/* chamado a cada segundo: esquadrões com engenheiro, fora de combate, parados ou em guarnição, fazem obra */
+/* prédio seu onde o esquadrão está (a até alcanceObra) e que ainda não chegou ao teto de fortificação */
+function predioParaFortificar(P, sq, raio, teto) {
+  const fac = sq.faccao, [x, z] = centroDoEsquadrao(sq); let melhor = null, md = Infinity;
+  P.reg.oc.edificiosPerto(x, z, raio, e => {
+    if (e.dono !== fac || e.destruido || (e.fortificado || 0) >= teto - 1e-9) return;
+    const d = Math.hypot(e.x - x, e.z - z); if (d < md) { md = d; melhor = e; }
+  });
+  return melhor;
+}
+/* chamado a cada segundo: esquadrões com engenheiro, fora de combate, parados ou em guarnição, fazem obra.
+   Conserto e reconstrução na hora; fortificar só depois de 2 min no mesmo estado e só até o teto de 50 (19.4). */
 function fortificacoes(P, dt) {
+  const teto = SUPRIMENTO.tetoCombate;
   for (const sq of P.esquadroes) {
-    if (sq.combate || (sq.estado !== "guarnição" && sq.estado !== "parado") || !ativos(sq).length) continue;
+    if (sq.combate || (sq.estado !== "guarnição" && sq.estado !== "parado") || !ativos(sq).length) { sq.quietoDesde = null; continue; }
+    if (sq.quietoDesde == null || sq.quietoEstado !== sq.estado) { sq.quietoDesde = P.tempo; sq.quietoEstado = sq.estado; }
     const engs = ativos(sq).filter(s => s.funcao === "engenheiro"); if (!engs.length) continue;
+    const quieto = P.tempo - sq.quietoDesde >= SUPRIMENTO.paradoMin;
     const g = sq.estado === "guarnição" && sq.guarda && sq.guarda.dono === sq.faccao ? sq.guarda : null;
-    let e = g, soConserto = false;
-    if (!g || (!precisaDeConserto(g) && (g.fortificado || 0) >= 1)) { e = predioPerto(P, sq, SUPRIMENTO.alcanceObra, true); soConserto = !!e; }
+    let e = g, soConserto = !quieto;
+    if (!g || (!precisaDeConserto(g) && (g.fortificado || 0) >= teto - 1e-9)) { e = predioPerto(P, sq, SUPRIMENTO.alcanceObra, true); soConserto = true; }
+    let foi = false;
     if (!e && sq.estado === "parado" && !sq.fixo && !sq.missao && P.tempo >= (sq.proximaObra || 0)) {   // parado sem missão: vai até um prédio seu danificado
       sq.proximaObra = P.tempo + 10;
       if (engs.some(s => temSuprimento(s, 1))) {
         const alvo = predioPerto(P, sq, SUPRIMENTO.procuraObra, false);
-        if (alvo && !guarnicaoDe(P, alvo).some(o => o !== sq)) ordenaPredio(P, sq, alvo, "defesa");
+        if (alvo && !guarnicaoDe(P, alvo).some(o => o !== sq)) { ordenaPredio(P, sq, alvo, "defesa"); foi = true; }
       }
     }
+    if (!e && !g && quieto && !foi) { e = predioParaFortificar(P, sq, SUPRIMENTO.alcanceObra, teto); soConserto = false; }
     if (!e) continue;
-    const r = trabalhaNoPredio(P, sq, engs, e, dt, soConserto || e !== g);
+    const r = trabalhaNoPredio(P, sq, engs, e, dt, soConserto, teto);
     if (r && r !== "semsuprimentos") sq.obraAte = P.tempo + 3;
   }
 }

@@ -17,7 +17,9 @@
      descansa em paz. Cansada, busca cessar-fogo; muito cansada, perde
      moral e voluntários.
    - Coalizão (19.3): quando uma facção cresce demais, as outras se
-     aproximam entre si, pioram com ela e podem declarar guerra juntas.
+     aproximam entre si, pioram com ela e podem declarar guerra juntas
+     (19.4: não dentro das 24 h de paz recente com ela).
+   - Facção "zumbi" (19.4, ver economia.js): se desfaz com eliminaFaccao.
    - Líder da facção: fica no QG. Se o QG cair, foge para outra base
      (perde influência e moral); sem outra base, a facção cai.
    (Números provisórios.)
@@ -247,7 +249,7 @@ function horaDaDiplomacia(P) {
   if (alvoCo) for (const m of vivas) {
     if (m === alvoCo || m.jogador) continue;
     const r = rel(P, m, alvoCo);
-    if (r.estado === "neutro" && r.valor <= COALIZAO.guerraAte + pers(m).guerra * .5 && exaustaoDe(P, m) < COALIZAO.cansaco) declaraGuerra(P, m, alvoCo);
+    if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= COALIZAO.guerraAte + pers(m).guerra * .5 && exaustaoDe(P, m) < COALIZAO.cansaco) declaraGuerra(P, m, alvoCo);   // 19.4: a paz recente (24 h) vale também contra a coalizão
   }
   // decisões dos líderes da IA
   for (let i = 0; i < vivas.length; i++) for (let j = i + 1; j < vivas.length; j++) decideDiplomacia(P, vivas[i], vivas[j]);
@@ -288,7 +290,7 @@ function decideDiplomacia(P, a, b) {
     : r.estado === "guerra" && r.valor >= DIPLO.propoePaz + guerra + opo && P.tempo - r.desde > 6 * HORA ? "paz" : null;
   if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador && cooldownOk(quer)) propoe(P, outro, eu, quer); return; }
   if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.declaraGuerra + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
-  else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
+  else if (r.estado === "pacto" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "alianca" && r.valor <= DIPLO.rompeAlianca) mudaEstado(P, a, b, "pacto", ia ? a : outro);
 }
 
@@ -321,16 +323,18 @@ function baseCaiu(P, e, antes) {
   }
   for (const s of (antes.reserva || []).slice()) if (s.esperaEm === e) { s.esperaEm = destino || antes.base; }
 }
-function eliminaFaccao(P, fac, ondeCaiu) {
+function eliminaFaccao(P, fac, ondeCaiu, motivo) {   // motivo: "zumbi" quando ela se desfaz sozinha (19.4)
   if (fac.eliminada) return;
   fac.eliminada = true; fac.exaustao = 0; fac.alvoDoGoverno = false;   // limpa exaustão, alvo do governo e cessar-fogos
+  fac.zumbiDesde = null; fac.obras = [];
+  for (const b of (P.batalhoes || [])) if (b.faccao === fac) b.equipeObras = [];   // a equipe de obras também se dispersa
   for (const [k, r] of (P.diplo || [])) if (k.split("-").includes(String(fac.id))) { r.exaustao = {}; if (r.estado === "cessarfogo") r.estado = "neutro"; }
   for (const e of P.reg.edificios) if (e.dono === fac) { e.dono = null; e.donoAnterior = fac; }
   for (const z of P.reg.zonas) atualizaZona(z);
   for (const s of P.soldados) if (s.faccao === fac && ["ok", "ferido", "reserva", "comando", "fila", "tratando"].includes(s.vida)) { if (s.sq) tiraDoEsquadrao(P, s); s.vida = "desertou"; }
   fac.reserva = [];
   P.propostas = (P.propostas || []).filter(p => p.de !== fac && p.para !== fac);
-  avisa(P, "eliminada", { fac, e: ondeCaiu });
+  avisa(P, "eliminada", { fac, e: ondeCaiu, motivo });
   const vivas = rivaisVivas(P), eu = vivas.find(f => f.jogador);
   if (fac.jogador) avisa(P, "derrota", { fac });
   else if (eu && vivas.length === 1) avisa(P, "vitoria", { fac: eu });
