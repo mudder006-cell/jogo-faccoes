@@ -92,3 +92,55 @@ Recomendação (só sugestão): A para bases e fronteira, combinada com C.
 - Ordens de rival às 24 h: 17 tomar, 13 proteger, 1 frente.
 - Caixa das rivais: 1.200 ou mais em 7,8% das horas, 4.000 ou mais em 0%. Obras prontas: 0. Comida com saldo maior que 4: 74% das horas.
 - Esquadrões com engenheiro: 70% andando, 22% em guarnição, 3% parados, 5% em combate. Engenheiros por rival: 0 a 2. Prédios danificados de rival: 78 prédios-hora em 6 partidas.
+
+# Testes sem o governo antigo (25/11/2026)
+
+Pergunta do Renan: o governo antigo foi feito só para impedir as facções de crescerem demais. O que muda sem ele, e depois que ele acaba? Nada do jogo foi alterado. O `testes/estresse_ia.js` ganhou a opção `--governo normal|nenhum|fim` (e `--fimgoverno H`, padrão 24). No modo `nenhum`, logo após fundar as facções, os soldados do governo são mortos, as guarnições soltas e todos os prédios dele ficam sem dono (o código já aceita prédio sem dono: cerca de 20% do mapa começa assim). No modo `fim`, a partida é normal até a hora H e aí o governo é removido do mesmo jeito. Sem a opção, a saída é idêntica à de antes (conferido na semente B2, 24 h).
+
+Base dos testes: sementes B2, K7, Q4, A1, C3, D4, dificuldade normal, 3 rivais, 72 h (6 partidas, 18 rivais por modo). Arquivos em `testes/relatorios/2026-11-25-governo-*.json`. Termo: "domínio" é a razão entre os prédios da maior e da menor rival viva, por partida.
+
+| Medida (6 partidas, 72 h) | Normal | Sem governo desde o início | Governo some na hora 24 | Sem governo, todas agressivas | Sem governo, todas comerciantes |
+|---|---|---|---|---|---|
+| Partidas com guerra entre rivais | 2 de 6 | 6 de 6 | 5 de 6 | 6 de 6 | 5 de 6 |
+| Hora da 1ª guerra (por partida) | 16 e 32 | 41 a 62 (típico 48) | 16 a 66 (típico 59) | 29 a 48 | 51 a 64 |
+| Pares de rivais que guerrearam | n/m (2 partidas) | 12 | 7 | 13 | 7 |
+| Guerras por personalidade (lados em guerra) | n/m | oportunista 8, defensiva 6, comerciante 5, agressiva 5 | oportunista 5, comerciante 3, defensiva 3, agressiva 3 | agressiva 26 (todas) | comerciante 14 (todas) |
+| Pazes (guerra que virou paz) | n/m | 0 | 0 | 0 | 0 |
+| Domínio mediano (maior/menor) | 5,8x | 9,6x | 6,1x | 4,5x | 10,9x |
+| Domínio pior partida | 93x | 1.236x (1.339 prédios contra 1) | 1.635x | 1.236x | 1.650x |
+| Prédios por rival: média (menor a maior) | 108 (0 a 449) | 546 (1 a 1.339) | 461 (0 a 1.635) | 577 (1 a 1.293) | 519 (1 a 1.650) |
+| Caixa médio por rival ($) | 419 | 3.143 | 13.550 | 2.111 | 8.419 |
+| Rivais com caixa negativo / eliminadas (de 18) | 2 / 2 | 1 / 0 | 2 / 2 | 1 / 0 | 1 / 0 |
+| Soldados vivos por rival (média) | 14 | 40 | 23 | 53 | 43 |
+| Obras: fortificado (só rivais) / obra pronta (todos) | 8 / 1 | 9 / 1 | 9 / 16 | 10 / 6 | 10 / 13 |
+| Prédios de rivais com fortificação no fim / engenheiros vivos (soma das 6) | 98 / 16 | 173 / 30 | 142 / 23 | 152 / 25 | 197 / 24 |
+| Governo no fim (prédios / soldados, soma) | 1.118 a 2.139 cada | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Obs.: "consertado" e "reconstruído" não apareceram em nenhuma rival em nenhum modo (o script os conta; o resultado foi zero). No modo normal, os pares e pazes não foram contados pelo script (só a 1ª guerra); por isso "n/m".
+
+Ocupação do território vazio (média das 6 partidas, soma de prédios das 3 rivais / prédios sem dono no mapa):
+
+| Hora | Sem governo desde o início | Governo some na hora 24 |
+|---|---|---|
+| 6 | 67 / 2.087 | 53 / 329 |
+| 12 | 141 / 2.014 | 86 / 293 |
+| 24 | 379 / 1.776 | 126 / 2.025 (governo acabou de sair) |
+| 48 | 1.171 / 984 | 651 / 1.493 |
+| 72 | 1.637 / 517 | 1.384 / 760 |
+
+Maior rival de uma partida: 76 prédios na hora 6, 173 na 12, 445 na 24, 992 na 48 e 1.339 na 72 (sem governo desde o início); no modo `fim`, 126 na hora 24, 648 na 48 e 1.635 na 72.
+
+## Conclusões
+
+1. Sem o governo, as rivais passam a guerrear: de 2 de 6 partidas para 6 de 6 em 72 h. Mas a 1ª guerra vem tarde (hora 41 a 62, não antes): primeiro elas ocupam o vazio, e só quando o mapa enche e as fronteiras se encostam é que o atrito aparece. Em todo teste, nenhuma guerra virou paz em 72 h.
+2. O vazio é ocupado depressa, e em 72 h as rivais já tomaram quase tudo: de 2.087 prédios sem dono na hora 6 sobram 517 na hora 72. A média passa de 108 para 546 prédios por rival. Ou seja, o governo realmente era o freio de tamanho: com ele, as rivais ficam em cerca de 100 prédios; sem ele, ficam 5 vezes maiores.
+3. Uma rival explode em tamanho e as outras ficam para trás. Em todo modo sem governo, em 1 de 6 partidas a maior rival chegou a 1.300 a 1.650 prédios enquanto a menor ficou com 1 ou 0 (domínio de mais de 1.200x). A mediana de domínio, 9,6x, também é maior que a de antes (5,8x). Sem freio, quem sai na frente leva o mapa.
+4. Sem o governo antigo, há bem mais dinheiro e mais soldados (caixa médio de $ 419 para $ 3.143; soldados de 14 para 40 por rival), e menos rivais quebradas ou eliminadas (de 2 eliminadas para 0). Se o governo sai só na hora 24, o caixa sobe ainda mais ($ 13.550) e voltam 2 eliminadas, porque a queda repentina abre muitos alvos de uma vez.
+5. A personalidade importa pouco: todas guerreiam em número parecido (oportunista 8, defensiva 6, comerciante 5, agressiva 5). Rivais todas agressivas guerreiam mais cedo (hora 29 a 48); todas comerciantes, mais tarde (hora 51 a 64) e em menos partidas. Obras de conserto e reconstrução continuam em zero; fortificar e obra pronta crescem junto com o território, não por mudança de comportamento.
+
+## Ideias para rever o papel do governo antigo (sem escolher)
+
+- A) Encolher o governo em vez de tirá-lo (por exemplo, de 80% para 40 a 50% do mapa, e sem a cidade velha e os prédios de força). Pró: sobra território livre para as rivais se encostarem mais cedo, o freio de tamanho continua. Contra: ainda é um alvo fácil, só que menor; precisa de testes para achar o ponto certo.
+- B) Governo que se defende e contra-ataca quem passar de um certo tamanho (freio por reação, não por tamanho fixo). Pró: segura a rival que dispara (conclusão 3) e vira um "inimigo comum", sem travar o crescimento antes disso. Contra: regra nova e mais complexa; pode punir injustamente a facção do jogador; precisa de limiar bem escolhido.
+- C) Governo que perde força com o tempo (guarnições cada vez menores ou prédios soltando-se aos poucos, em vez de acabar de uma vez só como no modo `fim`). Pró: evita o choque da hora 24, em que 2.000 prédios ficam livres de uma vez, e dá tempo para as fronteiras se formarem. Contra: o ritmo certo é difícil de ajustar, e o vazio continua sendo ocupado por quem estiver mais forte.
+- Em qualquer caso, vale pensar junto em um freio para a rival que dispara (pior caso de 1.600 prédios contra 0 a 1), seja a diplomacia (as outras rivais se unirem contra ela) ou um custo de manutenção crescente por prédio.
