@@ -2,18 +2,19 @@
 // Uso: node testes/teste_obras.js [semente]
 const fs = require('fs');
 const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
-const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, ativos, batalhoesDe, esquadroesDe, tamanhoDaEquipe, equipesDeObras, EQUIPE_OBRAS, contas, tomaEdificio, obrasRival, OBRAS, FAZENDA_NIVEL, POR_PLANTACAO, COMIDA, comidaDoPredio, ZONAS_DE_CAMPO, PERSONALIDADES, verificaZumbi, ZUMBI, RECURSOS_INICIAIS, horaDaEconomia, horaDaDiplomacia, rel, mudaEstado, apazigua, fimDoCessarFogo, COALIZAO, EXAUSTAO, fortificacaoDe, textoDoEngenheiroDeObras, basesDe, PRECO, SALARIO, totalEquipeDeObras, criaBatalhao, candidatosACmd, soltaPredioDoGoverno, eliminaFaccao, fortificacoes, minimoDaIA, entraNoEsquadrao, criaSoldado, SUPRIMENTO, tamanhoDoPredio, moveSoldado, novoEsquadrao };')();
+const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, ativos, batalhoesDe, esquadroesDe, tamanhoDaEquipe, equipesDeObras, EQUIPE_OBRAS, contas, tomaEdificio, obrasRival, OBRAS, FAZENDA_NIVEL, POR_PLANTACAO, COMIDA, comidaDoPredio, ZONAS_DE_CAMPO, PERSONALIDADES, verificaZumbi, ZUMBI, PAISES_COMIDA, vendeComida, vendeAosPaises, horaDoMercado, obraDaLucro, RECURSOS_INICIAIS, horaDaEconomia, horaDaDiplomacia, rel, mudaEstado, apazigua, fimDoCessarFogo, COALIZAO, EXAUSTAO, fortificacaoDe, textoDoEngenheiroDeObras, basesDe, PRECO, SALARIO, totalEquipeDeObras, criaBatalhao, candidatosACmd, soltaPredioDoGoverno, eliminaFaccao, fortificacoes, minimoDaIA, entraNoEsquadrao, criaSoldado, SUPRIMENTO, tamanhoDoPredio, moveSoldado, novoEsquadrao };')();
 const semente = process.argv[2] || 'B2';
 let falhas = 0;
 const confere = (nome, ok, detalhe) => { console.log((ok ? '  ok    ' : '  FALHOU ') + nome + (detalhe ? '  [' + detalhe + ']' : '')); if (!ok) falhas++; };
 
-function novaPartida(sem, rivais) {
+function novaPartida(sem, rivais, semRenda) {
   const reg = G.geraRegiao(sem), P = G.criaPartida(reg);
   const eu = G.criaFaccao(1, 'Jogador', 0xf2b233, { jogador: true });
   const base = reg.edificios.filter(G.podeComecar).find(e => e.zona.tipo === 'vila') || reg.edificios.filter(G.podeComecar)[0];
   const sq = G.fundaFaccao(P, eu, base);
   const tom = [base], riv = [];
   for (let i = 0; i < (rivais || 0); i++) { const b = G.escolhaRival(reg, P.r, tom); if (!b) break; tom.push(b); const f = G.criaFaccao(2 + i, 'Rival ' + i, 0xff0000); G.fundaFaccao(P, f, b); riv.push(f); }
+  if (!semRenda) for (const f of [eu, ...riv]) { f.rendaHora = 10; G.equipesDeObras(P, 1); }   // renda positiva na última hora: a equipe entra
   const eventos = []; P.ouvintes.push((t, d) => eventos.push([t, d]));
   return { reg, P, eu, base, sq, riv, eventos };
 }
@@ -28,13 +29,13 @@ console.log('1) Tamanho da equipe de obras (semente ' + semente + ')');
     const reg = G.geraRegiao(semente), P = G.criaPartida(reg), f = G.criaFaccao(1, 'Pobre', 0xf2b233, { jogador: true });
     const base = reg.edificios.filter(G.podeComecar)[0], antes = G.RECURSOS_INICIAIS.dinheiro; G.RECURSOS_INICIAIS.dinheiro = G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador - 1;
     G.fundaFaccao(P, f, base); G.RECURSOS_INICIAIS.dinheiro = antes;
-    const pb = G.batalhoesDe(P, f)[0];
+    f.rendaHora = 10; const pb = G.batalhoesDe(P, f)[0];
     confere('sem caixa com folga o batalhão nasce sem engenheiro de obras', pb.equipeObras.length === 0, pb.equipeObras.length + ' engenheiros, caixa $ ' + f.recursos.dinheiro);
     f.recursos.dinheiro = G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador; G.equipesDeObras(P, 1);
     confere('com kit + reserva entra 1; o 2º só com mais $ ' + (G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador), pb.equipeObras.length === 1 && f.recursos.dinheiro === G.EQUIPE_OBRAS.reservaJogador);
   }
   {   // reserva da rival = reserva de obras da personalidade
-    const { P, riv } = novaPartida(semente, 1), r = riv[0], rb = G.batalhoesDe(P, r)[0]; r.personalidade = 'agressiva'; rb.equipeObras.length = 0;
+    const { P, riv } = novaPartida(semente, 1), r = riv[0], rb = G.batalhoesDe(P, r)[0]; r.personalidade = 'agressiva'; rb.equipeObras.length = 0; r.rendaHora = 10;
     r.recursos.dinheiro = G.PRECO.explosivo + 1000 - 1; G.equipesDeObras(P, 1); const sem = rb.equipeObras.length;
     r.recursos.dinheiro = G.PRECO.explosivo + 1000; G.equipesDeObras(P, 1);
     confere('rival agressiva: contrata só com $ 300 + reserva 1000', sem === 0 && rb.equipeObras.length === 1, 'sem ' + sem + ', com ' + rb.equipeObras.length);
@@ -123,8 +124,8 @@ console.log('3) Obras de comida: valores novos e rival que constrói com caixa s
     };
     const barato = G.OBRAS.armazem.custo + reserva, fazenda = G.OBRAS.fazenda.custo + reserva;
     const sem = monta(barato - 1), arm = monta(barato), faz = monta(fazenda);
-    confere(pers + ' (reserva $ ' + reserva + '): abaixo de $ ' + barato + ' não constrói; com $ ' + barato + ' faz armazém; com $ ' + fazenda + ' faz fazenda',
-      sem.obras.length === 0 && arm.obras.length >= 1 && arm.obras[0].tipo === 'armazem' && faz.obras.length >= 1 && faz.obras[0].tipo === 'fazenda' && faz.recursos.dinheiro === fazenda - G.OBRAS.fazenda.custo,
+    confere(pers + ' (reserva $ ' + reserva + '): abaixo de $ ' + barato + ' não constrói; com $ ' + barato + ' o armazém não dá lucro (comida sobrando) e não faz; com $ ' + fazenda + ' faz fazenda',
+      sem.obras.length === 0 && arm.obras.length === 0 && faz.obras.length >= 1 && faz.obras[0].tipo === 'fazenda' && faz.recursos.dinheiro === fazenda - G.OBRAS.fazenda.custo,
       'sem ' + sem.obras.length + ', ' + arm.obras.map(o => o.tipo) + ', ' + faz.obras.map(o => o.tipo) + ', caixa $ ' + faz.recursos.dinheiro);
   }
   {
@@ -201,6 +202,66 @@ console.log('5) Paz recente de 24 h vale também contra a coalizão');
   P.coalizao = { alvo, desde: P.tempo }; P.tempo += 25 * G.HORA; r2.valor = -80; G.rel(P, b, alvo).estado = 'neutro';
   P.coalizao.desde = P.tempo; G.horaDaDiplomacia(P);
   confere('passadas as 24 h ela volta a poder declarar', G.rel(P, b, alvo).estado === 'guerra', G.rel(P, b, alvo).estado);
+}
+
+console.log('7) Contratação exige renda positiva; países compram comida; obra só com lucro');
+{
+  const { P, eu } = novaPartida(semente, 0, true), b = G.batalhoesDe(P, eu)[0];
+  confere('sem renda positiva (nenhuma hora fechada) não contrata, mesmo com caixa de $ ' + Math.round(eu.recursos.dinheiro), b.equipeObras.length === 0);
+  eu.rendaHora = -5; G.equipesDeObras(P, 1);
+  confere('renda por hora negativa: não contrata', b.equipeObras.length === 0);
+  eu.rendaHora = 0; G.equipesDeObras(P, 1);
+  confere('renda zero: não contrata', b.equipeObras.length === 0);
+  eu.rendaHora = 3; G.equipesDeObras(P, 1);
+  confere('renda positiva: contrata', b.equipeObras.length === 2);
+  const q = novaPartida(semente, 1, true), r = q.riv[0], rb = G.batalhoesDe(q.P, r)[0]; r.rendaHora = -1; G.equipesDeObras(q.P, 1);
+  confere('rival igual: sem renda positiva não contrata', rb.equipeObras.length === 0);
+  G.horaDaEconomia(q.P);
+  confere('horaDaEconomia grava a renda da hora em rendaHora', typeof r.rendaHora === 'number' && r.rendaHora !== -1, 'renda $ ' + r.rendaHora.toFixed(1));
+}
+{
+  const { P, riv, eu } = novaPartida(semente, 2), r = riv[0];
+  for (const f of [eu, riv[1]]) f.recursos.comida = 5000;   // ninguém precisa comprar
+  r.recursos.comida = 1000; r.recursos.dinheiro = 0; P.precoComida = 1;
+  const v1 = G.vendeComida(P, r, 300, true);
+  confere('países pagam $ ' + G.PAISES_COMIDA.preco + ' por unidade, até ' + G.PAISES_COMIDA.porHora + ' por hora', v1 === 100 && r.recursos.dinheiro === 150 && r.recursos.comida === 900, v1 + ' vendidas, caixa $ ' + r.recursos.dinheiro);
+  const v2 = G.vendeComida(P, r, 300, true);
+  confere('na mesma hora não vende mais que o limite', v2 === 0 && r.recursos.dinheiro === 150);
+  P.tempo += G.HORA; r.recursos.dinheiro = 0; P.precoComida = 1;
+  const antes = r.recursos.comida; G.horaDoMercado(P);
+  confere('a rival com comida acima de 180 vende o excedente aos países na hora seguinte (100 por hora)', antes - r.recursos.comida === 100 && Math.abs(r.receitaPaises - 300) < 1e-9, 'vendeu ' + (antes - r.recursos.comida) + ', receita total $ ' + r.receitaPaises);
+  // mercado primeiro quando o preço entre facções passa de $ 1,50
+  const comp = riv[1]; comp.recursos.comida = 0; comp.recursos.dinheiro = 5000; r.recursos.comida = 1000; r.recursos.dinheiro = 0; P.tempo += G.HORA; P.precoComida = 3;
+  const cx = G.vendeComida(P, r, 100, true);
+  confere('preço entre facções de $ 3 (acima de $ 1,50): vende primeiro a quem precisa, o resto aos países', cx === 100 && r.recursos.dinheiro > 150 && comp.recursos.comida > 0, 'caixa $ ' + r.recursos.dinheiro.toFixed(0) + ', comprador recebeu ' + comp.recursos.comida);
+  // jogador: botão Vender 100 também vende aos países
+  eu.recursos.comida = 1000; eu.recursos.dinheiro = 0; comp.recursos.comida = 5000; P.tempo += G.HORA; P.precoComida = 1;
+  confere('jogador: "Vender 100" sem comprador vende aos países', G.vendeComida(P, eu, 100) === 100 && eu.recursos.dinheiro === 150);
+}
+{
+  const mk = (preco, dinheiro) => {
+    const { reg, P, riv } = novaPartida(semente, 1), r = riv[0]; r.personalidade = 'defensiva'; r.obras = []; P.precoComida = preco;
+    const campo = reg.edificios.filter(e => e.tipo === 'casa' && !e.dono && G.ZONAS_DE_CAMPO.includes(e.zona.tipo)).slice(0, 4);
+    for (const e of campo) { G.tomaEdificio(P, e, r); e.tipo = 'fazenda'; e.nivel = 1; e.plantacao = 3; }   // 4 fazendas já com plantação cheia: sobra comida, só resta melhorar
+    r.recursos.comida = 300; r.recursos.dinheiro = dinheiro; G.obrasRival(P, r); return r;
+  };
+  const sobra = mk(1, 20000);
+  confere('com comida sobrando, melhorar fazenda (payback > 36 h a $ 1,50) não começa', sobra.obras.length === 0, 'obras ' + sobra.obras.map(o => o.tipo));
+  const caro = mk(2.5, 20000);
+  confere('com o preço a $ 2,50 a mesma obra se paga em ~25 h e começa', caro.obras.length === 1 && caro.obras[0].tipo === 'melhorar', 'obras ' + caro.obras.map(o => o.tipo));
+  const { P, riv } = novaPartida(semente, 1), r = riv[0];
+  const c = G.contas(P, r);
+  confere('payback da fazenda nova a $ 1,50 é ' + (800 / (30 * 1.5)).toFixed(1) + ' h (dá lucro), do armazém ' + (600 / (10 * 1.5)).toFixed(0) + ' h (não dá)', G.obraDaLucro(P, 'fazenda', { nivel: 1 }) && !G.obraDaLucro(P, 'armazem', { nivel: 1 }) && G.obraDaLucro(P, 'plantacao', { nivel: 1 }));
+  {   // faltando comida: constrói mesmo sem lucro (armazém a $ 1,50 não se paga em 36 h)
+    const { reg, P, riv } = novaPartida(semente, 1), r = riv[0]; r.personalidade = 'defensiva'; r.obras = []; P.precoComida = 1;
+    for (const e of reg.edificios.filter(e => e.tipo === 'casa' && !e.dono).slice(0, 60)) G.tomaEdificio(P, e, r);
+    for (let i = 0; i < 400; i++) G.criaSoldado(P, r, 'fuzileiro');   // soldados comem: o saldo de comida fica negativo
+    const campo = reg.edificios.find(e => e.dono === r && e.tipo === 'casa' && G.ZONAS_DE_CAMPO.includes(e.zona.tipo) && e !== r.base);
+    for (const e of reg.edificios.filter(e => e.dono === r && e !== campo)) if (e.tipo === 'casa' && G.ZONAS_DE_CAMPO.includes(e.zona.tipo)) e.dono = null;
+    const saldo = G.contas(P, r).total.comida; r.recursos.dinheiro = 600 + 500;
+    G.obrasRival(P, r);
+    confere('rival faltando comida (saldo ' + saldo.toFixed(1) + '/h) faz o armazém mesmo sem lucro', saldo <= 4 && campo && r.obras.length === 1 && r.obras[0].tipo === 'armazem' || !campo, r.obras.map(o => o.tipo) + (campo ? '' : ' (sem casa de campo na semente)'));
+  }
 }
 
 console.log('6) Determinismo: mesma semente, mesma equipe de obras');

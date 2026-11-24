@@ -77,6 +77,7 @@ function horaDaEconomia(P) {
   for (const fac of P.faccoes) {
     if (fac.governo || !fac.recursos) continue;
     const c = contas(P, fac), R = fac.recursos;
+    fac.rendaHora = c.total.dinheiro;   // 19.4: renda da última hora fechada (a equipe de obras só é contratada com renda positiva)
     R.dinheiro += c.total.dinheiro; R.influencia += c.total.influencia; R.comida += c.total.comida;
     const meus = P.soldados.filter(s => s.faccao === fac && s.vida === "ok");
     // sem dinheiro: sem salário, moral cai e alguns desertam

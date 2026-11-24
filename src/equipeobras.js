@@ -4,7 +4,8 @@
    - Cada batalhão (do jogador e das rivais; o governo antigo não) tem uma equipe:
      2 engenheiros quando o batalhão nasce, +1 a cada 2 esquadrões além do 2º,
      no máximo 4. Cada um custa salário de soldado ($ 5/h) mais um kit de explosivos
-     ($ 300, pago uma vez quando entra). Não entram em esquadrão, não lutam e não
+     ($ 300, pago uma vez quando entra). Só entra com caixa de $ 300 + reserva e com
+     renda por hora positiva na última hora fechada. Não entram em esquadrão, não lutam e não
      atiram primeiro; só fortificam, consertam e reconstruem.
    - Prioridade: 1) as bases (QG e bases avançadas) até fortificação 100;
      2) prédios de fronteira (a até 150 m de prédio de quem está em guerra com a
@@ -45,6 +46,7 @@ function contrataEquipeDeObras(P, b) {
   if (b.equipeObras.length >= EQUIPE_OBRAS.maximo) return;
   const alvo = tamanhoDaEquipe(esquadroesDe(P, b).length);
   const reserva = fac.jogador ? EQUIPE_OBRAS.reservaJogador : (pers(fac).reservaObras == null ? 700 : pers(fac).reservaObras);
+  if (!((fac.rendaHora || 0) > 0)) return;   // 19.4: só contrata com renda por hora positiva (saldo de dinheiro da última hora fechada)
   while (b.equipeObras.length < alvo && fac.recursos.dinheiro >= PRECO.explosivo + reserva) {   // só contrata com folga: custo do kit + reserva
     fac.recursos.dinheiro -= PRECO.explosivo;
     b.equipeObras.push(novoEngenheiroDeObras(P, b));

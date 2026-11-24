@@ -500,7 +500,7 @@ function janelaEconomia(p) {
   m.appendChild(cria("div", "nota", vend.length ? "Vendendo agora: " + vend.map(v => v.f.nome + " (" + Math.round(v.tem) + ")").join(", ") : "Nenhuma facção em paz com você tem comida sobrando: a compra vem de fora, a $ " + MERCADO_COMIDA.importa + "."));
   const ac = cria("div", "dip-ac");
   ac.appendChild(botao(ICONE_RECURSO.comida, "Comprar 100", null, depoisDe(() => compraComida(partida, f, 100, true)), "De quem vende; se ninguém vender, importa"));
-  ac.appendChild(botao(ICONE_RECURSO.dinheiro, "Vender 100", null, depoisDe(() => vendeComida(partida, f, 100) > 0), "Para quem está precisando e não está em guerra com você"));
+  ac.appendChild(botao(ICONE_RECURSO.dinheiro, "Vender 100", null, depoisDe(() => vendeComida(partida, f, 100) > 0), "Para quem está precisando e não está em guerra com você; sem comprador, os países pagam $ " + PAISES_COMIDA.preco + " (até " + PAISES_COMIDA.porHora + " por hora)"));
   m.appendChild(ac);
   f.vendaAcima = f.vendaAcima || 400;
   const va = cria("div", "venda-auto");

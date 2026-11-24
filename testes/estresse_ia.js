@@ -107,7 +107,7 @@ function umaPartida(semente, dif) {
       const r = G.resumoFaccao(P, f);
       res.rivais.push({ nome: f.nome, pers: f.personalidade, eliminada: !!f.eliminada, predios: r.predios, soldados: G.soldados(P, f),
         dinheiro: Math.round(f.recursos.dinheiro), caixaMin: Math.round(caixaMin.get(f)), comida: Math.round(f.recursos.comida),
-        horasNeg: horasNeg.get(f), obrasProntas: obrasPor.get(f), batalhoes: G.batalhoesDe(P, f).length, veiculos: (f.veiculos || []).length,
+        horasNeg: horasNeg.get(f), receitaPaises: Math.round(f.receitaPaises || 0), obrasProntas: obrasPor.get(f), batalhoes: G.batalhoesDe(P, f).length, veiculos: (f.veiculos || []).length,
         guerras: rivais.filter(o => o !== f && G.estadoEntre(P, f, o) === 'guerra').length });
     }
     { res.modoGoverno = GOVERNO; res.paresGuerra = extra.paresGuerra.size; res.pazes = extra.pazes; res.cessarFogo = extra.cessar; res.cessarParaPaz = extra.cessarParaPaz; res.cessarParaGuerra = extra.cessarParaGuerra; res.fronteiraH = extra.fronteiraH; res.serie = extra.serie; res.paresPorPers = {};
@@ -143,7 +143,7 @@ for (const s of SEMENTES) for (const d of DIFS) {
   console.log('\n== semente', s, '| dif', d, '|', (res.ms / 1000).toFixed(1), 's | 1ª guerra entre rivais:', res.primeiraGuerraH === null ? 'nunca' : res.primeiraGuerraH + ' h');
   console.log('   obras das rivais (eventos):', JSON.stringify(res.obrasRivais || {}), '| engenheiros vivos no fim:', res.engenheirosRivais, '| prédios de rivais com fortificação > 0:', res.fortificadosRivais);
   for (const r of res.rivais) console.log('  ', r.nome.padEnd(8), (r.pers || '?').padEnd(11), r.eliminada ? 'ELIMINADA' : '', 'prédios', String(r.predios).padStart(4), '| sold', String(r.soldados).padStart(3), '| $', r.dinheiro, '(mín', r.caixaMin + ') | bat', r.batalhoes, '| veíc', r.veiculos, '| guerras', r.guerras);
-  console.log('   quedas:', res.quedas.length ? res.quedas.map(q => q.nome + ' h' + q.hora + ' (' + q.motivo + ')').join(', ') : 'nenhuma', '| horas com caixa negativo:', res.rivais.map(r => r.horasNeg).join('/'), '| obras de comida prontas:', res.rivais.map(r => r.obrasProntas).join('/'));
+  console.log('   quedas:', res.quedas.length ? res.quedas.map(q => q.nome + ' h' + q.hora + ' (' + q.motivo + ')').join(', ') : 'nenhuma', '| horas com caixa negativo:', res.rivais.map(r => r.horasNeg).join('/'), '| obras de comida prontas:', res.rivais.map(r => r.obrasProntas).join('/'), '| $ vendido aos países:', res.rivais.map(r => r.receitaPaises).join('/'));
   if (res.governo.predios0 !== undefined) console.log('   governo: prédios', res.governo.predios0, '→', res.governo.predios, '| soldados', res.governo.sold0, '→', res.governo.sold);
   if (res.modoGoverno) console.log('   1ª fronteira entre rivais:', res.fronteiraH === null ? 'nunca' : res.fronteiraH + ' h', '| pares que já guerrearam:', res.paresGuerra, '| pazes:', res.pazes, '| cessar-fogos:', res.cessarFogo, '(viraram paz ' + res.cessarParaPaz + ', voltaram à guerra ' + res.cessarParaGuerra + ')', '| prédios das rivais por hora:', Object.entries(res.serie).map(([h, x]) => h + 'h=' + x.rivais.join('/') + ' (sem dono ' + x.semDono + ')').join(' ; '));
   console.log('   governo por hora:', Object.entries(res.serie).map(([h, x]) => h + 'h=' + x.gov).join(' '), '| exaustão máx/final:', res.exMax + '/' + res.exFinal, '| propostas ao jogador:', res.propJogador || 0, '| coalizão formou/desfez:', (res.coalFormou || 0) + '/' + (res.coalDesfez || 0), '| mudanças de alvo do governo:', res.alvoMud || 0);

@@ -23,6 +23,8 @@ const OBRAS = {
 const FAZENDA_NIVEL = [1, 1.8, 2.8];
 const POR_PLANTACAO = 8;                 // comida por hora de cada expansão de plantação
 const ZONAS_DE_CAMPO = ["vila", "rural"];
+/* 19.4: os países compram o excedente quando ninguém na região compra (limite por facção por hora, para não virar dinheiro infinito) */
+const PAISES_COMIDA = { preco: 1.5, porHora: 100, paybackMax: 36 };
 const MERCADO_COMIDA = { base: 2, minimo: 1, importa: 6, reserva: 40, horasDeFolga: 3, rivalVendeAcima: 180, rivalGuarda: 120, relacaoPor100: 1, colchao: 60 };
 
 /* ---------- alimentar e confiança ---------- */
@@ -91,13 +93,24 @@ function horaDasObras(P, fac) {
    defensiva 500, comerciante 300), sem precisar faltar comida; 1 obra por vez (comerciante 2). Ordem: o que rende mais por dólar
    (fazenda nova, plantação, armazém, melhorar). */
 const ORDEM_OBRAS_RIVAL = ["fazenda", "plantacao", "armazem", "melhorar"];
+/* comida a mais por hora que a obra dá (a casa ou loja de antes não produzia) */
+function ganhoDaObra(tipo, e) {
+  if (tipo === "fazenda") return COMIDA.fazenda;
+  if (tipo === "armazem") return COMIDA.armazem;
+  if (tipo === "plantacao") return POR_PLANTACAO;
+  const n = e.nivel || 1; return COMIDA.fazenda * (FAZENDA_NIVEL[n] - FAZENDA_NIVEL[n - 1]);
+}
+/* 19.4: só constrói se se paga em até 36 h vendendo a comida ao preço que ela consegue (o do mercado, mas nunca menos que $ 1,50 dos países);
+   com a comida faltando (saldo de 4/h ou menos) constrói mesmo sem lucro */
+function obraDaLucro(P, tipo, e) { const preco = Math.max(PAISES_COMIDA.preco, P.precoComida || 0); return custoObra(tipo, e) / (ganhoDaObra(tipo, e) * preco) <= PAISES_COMIDA.paybackMax; }
 function obrasRival(P, fac) {
   const pe = pers(fac), reserva = pe.reservaObras == null ? 700 : pe.reservaObras, juntas = pe.obrasJuntas || 1;
+  const falta = contas(P, fac).total.comida <= 4;
   const meus = P.reg.edificios.filter(e => e.dono === fac && ZONAS_DE_CAMPO.includes(e.zona.tipo));
   while ((fac.obras || []).length < juntas) {
     let feito = false;
     for (const tipo of ORDEM_OBRAS_RIVAL) {
-      const e = meus.find(x => OBRAS[tipo].em.includes(x.tipo) && !motivoObra(P, fac, x, tipo) && fac.recursos.dinheiro >= custoObra(tipo, x) + reserva);
+      const e = meus.find(x => OBRAS[tipo].em.includes(x.tipo) && !motivoObra(P, fac, x, tipo) && fac.recursos.dinheiro >= custoObra(tipo, x) + reserva && (falta || obraDaLucro(P, tipo, x)));
       if (e && comecaObra(P, fac, e, tipo)) { feito = true; break; }
     }
     if (!feito) return;
@@ -141,16 +154,31 @@ function compraComida(P, f, q, manual) {
   if (comprou > 0) { f.recursos.dinheiro -= gasto; f.recursos.comida += comprou; avisa(P, "comprouComida", { fac: f, n: comprou, custo: Math.round(gasto), importou, deQuem, manual }); }
   return comprou;
 }
-function vendeComida(P, f, q) {   // venda na hora para quem está precisando (sem estar em guerra)
+/* vende aos países a $ 1,50 a unidade, até 100 por facção por hora do jogo */
+function vendeAosPaises(P, f, q) {
+  const hora = Math.floor(P.tempo / HORA + 1e-9);
+  if (f.paisesHora !== hora) { f.paisesHora = hora; f.paisesVendido = 0; }
+  const n = Math.floor(Math.min(q, f.recursos.comida, PAISES_COMIDA.porHora - f.paisesVendido)); if (n <= 0) return 0;
+  f.paisesVendido += n; f.recursos.comida -= n; f.recursos.dinheiro += n * PAISES_COMIDA.preco;
+  f.receitaPaises = (f.receitaPaises || 0) + n * PAISES_COMIDA.preco;
+  return n;
+}
+/* venda na hora: se o preço entre facções passa de $ 1,50 vende primeiro a quem está precisando (sem estar em guerra) e o resto aos países;
+   se não passa, vende aos países primeiro */
+function vendeComida(P, f, q, auto) {
   const preco = P.precoComida || precoDaComida(P); let vendeu = 0, ganhou = 0;
-  for (const o of P.faccoes) {
-    if (o === f || o.governo || o.eliminada || !o.recursos || hostis(P, f, o)) continue;
-    const n = Math.min(q - vendeu, Math.ceil(precisaDeComida(P, o)), f.recursos.comida, Math.floor(o.recursos.dinheiro / preco)); if (n <= 0) continue;
-    o.recursos.comida += n; o.recursos.dinheiro -= n * preco; f.recursos.comida -= n; f.recursos.dinheiro += n * preco; vendeu += n; ganhou += n * preco;
-    mudaRelacao(P, f, o, Math.min(3, n / 100 * MERCADO_COMIDA.relacaoPor100));
-    if (vendeu >= q) break;
-  }
-  if (vendeu) avisa(P, "vendeuComida", { fac: f, n: vendeu, ganho: Math.round(ganhou) });
+  const paraFaccoes = () => {
+    for (const o of P.faccoes) {
+      if (vendeu >= q) break;
+      if (o === f || o.governo || o.eliminada || !o.recursos || hostis(P, f, o)) continue;
+      const n = Math.min(q - vendeu, Math.ceil(precisaDeComida(P, o)), f.recursos.comida, Math.floor(o.recursos.dinheiro / preco)); if (n <= 0) continue;
+      o.recursos.comida += n; o.recursos.dinheiro -= n * preco; f.recursos.comida -= n; f.recursos.dinheiro += n * preco; vendeu += n; ganhou += n * preco;
+      mudaRelacao(P, f, o, Math.min(3, n / 100 * MERCADO_COMIDA.relacaoPor100));
+    }
+  };
+  const paraPaises = () => { const n = vendeAosPaises(P, f, q - vendeu); vendeu += n; ganhou += n * PAISES_COMIDA.preco; };
+  if (preco > PAISES_COMIDA.preco) { paraFaccoes(); paraPaises(); } else { paraPaises(); paraFaccoes(); }
+  if (vendeu && !auto) avisa(P, "vendeuComida", { fac: f, n: vendeu, ganho: Math.round(ganhou) });
   return vendeu;
 }
 function horaDoMercado(P) {
@@ -162,5 +190,7 @@ function horaDoMercado(P) {
     const q = Math.ceil(precisaDeComida(P, f));
     if (q > 0 && f.recursos.comida < MERCADO_COMIDA.reserva) compraComida(P, f, q);
   }
+  // excedente: quem passa do limite de venda (a rival sempre; o jogador com a venda automática ligada) vende ao mercado e, sem comprador, aos países
+  for (const v of vendedores(P)) if (v.tem > 0) vendeComida(P, v.f, v.tem, true);
 }
 function comidaDoPais(rel) { return rel.relacao >= 85 ? 150 : rel.relacao >= 60 ? 80 : rel.relacao >= ENTREGA.minimo ? 40 : 0; }
