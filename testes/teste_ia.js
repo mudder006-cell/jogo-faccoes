@@ -1,6 +1,6 @@
 // As rivais com as mesmas mecânicas do jogador (batalhões, estoque, veículos, comida) e o governo com batalhões
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','veiculos','comando','ia','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','suprimentos','veiculos','comando','ia','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, HORA, resumoFaccao, batalhoesDe, esquadroesDe, soldadosDe, textoOrdem, estadoEntre, contas, forcaDaFaccao, PERSONALIDADES };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg);
 P.dificuldade = process.argv[3] || 'normal';

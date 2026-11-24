@@ -39,9 +39,9 @@ function faixaArsenal(pai, f) {
   const m = cria("div", "arsenal municoes");
   const usam = t => partida.soldados.filter(s => s.faccao === f && s.vida === "ok" && s.arma && MUNICAO_DA[s.arma] === t);
   for (const [t, d] of Object.entries(MUNICOES)) {
-    const l = usam(t), carregado = l.reduce((x, s) => x + s.municao, 0), c = cria("div", "a-item" + (f.municao[t] ? "" : " zero"));
+    const l = t === "suprimento" ? partida.soldados.filter(s => s.faccao === f && s.vida === "ok" && cargaSuprimento(s)) : usam(t), carregado = l.reduce((x, s) => x + (t === "suprimento" ? s.suprimentos || 0 : s.municao), 0), c = cria("div", "a-item" + (f.municao[t] ? "" : " zero"));
     c.appendChild(ico(d.icone)); c.appendChild(cria("b", null, f.municao[t].toLocaleString("pt-BR"))); c.appendChild(cria("span", "a-nome", d.curto + " no estoque"));
-    if (l.length) c.appendChild(cria("small", null, Math.round(carregado / l.reduce((x, s) => x + cargaDe(s), 0) * 100) + "% nas mãos de " + l.length));
+    if (l.length) c.appendChild(cria("small", null, Math.round(carregado / Math.max(1, l.reduce((x, s) => x + (t === "suprimento" ? cargaSuprimento(s) : cargaDe(s)), 0)) * 100) + "% nas mãos de " + l.length));
     c.title = d.n + ": cada soldado leva " + d.carga + "; caixa com " + d.caixa;
     m.appendChild(c);
   }
@@ -329,7 +329,9 @@ function janelaArmas(p) {
     for (const b of BASES_ARMA.filter(b => CATEGORIA[b] === cat)) tab.appendChild(linhaItem(chave(b, nivelNaJanela)));
   }
   tab.appendChild(cria("div", "at-sec", "Munição (caixas)"));
-  for (const t of Object.keys(MUNICOES)) tab.appendChild(linhaItem("cx-" + t));
+  for (const t of Object.keys(MUNICOES)) if (t !== "suprimento") tab.appendChild(linhaItem("cx-" + t));
+  tab.appendChild(cria("div", "at-sec", "Suprimentos (médico trata, engenheiro fortifica e reconstrói) · caixa de " + MUNICOES.suprimento.caixa + ": " + (totalSuprimentos(partida, f)) + " no total"));
+  tab.appendChild(linhaItem("cx-suprimento"));
   const vn = VEICULOS[nivelNaJanela - 1];
   tab.appendChild(cria("div", "at-sec", "Veículo de logística · " + vn.n + ": leva " + vn.carga + " volumes, aguenta " + vn.vida + " de dano"));
   tab.appendChild(linhaItem(chave("veiculo", nivelNaJanela)));
@@ -444,6 +446,17 @@ function janelaEconomia(p) {
     }
     p.appendChild(b);
   }
+  // suprimentos (19.2): onde estão e para onde vão
+  const sup = cria("div", "secao"), st = cria("div", "rec-tit"); st.appendChild(ico(MUNICOES.suprimento.icone)); st.appendChild(cria("b", null, "Suprimentos")); st.appendChild(cria("span", null, totalSuprimentos(partida, f).toLocaleString("pt-BR") + " em estoque")); sup.appendChild(st);
+  const linhasSup = [["QG (depósito)", f.municao.suprimento]];
+  for (const b of batalhoesDe(partida, f)) linhasSup.push([b.nome + (b.base === f.base ? " (no QG)" : ""), b.municao.suprimento]);
+  for (const e of partida.reg.edificios) if (e.dono === f && e.estoque && e.estoque.municao.suprimento) linhasSup.push(["Base avançada em " + e.zona.nome, e.estoque.municao.suprimento]);
+  const mochila = partida.soldados.filter(s => s.faccao === f && s.vida === "ok" && cargaSuprimento(s));
+  linhasSup.push(["Na mochila de " + mochila.length + " médico(s) e engenheiro(s)", Math.floor(mochila.reduce((t, s) => t + (s.suprimentos || 0), 0))]);
+  for (const [r, v] of linhasSup) { const l = cria("div", "item"); l.appendChild(cria("span", "r", r)); l.appendChild(cria("span", null, String(v))); sup.appendChild(l); }
+  sup.appendChild(cria("div", "nota", "Gastam: médico 1 por ferido tratado no campo; hospital e QG " + SUPRIMENTO.tratarBase + " por ferido (sem estoque, tratam no dobro do tempo); engenheiro " + Math.round(SUPRIMENTO.fortificarPorPonto * 100) + " para fortificar 100 pontos, mais para consertar e reconstruir. Compre, fabrique ou receba dos países em Armas."));
+  if (mochila.length && !totalSuprimentos(partida, f)) { const a = cria("div", "dica-j alerta"); a.appendChild(ico("warning")); a.appendChild(cria("span", null, "Sem suprimentos: médicos não tratam e engenheiros não trabalham.")); sup.appendChild(a); }
+  p.appendChild(sup);
   const d = botao(ICONE_RECURSO.comida, "Distribuir comida: " + DISTRIBUIR.comida + " → +" + DISTRIBUIR.influencia + " de influência", "principal largo", depoisDe(() => distribuiComida(partida, f)));
   d.disabled = f.recursos.comida < DISTRIBUIR.comida; p.appendChild(d);
   // mercado de comida

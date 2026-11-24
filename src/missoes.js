@@ -67,7 +67,8 @@ function pensaMissao(P, sq) {
   const fac = sq.faccao, m = sq.missao;
   // 1) se refazer: perdeu muita gente, ficou pequeno ou tem gente sem arma → QG
   sq.maior = Math.max(sq.maior || 0, ativos(sq).length);
-  const recarregar = precisaRecarregar(sq, P), alvoRec = recarregar && organizada(fac) ? baseParaRecarregar(P, sq) : null;
+  const baseSup = precisaSuprimentos(P, sq);   // médico ou engenheiro sem suprimentos e uma base com estoque
+  const recarregar = precisaRecarregar(sq, P) || !!baseSup, alvoRec = recarregar && organizada(fac) ? (baseParaRecarregar(P, sq) || baseSup) : null;
   if (!recarregar && poucaMunicao(sq) >= Math.ceil(ativos(sq).length / 2)) {
     if (!sq.avisouEstoque) { sq.avisouEstoque = true; const s = ativos(sq).find(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO); if (s) avisa(P, "semestoque", { sq, tipo: MUNICAO_DA[s.arma] }); }
   } else if (municaoMedia(sq) > .5) sq.avisouEstoque = false;
@@ -94,7 +95,7 @@ function pensaMissao(P, sq) {
     const o = perigoDeAlguem(P, sq);
     if (o && (!m || m.tipo !== "defender" || zonaDe(P.reg, ...centroDoEsquadrao(o)) === m.alvo)) { vaiAtacarEsquadrao(P, sq, o, "socorro"); return; }
   }
-  if (!m) { pegaFacil(P, sq); return; }
+  if (!m) { if (!(sq.obraAte > P.tempo)) pegaFacil(P, sq); return; }   // engenheiros no meio de uma obra seguram o esquadrão
   if (m.tipo === "expandir") missaoExpandir(P, sq);
   else if (m.tipo === "defender") missaoDefender(P, sq);
   else if (m.tipo === "cacar") missaoCacar(P, sq);
@@ -231,17 +232,4 @@ function missoesDoSegundo(P) {
     pensaMissao(P, sq);
   }
 }
-
-/* engenheiros fortificam o prédio onde o esquadrão está guardando */
-const FORTIFICAR_EM = 2;   // horas do jogo para chegar a 100%
-function fortificacoes(P, dt) {
-  for (const sq of P.esquadroes) {
-    if (sq.estado !== "guarnição" || !sq.guarda || sq.combate) continue;
-    const engs = ativos(sq).filter(s => s.funcao === "engenheiro"); if (!engs.length) continue;
-    const nv = Math.max(...engs.map(s => (s.item === "explosivo" ? s.nivelItem || 1 : 1))) - 1;   // explosivos melhores, fortificação mais rápida
-    const e = sq.guarda, antes = e.fortificado || 0;
-    if (e.dono !== sq.faccao) continue;
-    e.fortificado = Math.min(1, antes + dt / (NIVEL.fortificaHoras[nv] * HORA));
-    if (antes < 1 && e.fortificado >= 1) avisa(P, "fortificado", { sq, e });
-  }
-}
+/* engenheiros: fortificar, consertar e reconstruir prédios (gastam suprimentos) ficou em suprimentos.js */

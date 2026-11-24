@@ -80,6 +80,8 @@ function minimoDaIA(P, fac, b) {
   };
   if (ar || sold.length >= 8) { b.minimo.metralhadora = 1; b.minimo["cx-cinta"] = Math.max(1, ar) * 400 * fator; }
   if (noArsenal(b, "rpg") || sold.some(s => s.arma === "rpg")) b.minimo["cx-foguete"] = 3;
+  // suprimentos (19.2): mesma regra do jogador: o suficiente para encher a mochila de cada médico e engenheiro, mais uma folga de 20
+  b.minimo["cx-suprimento"] = 20 + sold.reduce((t, s) => t + cargaSuprimento(s), 0);
 }
 function alimentacaoDaIA(P, fac) {
   const c = contas(P, fac), R = fac.recursos;

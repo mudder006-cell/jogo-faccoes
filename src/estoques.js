@@ -12,7 +12,7 @@
    ============================================================ */
 const COMPRA_AUTO = { filaMaxHoras: 3 };   // fabrica só se a fila da oficina tiver menos de 3 h de trabalho; senão compra
 
-function criaEstoque() { return { arsenal: criaArsenal(), municao: { bala: 0, cinta: 0, granada: 0, foguete: 0 } }; }
+function criaEstoque() { return { arsenal: criaArsenal(), municao: criaMunicao() }; }
 function estoqueDaBase(e) { return e.estoque || (e.estoque = criaEstoque()); }
 /* estoques que um soldado do batalhão "bat" pode usar nesta base, na ordem em que usa */
 function estoquesNaBase(P, fac, bat, base) {
@@ -55,6 +55,7 @@ function equipaNaBase(P, s, base) {
     if (mi && (s.item !== f.item || mi.n > (s.nivelItem || 1))) { devolveItem(dep, s); mi.e.arsenal[chave(f.item, mi.n)]--; s.item = f.item; s.nivelItem = mi.n; s.usosKit = null; }
   } else if (s.item) devolveItem(dep, s);
   if (s.arma) { const t = MUNICAO_DA[s.arma], falta = Math.floor(cargaDe(s) - s.municao); if (falta > 0) s.municao += tiraMunicao(l, t, falta); }
+  abasteceSuprimentos(s, l);   // médico e engenheiro enchem a mochila de suprimentos
   return mudou;
 }
 /* tem este item (arma ou kit) em alguma base que o soldado pode usar? devolve a base mais perto */

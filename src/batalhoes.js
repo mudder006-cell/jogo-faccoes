@@ -35,7 +35,7 @@ function criaBatalhao(P, fac, lider, base) {
   P.batalhoes = P.batalhoes || [];
   const n = (P.batalhoes.filter(b => b.faccao === fac).length) + 1;
   const b = { id: P.batalhoes.length, nome: n + "º Batalhão", faccao: fac, lider, base, ordem: null, postura: "equilibrado",
-    arsenal: criaArsenal(), municao: { bala: 0, cinta: 0, granada: 0, foguete: 0 }, proximo: 0,
+    arsenal: criaArsenal(), municao: criaMunicao(), proximo: 0,
     minimo: {}, prioridade: (P.batalhoes.filter(o => o.faccao === fac).length) + 1, proximoRecruta: 0 };
   P.batalhoes.push(b);
   viraLiderDeBatalhao(P, lider, b, base);

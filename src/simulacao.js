@@ -94,7 +94,7 @@ function guarnicaoDe(P, e) { return P.esquadroes.filter(o => o.guarda === e && a
 
 function fundaFaccao(P, fac, e) {
   Object.assign(fac, { arsenal: criaArsenal(), prisioneiros: [], reserva: [], fila: [], recursos: Object.assign({}, RECURSOS_INICIAIS) });
-  fac.arsenal.kit = 1; fac.municao = Object.assign({}, MUNICAO_INICIAL);
+  fac.arsenal.kit = 1; fac.municao = Object.assign(criaMunicao(), MUNICAO_INICIAL);
   preparaPaises(P, fac);
   P.faccoes.push(fac);
   fac.base = e;
@@ -285,13 +285,13 @@ function juntaReforcos(P, sq) {
 }
 
 /* ---------- feridos, tratamento e reserva ---------- */
-function temMedico(sq, ferido) { return ativos(sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== ferido); }
+function temMedico(sq, ferido) { return ativos(sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== ferido && temSuprimento(m, 1)); }
 function evacua(P, s) {
   const fac = s.faccao, sq = s.sq;
   if (sq) { sq.membros = sq.membros.filter(o => o !== s); if (sq.lider === s) escolheLider(P, sq); }
   s.sqAntes = sq; s.sq = null;
   const hospital = P.reg.edificios.find(e => e.tipo === "hospital" && e.dono === fac);
-  if (hospital) { s.vida = "tratando"; s.ondeTrata = "hospital"; s.fimTrat = P.tempo + TRATAMENTO_HOSPITAL; }
+  if (hospital) { s.vida = "tratando"; s.ondeTrata = "hospital"; s.fimTrat = P.tempo + TRATAMENTO_HOSPITAL * gastaTratamento(P, fac, s); }
   else if (fac.base) { s.vida = "fila"; s.ondeTrata = "QG"; fac.fila.push(s); }
   else { s.vida = "morto"; anota(P, s, "Morreu: não havia onde tratar o ferimento"); }
 }
@@ -302,7 +302,7 @@ function tratamentos(P) {
   for (const fac of P.faccoes) {
     if (!fac.fila) continue;
     const noQG = P.soldados.filter(s => s.faccao === fac && s.vida === "tratando" && s.ondeTrata === "QG").length;
-    for (let i = noQG; i < VAGAS_QG && fac.fila.length; i++) { const s = fac.fila.shift(); s.vida = "tratando"; s.fimTrat = P.tempo + TRATAMENTO_QG; }
+    for (let i = noQG; i < VAGAS_QG && fac.fila.length; i++) { const s = fac.fila.shift(); s.vida = "tratando"; s.fimTrat = P.tempo + TRATAMENTO_QG * gastaTratamento(P, fac, s); }
   }
   for (const s of P.soldados) {
     if (s.vida !== "tratando" || P.tempo < s.fimTrat) continue;

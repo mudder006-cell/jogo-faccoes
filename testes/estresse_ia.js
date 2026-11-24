@@ -18,7 +18,7 @@ const N_RIVAIS = +arg('rivais', 3);
 const PERS = arg('pers', '');
 const SAIDA = arg('json', '');
 
-const ARQS = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','veiculos','comando','ia','ordens'];
+const ARQS = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','suprimentos','veiculos','comando','ia','ordens'];
 const codigo = ARQS.map(f => fs.readFileSync(path.join(SRC, f + '.js'), 'utf8')).join('\n');
 const G = new Function(codigo + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, resumoFaccao, batalhoesDe, estadoEntre, contas, forcaDaFaccao, PERSONALIDADES };')();
 

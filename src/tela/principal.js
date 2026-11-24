@@ -312,6 +312,11 @@ function ouveA(P) {
     else if (tipo === "apoiofim" && meu(d.sq.faccao)) aviso(d.sq.nome + ": o esquadrão que ele apoiava caiu; está sem missão", MISSOES.apoiar.icone, "perigo");
     else if (tipo === "fortificado" && meu(d.sq.faccao)) aviso("Engenheiros terminaram de fortificar " + nm(d.e) + " em " + d.e.zona.nome, "wall", "bom", onde(d.e));
     else if (tipo === "tratadocampo" && meu(d.s.faccao)) aviso(d.m.nome + " tratou " + d.s.nome + " no campo: voltou a lutar", "medical_services", "bom");
+    else if (tipo === "semsuprimento" && meu(d.s.faccao)) aviso(d.s.nome + " (" + FUNCOES[d.s.funcao].n.toLowerCase() + ") está sem suprimentos" + (d.s.funcao === "medico" ? ": não trata ninguém" : ": não consegue fortificar nem consertar") + "; leve o esquadrão a uma base com estoque", "medical_services", "perigo", d.sq ? centroDoEsquadrao(d.sq) : null);
+    else if (tipo === "semsuprimentosestoque" && meu(d.fac)) aviso("Sem suprimentos no QG: o hospital trata no dobro do tempo. Compre ou fabrique em Armas", "medical_services", "perigo");
+    else if (tipo === "reconstruido" && meu(d.sq.faccao)) { repinta(d.e); camada.sujo = true; aviso("Engenheiros reergueram " + nm(d.e) + " em " + d.e.zona.nome + " (ainda danificado)", "construction", "bom", onde(d.e)); }
+    else if (tipo === "consertado" && meu(d.sq.faccao)) { repinta(d.e); aviso("Engenheiros terminaram de consertar " + nm(d.e) + " em " + d.e.zona.nome, "construction", "bom", onde(d.e)); }
+    else if ((tipo === "reconstruido" || tipo === "consertado") && d.e) repinta(d.e);
     else if (tipo === "kitacabou" && meu(d.s.faccao)) aviso("O kit médico de " + d.s.nome + " acabou: precisa de outro no QG", "medical_services", "perigo");
     else if (tipo === "recusou" && meu(d.fac)) aviso(d.s.nome + " não aceitou mudar de lado", "lock", "info");
     else if (tipo === "armou" && meu(d.s.faccao)) aviso(d.s.nome + " pegou " + nomeMin(chave(d.s.arma, d.s.nivel || 1)) + " no arsenal", "inventory_2", "bom");
@@ -335,7 +340,7 @@ function ouveA(P) {
   });
 }
 let agendado = false, janelaSuja = false;
-const MUDA_JANELA = new Set(["hora", "recrutou", "armou", "comprou", "encomendou", "fabricou", "chegoucarga", "apreendida", "doacao", "baixa", "tratado", "rendicao", "pedido", "pedidocumprido", "pedidoperdido", "recusou", "eliminado", "chegou", "combate", "fimcombate", "evento", "reforcado", "tratadocampo", "kitacabou", "vaibase", "diplomacia", "proposta", "propostavenceu", "presente", "novobatalhao", "ordembatalhao", "mudoubatalhao", "recarregar", "comprou", "trocou", "semtroca", "esperando", "transferido", "novoesquadrao", "pedidotroca", "pedidotransfer", "entregou", "motorista", "veiculodestruido", "veiculocapturado", "veiculoatribuido", "viagem"]);
+const MUDA_JANELA = new Set(["hora", "recrutou", "armou", "comprou", "encomendou", "fabricou", "chegoucarga", "apreendida", "doacao", "baixa", "tratado", "rendicao", "pedido", "pedidocumprido", "pedidoperdido", "recusou", "eliminado", "chegou", "combate", "fimcombate", "evento", "reforcado", "tratadocampo", "kitacabou", "semsuprimento", "semsuprimentosestoque", "reconstruido", "consertado", "fortificado", "vaibase", "diplomacia", "proposta", "propostavenceu", "presente", "novobatalhao", "ordembatalhao", "mudoubatalhao", "recarregar", "comprou", "trocou", "semtroca", "esperando", "transferido", "novoesquadrao", "pedidotroca", "pedidotransfer", "entregou", "motorista", "veiculodestruido", "veiculocapturado", "veiculoatribuido", "viagem"]);
 function atualizaEmBreve() {
   if (agendado) return; agendado = true;
   setTimeout(() => { agendado = false; mostraRecursos(); mostraCombates(); atualizaSelecao(); if (contexto) desenhaContexto(); if (janela && janela !== "ajuda" && janelaSuja && !document.querySelector(".tile.arrastando")) { janelaSuja = false; desenhaJanela(); } }, 500);

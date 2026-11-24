@@ -108,6 +108,7 @@ function necessidadeAvancadas(P, b) {
     if (!base || base === b.base || base === fac.base || Math.hypot(base.x - x, base.z - z) > LOGISTICA.avancadaRaio) continue;
     const q = m.get(base) || {};
     for (const s of ativos(sq)) if (s.arma) { const k = "cx-" + MUNICAO_DA[s.arma]; q[k] = (q[k] || 0) + cargaDe(s); }
+    for (const s of ativos(sq)) if (cargaSuprimento(s)) q["cx-suprimento"] = (q["cx-suprimento"] || 0) + cargaSuprimento(s);   // médicos e engenheiros também precisam da base avançada
     m.set(base, q);
   }
   for (const [base, q] of m) { const est = estoqueDaBase(base); for (const k of Object.keys(q)) q[k] = Math.max(0, q[k] - est.municao[tipoDaCaixa(k)] - aCaminhoDe(fac, base, k)); }

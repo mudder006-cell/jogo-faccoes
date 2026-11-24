@@ -40,7 +40,7 @@
   #recursos { display: flex; gap: 6px; }
   #recursos .rec { padding: 4px 12px 4px 8px; background: rgba(255,255,255,.06); border-color: transparent; }
   #recursos .rec .ico { font-size: 26px; }
-  .rec-dinheiro .ico { color: #8fd18f; } .rec-influencia .ico { color: #c9a0ff; } .rec-comida .ico { color: #f2b233; }
+  .rec-dinheiro .ico { color: #8fd18f; } .rec-influencia .ico { color: #c9a0ff; } .rec-comida .ico { color: #f2b233; } .rec-suprimento .ico { color: #7fc8e8; }
   #recursos .t { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
   #recursos .n { font-size: 10px; color: var(--suave); text-transform: uppercase; letter-spacing: .08em; }
   #recursos .v { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }

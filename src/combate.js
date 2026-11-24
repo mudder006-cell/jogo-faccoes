@@ -171,7 +171,7 @@ function pensa(P, s, sq, inimigos) {
   else if (sq.ordem.tipo === "avancar" || sq.ordem.tipo === "zona") acao = P.r() < s.pref.flanco ? "flanquear" : "avancar";
   else acao = "segurar";
   if (s.funcao === "metralhador" && alvo && (acao === "avancar" || acao === "flanquear")) acao = "atirar";   // cobre o avanço dos outros
-  if (s.funcao === "medico" && s.item === "kit" && acao !== "recuar") {
+  if (s.funcao === "medico" && s.item === "kit" && acao !== "recuar" && temSuprimento(s, SUPRIMENTO.tratarCampo)) {   // sem suprimentos o médico não trata (19.2)
     const ferido = sq.membros.filter(o => o.vida === "ferido" && (!o.medico || o.medico === s) && Math.hypot(o.x - s.x, o.z - s.z) < 70).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
     if (ferido) { ferido.medico = s; s.paciente = ferido; s.destino = [ferido.x, ferido.z]; s.acao = "socorrer"; s.alvo = null; s.sup = null; s.mira = null; return; }
   }
@@ -296,12 +296,19 @@ function explode(P, s, w, ix, iz, mult) {
   }
 }
 const DANO_DESTROI = 1;
+/* Resistência dos prédios (19.2). O dano de cada arma (danoPredio em soldados.js) é a fração do prédio que um acerto derruba.
+   Casa pequena (até 120 m² de área construída) sem fortificação cai com 3 acertos de RPG. Prédio maior aguenta mais.
+   A fortificação (0 a 1 por dentro, 0 a 100 na tela) divide o dano: com 100, multFortificado = 3x mais acertos.
+   Vale para qualquer arma com danoPredio (RPG, granada e as futuras). (Números provisórios.) */
+const PREDIO = { tamanhoRef: 120, tamanhoMinFator: .12, multFortificado: 3, perdaFortificacao: .25 };
+const tamanhoDoPredio = e => e.w * e.d * Math.max(1, e.andares || 1);
+const resistenciaDoPredio = e => 1 + (PREDIO.multFortificado - 1) * limita(e.fortificado || 0, 0, 1);
 function danificaPredio(P, e, dano, s) {
   if (!dano || e.destruido) return;
-  const tamanho = e.w * e.d * Math.max(1, e.andares || 1);
-  e.dano = Math.min(DANO_DESTROI, (e.dano || 0) + dano * limita(120 / tamanho, .12, 1.5));
-  if (e.fortificado) e.fortificado = Math.max(0, e.fortificado - dano);
-  if (e.dano >= DANO_DESTROI) { e.destruido = true; avisa(P, "destruido", { e, s }); }
+  const efetivo = dano * limita(PREDIO.tamanhoRef / tamanhoDoPredio(e), PREDIO.tamanhoMinFator, 1) / resistenciaDoPredio(e);
+  e.dano = Math.min(DANO_DESTROI, (e.dano || 0) + efetivo);
+  if (e.fortificado) e.fortificado = Math.max(0, e.fortificado - efetivo * PREDIO.perdaFortificacao);   // o estrago também derruba a fortificação
+  if (e.dano >= DANO_DESTROI - 1e-9) { e.dano = DANO_DESTROI; e.destruido = true; e.reconstrucao = 0; avisa(P, "destruido", { e, s }); }
   else avisa(P, "dano", { e });
 }
 
@@ -316,7 +323,7 @@ function atingido(P, o, s, amigo) {
   if (o.vida !== "ok") return;
   if (!amigo) { registraLuta(P, o.faccao, s.faccao); mudaRelacao(P, o.faccao, s.faccao, DIPLO.ferir); }
   if (!amigo) { s.acertos++; aprende(P, s, "pontaria", 2.5, "acertou um inimigo"); }
-  const medico = o.sq && ativos(o.sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== o && Math.hypot(m.x - o.x, m.z - o.z) < 40);
+  const medico = o.sq && ativos(o.sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== o && temSuprimento(m, 1) && Math.hypot(m.x - o.x, m.z - o.z) < 40);
   const fatal = P.r() < Math.min(.6, (medico ? .14 : .3) * (s.arma ? NIVEL.dano[(s.nivel || 1) - 1] : 1) * bonusDe(o).fatal);   // arma melhor mata mais; veterano sabe se proteger   // arma melhor, ferimento pior
   o.ferimentos++; o.caiuEm = P.tempo; o.destino = null;
   const por = amigo ? "fogo amigo de " + s.nome : s.nome + " (" + s.faccao.nome + ")";
@@ -331,6 +338,9 @@ function atingido(P, o, s, amigo) {
 const CHANCE_LEVE = .6, USOS_KIT = 3;
 function trataNoCampo(P, m, o) {
   m.tempoTrat = 0; m.paciente = null; o.medico = null;
+  if (!temSuprimento(m, SUPRIMENTO.tratarCampo)) { avisaSemSuprimento(P, m); return; }   // acabou no meio do caminho
+  gastaSuprimento(m, SUPRIMENTO.tratarCampo);
+  if (m.suprimentos < SUPRIMENTO.tratarCampo) avisaSemSuprimento(P, m);
   const nk = (m.nivelItem || 1) - 1;
   m.usosKit = (m.usosKit == null ? NIVEL.kitUsos[nk] : m.usosKit) - 1;
   if (m.usosKit <= 0) { m.item = null; m.usosKit = null; anota(P, m, "O kit médico acabou; precisa de outro no QG"); avisa(P, "kitacabou", { s: m }); }
@@ -345,7 +355,8 @@ function trataNoCampo(P, m, o) {
 function rende(P, s, captor) {
   s.vida = "rendido"; s.caiuEm = P.tempo; s.destino = null;
   captor.prisioneiros.push(s);
-  if (captor.arsenal) { if (s.arma) captor.arsenal[chave(s.arma, s.nivel || 1)]++; if (s.item) captor.arsenal[chave(s.item, s.nivelItem || 1)]++; if (s.arma && captor.municao) captor.municao[MUNICAO_DA[s.arma]] += Math.floor(s.municao); }
+  if (captor.arsenal) { if (s.arma) captor.arsenal[chave(s.arma, s.nivel || 1)]++; if (s.item) captor.arsenal[chave(s.item, s.nivelItem || 1)]++; if (s.arma && captor.municao) captor.municao[MUNICAO_DA[s.arma]] += Math.floor(s.municao); if (captor.municao && s.suprimentos > 0) captor.municao.suprimento += Math.floor(s.suprimentos); }
+  s.suprimentos = 0;
   s.arma = null; s.item = null; s.municao = 0;
   anota(P, s, "Rendeu-se a " + captor.nome + "; as armas ficaram com eles");
   tiraDoEsquadrao(P, s);
