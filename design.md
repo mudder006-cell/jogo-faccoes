@@ -181,6 +181,11 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Casa sem fortificação cai com 3 acertos de RPG (hoje ~7); com fortificação 100 aguenta bem mais (número provisório).
 - Fontes: fábricas, compra no mercado, comércio entre facções e tratados com grandes potências pagos com influência.
 
+### Engenheiros e obras (decidido pelo Renan em 25/11/2026)
+- Dois tipos de engenheiro: equipe de obras separada (2 a 4 engenheiros por batalhão, fora dos esquadrões; só fortifica e conserta; prioridade: bases, fronteira, danificados) e 1 engenheiro de combate no esquadrão (explosivos e fortificar onde o esquadrão para).
+- Obras devem ser mais vantajosas, para valer a pena construir (hoje a rival só constrói com $ 4.000 e falta de comida, e nunca constrói). Quanto e como: a propor.
+- Governo antigo: a função dele é só impedir as facções de crescerem demais; se atrapalha o andamento do jogo, rever. Testes sem o governo em andamento (25/11).
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
