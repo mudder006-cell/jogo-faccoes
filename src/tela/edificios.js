@@ -359,6 +359,14 @@ function repinta(e) {
   const d = e.dono;
   pintaEdificio(e, d ? d.cor : 0xffffff, d && !d.governo ? .45 : 0, e.destruido ? .78 : (e.dano || 0) * .5);
   if (e.destruido && !e._achatado) achata(e);
+  else if (!e.destruido && e._achatado) reergue(e);   // reconstruído pelos engenheiros (19.2)
+}
+function reergue(e) {
+  const L = e._lote; if (!L || !L.malha) return;
+  e._achatado = false;
+  const pos = L.malha.geometry.attributes.position, a = pos.array, base = e.base;
+  for (let i = e._v0; i < e._v1; i++) { const y = a[i * 3 + 1]; a[i * 3 + 1] = base + (y - base) / .28; }
+  pos.needsUpdate = true; L.malha.geometry.computeBoundingSphere();
 }
 /* obra pronta: puxa a cor do prédio para verde (fazenda) ou marrom (armazém) */
 function retingeObra(e) {

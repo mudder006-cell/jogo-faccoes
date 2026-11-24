@@ -2,7 +2,7 @@
 // Roda partidas sem tela (jogador + 3 rivais + governo), mede tiros por motivo e confere o determinismo.
 // Uso: node testes/teste_percepcao.js [SEMENTES] [HORAS]      ex.: node testes/teste_percepcao.js B2,K7 24
 const fs = require('fs');
-const ARQS = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','veiculos','comando','ia','ordens'];
+const ARQS = require('./arquivos.js');
 let src = ARQS.map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 // espiões: conferem o motivo de cada tiro na hora em que ele sai
 src = src.replace('function dispara(P, s, alvo) {', 'function dispara(P, s, alvo) { __espia.dispara(P, s, alvo); return dispara__o(P, s, alvo); }\nfunction dispara__o(P, s, alvo) {')

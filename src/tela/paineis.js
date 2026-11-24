@@ -76,6 +76,17 @@ function mostraRecursos() {
     b.addEventListener("click", () => abreJanela(janela === "economia" ? null : "economia"));
     bar.appendChild(b);
   }
+  // suprimentos (19.2): estoque de tudo que é seu; sem taxa por hora; clicar abre Armas (comprar ou fabricar)
+  const ns = totalSuprimentos(partida, f), medEng = partida.soldados.filter(s => s.faccao === f && s.vida === "ok" && cargaSuprimento(s));
+  const falta = medEng.length > 0 && (ns + medEng.reduce((t, s) => t + (s.suprimentos || 0), 0)) < medEng.length * 3;
+  const bs = cria("button", "rec rec-suprimento"); bs.type = "button"; bs.title = "Suprimentos: estoque do QG, dos batalhões e das bases. Médicos e engenheiros gastam; clique para comprar ou fabricar";
+  bs.appendChild(ico(MUNICOES.suprimento.icone));
+  const ts = cria("span", "t"); ts.appendChild(cria("span", "n", "Suprimentos"));
+  const vs = cria("span", "v" + (ns <= 0 && medEng.length ? " ruim" : "")); vs.textContent = Math.round(ns).toLocaleString("pt-BR");
+  if (falta) vs.appendChild(cria("span", "d ruim", " acabando"));
+  ts.appendChild(vs); bs.appendChild(ts);
+  bs.addEventListener("click", () => abreJanela(janela === "armas" ? null : "armas"));
+  bar.appendChild(bs);
 }
 let indiceCombate = 0;
 function mostraCombates() {
@@ -311,7 +322,8 @@ function painelPredio(p, e) {
   if (moradoresDe(e)) linha(corpo, "groups", "Moradores", String(moradoresDe(e)));
   if (e.destruido) linha(corpo, "skull", "Destruído", "escombros: sem imposto, sem moradores, quase não protege");
   else if (e.dano) linha(corpo, "local_fire_department", "Dano", Math.round(e.dano * 100) + "% (protege menos)");
-  if (e.fortificado) linha(corpo, "wall", "Fortificado", Math.round(e.fortificado * 100) + "% (defensores mais protegidos)");
+  if (e.destruido && e.reconstrucao) linha(corpo, "construction", "Reconstrução", Math.round(e.reconstrucao * 100) + "% feita");
+  linha(corpo, "wall", "Fortificação", fortificacaoDe(e) + " de 100 (aguenta " + resistenciaDoPredio(e).toFixed(1).replace(".", ",") + "x mais acertos de RPG e granada; defensores mais protegidos)");
   if (FABRICACAO.pontos[e.tipo]) linha(corpo, "precision_manufacturing", "Fabrica armas", FABRICACAO.pontos[e.tipo] + " ponto(s)/h" + (e.tipo === "fabrica" ? ", inclusive pesadas" : ""));
   if (e.tipo === "lider") linha(corpo, "diversity_3", "Clã", "manda " + RECRUTA.cla.qtd + " homens armados por dia a quem tem a casa");
   if (e.tipo === "lider") linha(corpo, "home_pin", "Base avançada", "quem tem a casa troca função, arma e esquadrão aqui, com o arsenal do QG");
@@ -335,6 +347,11 @@ function painelPredio(p, e) {
   }
   if (ac.children.length) p.appendChild(ac);
   if (!selBat && e.dono !== f) p.appendChild(cria("div", "nota", "Para tomar à força, selecione um batalhão à esquerda."));
+  if (f && e.dono === f && precisaDeConserto(e)) {   // engenheiros reconstroem ou consertam (gastam suprimentos)
+    const ag = cria("div", "acoes-grade"), mot = motivoReconstruir(partida, f, e);
+    ag.appendChild(botaoGrande("construction", e.destruido ? "Reconstruir" : "Consertar", "manda o esquadrão com engenheiro mais perto · gasta suprimentos", () => { reconstroi(partida, f, e); desenhaContexto(); }, mot));
+    p.appendChild(ag);
+  }
   // obras (paga e espera) nas vilas e setores rurais
   if (f && e.dono === f) {
     const obra = (f.obras || []).find(o => o.e === e);
@@ -421,6 +438,7 @@ function fichaArma(s) {
     d.appendChild(mb); d.appendChild(mm);
   }
   else { d.appendChild(ico("block")); d.appendChild(cria("span", null, "Sem arma: precisa ir ao QG")); }
+  if (cargaSuprimento(s)) { d.appendChild(ico(MUNICOES.suprimento.icone)); d.appendChild(cria("span", "peq" + (temSuprimento(s, 1) ? "" : " ruim"), "Suprimentos " + Math.floor(s.suprimentos || 0) + "/" + Math.round(cargaSuprimento(s)) + (temSuprimento(s, 1) ? "" : " (acabaram)"))); }
   if (s.item) { d.appendChild(icoArma(chave(s.item, s.nivelItem || 1), "peq")); d.appendChild(cria("span", "peq", nomeItem(chave(s.item, s.nivelItem || 1)) + (s.item === "kit" ? " · " + (s.usosKit == null ? NIVEL.kitUsos[(s.nivelItem || 1) - 1] : s.usosKit) + " usos" : ""))); }
   return d;
 }

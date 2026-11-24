@@ -17,7 +17,7 @@
      O líder precisa poder comandar (Veterano ou liderança 60+).
    (Números provisórios.)
    ============================================================ */
-const BATALHAO = { prediosPorBatalhao: 60, tamanhoEsquadrao: 6, pensa: 5, sugestaoBase: .55 };
+const BATALHAO = { minimoSuprimento: 40, prediosPorBatalhao: 60, tamanhoEsquadrao: 6, pensa: 5, sugestaoBase: .55 };
 const ORDENS_BATALHAO = {
   tomar:    { n: "Tomar área", icone: "flag", pede: "zona", dica: "Toma os pontos importantes e os prédios da zona escolhida" },
   proteger: { n: "Proteger área", icone: "shield_home", pede: "zona", dica: "Guarda a zona escolhida e expulsa quem entrar" },
@@ -35,8 +35,8 @@ function criaBatalhao(P, fac, lider, base) {
   P.batalhoes = P.batalhoes || [];
   const n = (P.batalhoes.filter(b => b.faccao === fac).length) + 1;
   const b = { id: P.batalhoes.length, nome: n + "º Batalhão", faccao: fac, lider, base, ordem: null, postura: "equilibrado",
-    arsenal: criaArsenal(), municao: { bala: 0, cinta: 0, granada: 0, foguete: 0 }, proximo: 0,
-    minimo: {}, prioridade: (P.batalhoes.filter(o => o.faccao === fac).length) + 1, proximoRecruta: 0 };
+    arsenal: criaArsenal(), municao: criaMunicao(), proximo: 0,
+    minimo: fac.jogador ? { "cx-suprimento": BATALHAO.minimoSuprimento } : {}, prioridade: (P.batalhoes.filter(o => o.faccao === fac).length) + 1, proximoRecruta: 0 };
   P.batalhoes.push(b);
   viraLiderDeBatalhao(P, lider, b, base);
   if (!fac.batalhaoPadrao) fac.batalhaoPadrao = b;

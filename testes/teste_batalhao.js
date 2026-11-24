@@ -1,6 +1,6 @@
 // Batalhão com ordem de tomar área + diplomacia em 2 dias de jogo
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','veiculos','comando','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, HORA, ativos, batalhoesDe, esquadroesDe, ordenaBatalhao, textoOrdem, rel, estadoEntre, resumoFaccao, recrutaMercenario, compra, passaItem, respondeProposta };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg);
 const eu = G.criaFaccao(1, 'Jogador', 0xf2b233, { jogador: true });

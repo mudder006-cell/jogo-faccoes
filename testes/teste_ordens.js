@@ -1,6 +1,6 @@
 // Ordens novas sem tela: avançar até um ponto, tomar uma zona e linha com dois esquadrões
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, podeComecar, passoDaPartida, relogio, ordenaPonto, ordenaZona, ordenaLinha, moveSoldado, resumoFaccao, ativos, centroDoEsquadrao };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg);
 const ev = {}; P.ouvintes.push((t, d) => { ev[t] = (ev[t] || 0) + 1; if (t === 'desvio' || t === 'zonaconcluida') console.log('  ', G.relogio(P), t, d.e ? d.e.tipo + ' ' + d.e.zona.nome : d.zona.nome); });

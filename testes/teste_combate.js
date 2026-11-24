@@ -1,10 +1,10 @@
 // Batalhas sem tela: o jogador ataca um prédio defendido pelo governo.
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','veiculos','comando','ia','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, ordenaIr, passoDaPartida, relogio, resumoFaccao, criaSorteio, defensores, ativos, patente, FUNCOES, trocaFuncao, moveSoldado };')();
 const sd = process.argv[2] || 'B2';
 const reg = G.geraRegiao(sd), P = G.criaPartida(reg);
-const ev = {}, mat = {}; P.ouvintes.push((t, d) => { if (t === 'baixa') { const k = d.s.faccao.nome + ' -> ' + d.o.faccao.nome; mat[k] = (mat[k] || 0) + 1; } ev[t] = (ev[t] || 0) + 1; if (['rendicao', 'abandonou', 'eliminado', 'chegou'].includes(t)) console.log('  ', G.relogio(P), t, d.sq ? d.sq.nome + ' ' + d.sq.faccao.nome : '', d.e ? d.e.tipo : '', d.s ? d.s.nome : ''); });
+const ev = {}, mat = {}; P.ouvintes.push((t, d) => { if (t === 'baixa' && d.s) { const k = d.s.faccao.nome + ' -> ' + d.o.faccao.nome; mat[k] = (mat[k] || 0) + 1; } ev[t] = (ev[t] || 0) + 1; if (['rendicao', 'abandonou', 'eliminado', 'chegou'].includes(t)) console.log('  ', G.relogio(P), t, d.sq ? d.sq.nome + ' ' + d.sq.faccao.nome : '', d.e ? d.e.tipo : '', d.s ? d.s.nome : ''); });
 const r = G.criaSorteio('t');
 const eu = G.criaFaccao(1, 'Jogador', 0xf2b233, { jogador: true });
 // começa perto de um ponto defendido do governo

@@ -8,6 +8,7 @@
    - Munição em 4 tipos: balas (fuzil), cintas (AR), granadas e foguetes (RPG).
      Cada soldado carrega a sua; recarrega numa base, do estoque da facção.
      O governo antigo não compra munição: o que os soldados levam é o que tem.
+   - Suprimentos (19.2): um quinto "tipo de munição" (caixa de 20) que o médico e o engenheiro gastam.
    No arsenal, o nível 1 usa o nome da arma ("fuzil") e os outros "fuzil_2", "fuzil_3".
    Caixas de munição à venda: "cx-bala", "cx-cinta", "cx-granada", "cx-foguete".
    (Números provisórios.)
@@ -23,9 +24,12 @@ const MUNICOES = {
   bala:    { n: "Balas de fuzil", curto: "Balas", carga: 120, caixa: 100, icone: "bullet" },
   cinta:   { n: "Cintas da AR", curto: "Cintas", carga: 400, caixa: 200, icone: "ammunition" },
   granada: { n: "Granadas", curto: "Granadas", carga: 8, caixa: 6, icone: "bomb" },
-  foguete: { n: "Foguetes de RPG", curto: "Foguetes", carga: 4, caixa: 3, icone: "rocket" }
+  foguete: { n: "Foguetes de RPG", curto: "Foguetes", carga: 4, caixa: 3, icone: "rocket" },
+  // Protótipo 19.2: suprimentos viajam e se guardam como a munição (caixa de 20 = 1 volume), mas quem gasta é o médico e o engenheiro (ver suprimentos.js)
+  suprimento: { n: "Suprimentos (médicos e engenheiros)", curto: "Suprimentos", carga: 8, caixa: 20, icone: "medical_services" }
 };
-const MUNICAO_INICIAL = { bala: 600, cinta: 0, granada: 0, foguete: 0 };
+const MUNICAO_INICIAL = { bala: 600, cinta: 0, granada: 0, foguete: 0, suprimento: 40 };
+const criaMunicao = () => { const m = {}; for (const t of Object.keys(MUNICOES)) m[t] = 0; return m; };
 const CARGA_GOVERNO = 1.5;      // soldados do governo levam 50% a mais, mas nunca recarregam
 const POUCA_MUNICAO = .15;      // abaixo disso o soldado conta como "sem munição" para voltar à base
 
@@ -67,7 +71,12 @@ function devolveArma(fac, s) {
   if (fac.municao && s.municao > 0) fac.municao[MUNICAO_DA[s.arma]] += Math.floor(s.municao);
   s.arma = null; s.nivel = 1; s.municao = 0;
 }
-function devolveItem(fac, s) { if (!s.item) return; fac.arsenal[chave(s.item, s.nivelItem || 1)]++; s.item = null; s.nivelItem = 1; s.usosKit = null; }
+function devolveItem(fac, s) {
+  if (!s.item) return;
+  fac.arsenal[chave(s.item, s.nivelItem || 1)]++; s.item = null; s.nivelItem = 1; s.usosKit = null;
+  if (fac.municao && s.suprimentos > 0) fac.municao.suprimento += Math.floor(s.suprimentos);   // devolve os suprimentos que levava
+  s.suprimentos = 0;
+}
 
 function poucaMunicao(sq) { return ativos(sq).filter(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO).length; }
 /* vale a pena ir recarregar? (metade ou mais sem munição e tem estoque para eles) */

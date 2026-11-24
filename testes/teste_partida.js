@@ -1,6 +1,6 @@
 // Simula uma partida sem tela: gera, funda o jogador e as rivais, manda o jogador pegar prédios e roda o tempo.
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','simulacao'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, ordenaIr, passoDaPartida, relogio, resumoFaccao, criaSorteio, rotaPelasRuas };')();
 const sd = process.argv[2] || 'B2';
 const reg = G.geraRegiao(sd); const t0 = Date.now();

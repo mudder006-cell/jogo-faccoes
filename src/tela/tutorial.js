@@ -31,7 +31,7 @@ const PASSOS_TUTORIAL = [
     alvo: '[data-janela="armas"]', pronto: () => janela === "armas" },
   { icone: "groups", titulo: "Orçamento dos batalhões", texto: "Em Batalhões você define o mínimo de soldados, armas e munição de cada batalhão: o que faltar é comprado ou fabricado sozinho, chega ao QG e os veículos de logística levam até a base do líder. Os soldados também são recrutados sozinhos. O líder monta os esquadrões; você pode sugerir trocas, e ele decide. Com mais território, abre outro batalhão.",
     alvo: '[data-janela="gestao"]', pronto: () => janela === "gestao" },
-  { icone: "handshake", titulo: "Diplomacia", texto: "Todas as facções começam neutras; o governo está em guerra com todas. Só quem está em guerra luta. Em Diplomacia você vê a relação, aceita propostas, propõe pactos e alianças ou declara guerra.",
+  { icone: "handshake", titulo: "Diplomacia", texto: "Todas as facções começam neutras; o governo está em guerra com todas. Só quem está em guerra luta. Em Diplomacia você vê a relação, aceita propostas, propõe pactos e alianças ou declara guerra. A guerra cansa as facções (exaustão): cansada, ela aceita cessar-fogo. Quem cresce demais vira alvo do governo e de uma coalizão das outras facções.",
     alvo: '[data-janela="faccoes"]', pronto: () => janela === "faccoes" },
   { icone: "star", titulo: "Pronto!", texto: "Para vencer, elimine todas as facções rivais. O governo antigo enfraquece com o tempo, mas contra-ataca. Os esquadrões se viram sozinhos: voltam ao QG para se refazer e pedem ajuda quando apertar. O botão Ajuda tem o resumo dos controles.",
     entendi: true, fim: true }

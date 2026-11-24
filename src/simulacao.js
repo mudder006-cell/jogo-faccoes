@@ -94,7 +94,7 @@ function guarnicaoDe(P, e) { return P.esquadroes.filter(o => o.guarda === e && a
 
 function fundaFaccao(P, fac, e) {
   Object.assign(fac, { arsenal: criaArsenal(), prisioneiros: [], reserva: [], fila: [], recursos: Object.assign({}, RECURSOS_INICIAIS) });
-  fac.arsenal.kit = 1; fac.municao = Object.assign({}, MUNICAO_INICIAL);
+  fac.arsenal.kit = 1; fac.municao = Object.assign(criaMunicao(), MUNICAO_INICIAL);
   preparaPaises(P, fac);
   P.faccoes.push(fac);
   fac.base = e;
@@ -127,7 +127,7 @@ function tomaEdificio(P, e, fac, adesao) {
       avisa(P, "estoqueperdido", { e, fac, antes, txt });
     }
   }
-  if (antes && fac && !antes.governo && !fac.governo && !adesao) mudaRelacao(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? DIPLO.tomarChave : DIPLO.tomarPredio);
+  if (antes && fac && !antes.governo && !fac.governo && !adesao) { mudaRelacao(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? DIPLO.tomarChave : DIPLO.tomarPredio); cansa(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? EXAUSTAO.chave : EXAUSTAO.predio); }
   if (antes && !antes.governo && (antes.base === e || (P.batalhoes || []).some(b => b.faccao === antes && b.base === e) || basesDe(P, antes).length === 0 || e.tipo === "lider")) baseCaiu(P, e, antes);
   const zn = e.zona, donoAntes = zn.dono;
   atualizaZona(zn);
@@ -285,13 +285,13 @@ function juntaReforcos(P, sq) {
 }
 
 /* ---------- feridos, tratamento e reserva ---------- */
-function temMedico(sq, ferido) { return ativos(sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== ferido); }
+function temMedico(sq, ferido) { return ativos(sq).some(m => m.funcao === "medico" && m.item === "kit" && m !== ferido && temSuprimento(m, 1)); }
 function evacua(P, s) {
   const fac = s.faccao, sq = s.sq;
   if (sq) { sq.membros = sq.membros.filter(o => o !== s); if (sq.lider === s) escolheLider(P, sq); }
   s.sqAntes = sq; s.sq = null;
   const hospital = P.reg.edificios.find(e => e.tipo === "hospital" && e.dono === fac);
-  if (hospital) { s.vida = "tratando"; s.ondeTrata = "hospital"; s.fimTrat = P.tempo + TRATAMENTO_HOSPITAL; }
+  if (hospital) { s.vida = "tratando"; s.ondeTrata = "hospital"; s.fimTrat = P.tempo + TRATAMENTO_HOSPITAL * gastaTratamento(P, fac, s); }
   else if (fac.base) { s.vida = "fila"; s.ondeTrata = "QG"; fac.fila.push(s); }
   else { s.vida = "morto"; anota(P, s, "Morreu: não havia onde tratar o ferimento"); }
 }
@@ -302,7 +302,7 @@ function tratamentos(P) {
   for (const fac of P.faccoes) {
     if (!fac.fila) continue;
     const noQG = P.soldados.filter(s => s.faccao === fac && s.vida === "tratando" && s.ondeTrata === "QG").length;
-    for (let i = noQG; i < VAGAS_QG && fac.fila.length; i++) { const s = fac.fila.shift(); s.vida = "tratando"; s.fimTrat = P.tempo + TRATAMENTO_QG; }
+    for (let i = noQG; i < VAGAS_QG && fac.fila.length; i++) { const s = fac.fila.shift(); s.vida = "tratando"; s.fimTrat = P.tempo + TRATAMENTO_QG * gastaTratamento(P, fac, s); }
   }
   for (const s of P.soldados) {
     if (s.vida !== "tratando" || P.tempo < s.fimTrat) continue;
@@ -383,7 +383,7 @@ function subpasso(P, dt) {
   }
   if (P.tempo >= P.proximaHora) {
     P.proximaHora += HORA;
-    horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDaDiplomacia(P);
+    horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDoGoverno(P); horaDaDiplomacia(P);
     for (const f of P.faccoes) if (!f.jogador && !f.governo && !f.eliminada) { economiaRival(P, f); recrutamentoRival(P, f); armasRival(P, f); }
     avisa(P, "hora", {});
   }

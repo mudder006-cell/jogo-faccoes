@@ -6,6 +6,7 @@
      apreendida no caminho (menos risco com postos de gasolina seus).
    - Fabricar: oficinas e fábricas suas produzem aos poucos. Armas
      pesadas só saem de fábrica.
+   - Suprimentos (19.2): caixa de 20 por $ 80, 2 pontos de fabricação (oficina serve), contrabando e doação.
    - Doação estrangeira: cada país tem uma relação com você, que sobe
      mandando emissários (influência) e cumprindo os pedidos dele.
      Com relação alta, manda armas todo dia.
@@ -14,20 +15,20 @@
    ============================================================ */
 /* preço do nível 1 (nível 2 = 4x, nível 3 = 15x) e das caixas de munição */
 const PRECO = { fuzil: 400, metralhadora: 1500, lancagranadas: 1800, rpg: 2500, kit: 200, explosivo: 300,
-  "cx-bala": 60, "cx-cinta": 150, "cx-granada": 240, "cx-foguete": 450, veiculo: 2500 };
+  "cx-bala": 60, "cx-cinta": 150, "cx-granada": 240, "cx-foguete": 450, "cx-suprimento": 80, veiculo: 2500 };
 const precoDe = k => (ehCaixa(k) ? PRECO[k] : PRECO[baseDe(k)] * NIVEL.preco[nivelDe(k) - 1]);
 const ITENS_A_VENDA = () => { const l = []; for (const b of BASES_ARMA) for (const n of [1, 2, 3]) l.push(chave(b, n)); return l.concat(Object.keys(MUNICOES).map(t => "cx-" + t)); };
 const CONTRABANDO = { desconto: .55, horas: 6, risco: .25, riscoPorPosto: .05, riscoMin: .05 };
 const FABRICACAO = {
   pontos: { oficina: 1, fabrica: 3 },          // pontos de produção por hora
-  custo: { fuzil: 8, kit: 3, explosivo: 5, metralhadora: 18, lancagranadas: 22, rpg: 26, "cx-bala": 2, "cx-cinta": 4, "cx-granada": 4, "cx-foguete": 6, veiculo: 30 },
+  custo: { fuzil: 8, kit: 3, explosivo: 5, metralhadora: 18, lancagranadas: 22, rpg: 26, "cx-bala": 2, "cx-cinta": 4, "cx-granada": 4, "cx-foguete": 6, "cx-suprimento": 2, veiculo: 30 },
   pesada: ["metralhadora", "lancagranadas", "rpg", "cx-granada", "cx-foguete", "veiculo"],   // só em fábrica (e todo nível 3)
   material: .3                                  // paga 30% do preço em material
 };
 const PAISES = [
-  { id: "sarabel", n: "Reino de Sarabel", icone: "crown", gosta: ["fuzil", "metralhadora", "fuzil"], municao: ["cx-bala", "cx-cinta"] },
-  { id: "toveria", n: "República de Toveria", icone: "account_balance", gosta: ["rpg", "lancagranadas", "fuzil"], municao: ["cx-foguete", "cx-granada"] },
-  { id: "ostlan", n: "Federação de Ostlan", icone: "public", gosta: ["kit", "fuzil", "explosivo"], municao: ["cx-bala", "cx-bala"] }
+  { id: "sarabel", n: "Reino de Sarabel", icone: "crown", gosta: ["fuzil", "metralhadora", "fuzil"], municao: ["cx-bala", "cx-cinta"], suprimento: 1 },
+  { id: "toveria", n: "República de Toveria", icone: "account_balance", gosta: ["rpg", "lancagranadas", "fuzil"], municao: ["cx-foguete", "cx-granada"], suprimento: 1 },
+  { id: "ostlan", n: "Federação de Ostlan", icone: "public", gosta: ["kit", "fuzil", "explosivo"], municao: ["cx-bala", "cx-bala"], suprimento: 2 }
 ];
 const EMISSARIO = { influencia: 45, relacao: 8 };
 const PEDIDO = { aCada: 12 * HORA, prazo: 48 * HORA, premio: 25, castigo: 10 };
@@ -46,7 +47,7 @@ function preparaPaises(P, fac) {
 function compra(P, fac, item, n, auto) {
   n = n || 1; const custo = precoDe(item) * n;
   if (fac.recursos.dinheiro < custo) return false;
-  fac.recursos.dinheiro -= custo; guarda(fac, item, n);
+  fac.recursos.dinheiro -= custo; guarda(fac, item, n); gastoDeGuerra(P, fac, custo);
   avisa(P, "comprou", { fac, item, n, auto });
   return true;
 }
@@ -57,7 +58,7 @@ function riscoContrabando(P, fac) {
 function encomenda(P, fac, item, n) {
   n = n || 1; const custo = Math.round(precoDe(item) * CONTRABANDO.desconto) * n;
   if (fac.recursos.dinheiro < custo) return false;
-  fac.recursos.dinheiro -= custo;
+  fac.recursos.dinheiro -= custo; gastoDeGuerra(P, fac, custo);
   fac.cargas.push({ item, n, chega: P.tempo + CONTRABANDO.horas * HORA, risco: riscoContrabando(P, fac) });
   avisa(P, "encomendou", { fac, item, n });
   return true;
@@ -112,6 +113,8 @@ function entregaDoPais(rel, pais) {
   if (rel.relacao >= 85) { add(chave(pais.gosta[0], 2), 1); add(pais.gosta[1], 1); }
   if (rel.relacao >= ENTREGA.minimo) add(pais.municao[0], 1);
   if (rel.relacao >= 60) add(pais.municao[1], 1);
+  if (rel.relacao >= ENTREGA.minimo) add("cx-suprimento", pais.suprimento);          // 19.2: caixas de suprimentos (Ostlan manda o dobro)
+  if (rel.relacao >= 85) add("cx-suprimento", pais.suprimento);
   return l;
 }
 
@@ -167,5 +170,8 @@ function armasRival(P, fac) {
   preparaPaises(P, fac);
   // armas e munição do dia a dia vêm do estoque mínimo dos batalhões (compra automática), como o jogador
   if (!podeFabricar(P, fac, "cx-bala") && fac.producao.length < 2 && R.dinheiro > 400) fabrica(P, fac, fac.municao.bala < 400 ? "cx-bala" : "fuzil");
+  // suprimentos: fabrica caixas quando o estoque (QG e batalhões) está baixo; o resto vem do mínimo dos batalhões (compra automática)
+  const queroSup = batalhoesDe(P, fac).reduce((t, b) => t + (b.minimo["cx-suprimento"] || 0), 0);   // só fabrica se o estoque está abaixo do mínimo e não há caixa na fila
+  if (!fac.producao.some(o => o.item === "cx-suprimento") && totalSuprimentos(P, fac) < queroSup && R.dinheiro > 1500 && !podeFabricar(P, fac, "cx-suprimento")) fabrica(P, fac, "cx-suprimento");
   if (R.influencia > 200) { const p = PAISES.reduce((a, b) => (fac.paises[b.id].relacao > fac.paises[a.id].relacao ? b : a)); mandaEmissario(P, fac, p.id); }
 }

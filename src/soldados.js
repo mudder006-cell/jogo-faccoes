@@ -15,8 +15,8 @@ const INICIAIS = "ABDFGHJKMNQRSTZ";
 const ARMAS = {
   fuzil:         { n: "Fuzil", alcance: 260, cadencia: 1.1, precisao: 1, area: 0 },
   metralhadora:  { n: "Metralhadora", alcance: 300, cadencia: .22, precisao: .5, area: 0, supressao: true },
-  lancagranadas: { n: "Lança-granadas", alcance: 170, cadencia: 4, precisao: .8, area: 5, contraPredio: .25, danoPredio: .03 },
-  rpg:           { n: "Lança-foguetes (RPG)", alcance: 200, cadencia: 7, precisao: .75, area: 4, contraPredio: .85, danoPredio: .15, mira: .5 }
+  lancagranadas: { n: "Lança-granadas", alcance: 170, cadencia: 4, precisao: .8, area: 5, contraPredio: .25, danoPredio: .068 },
+  rpg:           { n: "Lança-foguetes (RPG)", alcance: 200, cadencia: 7, precisao: .75, area: 4, contraPredio: .85, danoPredio: .34, mira: .5 }
 };
 const ITENS = { kit: "Kit médico", explosivo: "Explosivos" };
 const FUNCOES = {
@@ -43,7 +43,7 @@ const BONUS_PATENTE = [
   { moral: 15, precisao: 1.15, calma: .7, fatal: .55 }
 ];
 const bonusDe = s => BONUS_PATENTE[nivelPatente(s)];
-const moralMax = s => s.atr.coragem + 30 + bonusDe(s).moral;
+const moralMax = s => s.atr.coragem + 30 + bonusDe(s).moral - moralExaustao(s.faccao);   // 19.3: exaustão de guerra alta tira até 12 de moral máxima
 /* pode comandar um esquadrão: Veterano ou mais, ou liderança 60+ */
 const LIDERANCA_PARA_LIDERAR = 60;
 function podeLiderar(s) { return nivelPatente(s) >= 2 || s.atr.lideranca >= LIDERANCA_PARA_LIDERAR; }
@@ -60,6 +60,7 @@ function criaSoldado(P, fac, funcao, base) {
     abates: 0, acertos: 0, ferimentos: 0, combates: 0, diario: [], caiuEm: 0, rosto: criaRosto(r, fac), nivel: 1, nivelItem: 1, municao: 0,
     mem: new Map(), sup: null, mira: null };   // percepção: última posição conhecida de cada inimigo, alvo de supressão e o que mostra a tela
   s.municao = cargaDe(s);
+  s.suprimentos = fac.governo ? cargaSuprimento(s) : 0;   // o governo antigo já nasce com o que vai usar; os outros enchem a mochila numa base
   P.soldados.push(s);
   return s;
 }
