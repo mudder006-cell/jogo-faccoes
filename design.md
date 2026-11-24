@@ -202,6 +202,13 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Ajustes depois do teste do caixa (Renan, 24/11/2026; `testes/relatorios/2026-11-24-prot19-4-caixa.md`): engenheiro de obras só é contratado com folga de caixa **e** renda por hora positiva (rival e jogador). **Países compram o excedente de comida a $ 1,50 por unidade**, para a comida virar dinheiro e a obra se pagar; a rival só constrói obra de comida que dá lucro.
 - Zumbi (Renan, 24/11/2026, depois do teste final): a contagem vale para quem já teve 10 prédios **ou** depois de 24 h de jogo, o que vier primeiro (no teste, uma rival ficou com 1 prédio e −$ 3.652 para sempre porque nunca chegou a 10).
 
+### Mandatos e segurar território (decidido pelo Renan em 24/11/2026; protótipo 19.5)
+- Problema visto pelo Renan: o batalhão cumpre a ordem por pouco tempo e depois ataca no lugar errado ou larga a defesa.
+- Regras menos engessadas: a ordem vira um **mandato** (intenção com fim definido, que só acaba quando o jogador cancela ou fica impossível, com aviso). Dentro do mandato o esquadrão decide por pontos (quanto ajuda o mandato, risco, distância), com **coleira** (pode sair para socorrer ou perseguir, com limite de distância e tempo, e volta) e **revezamento** (quem precisa recarregar só sai quando outro chega, ou deixa parte no lugar). O batalhão presta contas e diz por que largou uma ordem.
+- **Assalto toma, guarnição segura:** esquadrões de assalto invadem; quando um ponto é tomado, esquadrões de segurar ocupam e o assalto segue. Vale para o jogador e para as rivais. Papéis por pontos (quem tem metralhador e engenheiro tende a segurar; quem tem AT e granadeiro, a assaltar), sem composição fixa.
+- Primeiro passo: diagnóstico com a medida "% do tempo cumprindo a ordem".
+- Para o futuro (Renan): centros de distribuição (para não voltar à base para recarregar) e mapa bem maior.
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
