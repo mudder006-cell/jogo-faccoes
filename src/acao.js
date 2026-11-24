@@ -48,7 +48,7 @@ function contraAtaqueGoverno(P) {
   const alvos = P.faccoes.filter(f => f.alvoDoGoverno && !f.eliminada);
   const emCurso = P.esquadroes.filter(q => q.faccao === gov && q.contra && ativos(q).length && (q.estado === "andando" || q.combate)).length;
   if (emCurso >= (alvos.length ? CONTRA.maxAlvo : CONTRA.maxAoMesmoTempo)) return;
-  let perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
+  let perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && !e.soltoPeloGoverno && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
   let raio = CONTRA.raio, minimo = CONTRA.minimoGuarnicao;
   if (alvos.length) { perdidos = perdidos.concat(P.reg.edificios.filter(e => alvos.includes(e.dono) && !perdidos.includes(e) && TIPOS_CHAVE.includes(e.tipo))); raio = CONTRA.raioAlvo; minimo = CONTRA.minimoAlvo; }
   if (!perdidos.length) return;

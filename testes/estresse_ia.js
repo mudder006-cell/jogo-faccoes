@@ -66,12 +66,14 @@ function umaPartida(semente, dif) {
     let govRemovido = GOVERNO === 'nenhum';
     const extra = { paresGuerra: new Set(), pazes: 0, cessar: 0, cessarParaPaz: 0, cessarParaGuerra: 0, fronteiraH: null, serie: {} }, estAnt = new Map(), proxSerie = [6, 12, 24, 48, 72, 96]; let proxFront = 0;
     const gov0 = { predios: G.resumoFaccao(P, P.governo).predios, sold: G.soldados(P, P.governo) };
-    P.ouvintes.push((t, d) => { res.eventos[t] = (res.eventos[t] || 0) + 1; if (['reconstruido', 'consertado', 'fortificado'].includes(t) && d.sq && !d.sq.faccao.jogador) { res.obrasRivais = res.obrasRivais || {}; res.obrasRivais[t] = (res.obrasRivais[t] || 0) + 1; } });
+    P.ouvintes.push((t, d) => { res.eventos[t] = (res.eventos[t] || 0) + 1; if (t === 'proposta' && d.p.para.jogador) res.propJogador = (res.propJogador || 0) + 1; if (t === 'coalizao') res[d.formou ? 'coalFormou' : 'coalDesfez'] = (res[d.formou ? 'coalFormou' : 'coalDesfez'] || 0) + 1; if (t === 'governoalvo') res.alvoMud = (res.alvoMud || 0) + 1; if (['reconstruido', 'consertado', 'fortificado'].includes(t) && d.sq && !d.sq.faccao.jogador) { res.obrasRivais = res.obrasRivais || {}; res.obrasRivais[t] = (res.obrasRivais[t] || 0) + 1; } });
+    res.exMax = 0; const govSerie = {};
     const caixaMin = new Map(rivais.map(f => [f, Infinity]));
     let estragado = null;
     while (P.tempo < HORAS * G.HORA) {
       G.passoDaPartida(P, .25);
       if (GOVERNO === 'fim' && !govRemovido && P.tempo >= FIM_GOV * G.HORA) { removeGoverno(P); govRemovido = true; }
+      for (const f of rivais) if ((f.exaustao || 0) > res.exMax) res.exMax = Math.round(f.exaustao);
       for (let i = 0; i < rivais.length; i++) for (let j = i + 1; j < rivais.length; j++) {
         const k = i + '-' + j, st = G.estadoEntre(P, rivais[i], rivais[j]), ant = estAnt.get(k);
         if (st === 'guerra') extra.paresGuerra.add(k);
@@ -106,6 +108,7 @@ function umaPartida(semente, dif) {
     }
     { res.modoGoverno = GOVERNO; res.paresGuerra = extra.paresGuerra.size; res.pazes = extra.pazes; res.cessarFogo = extra.cessar; res.cessarParaPaz = extra.cessarParaPaz; res.cessarParaGuerra = extra.cessarParaGuerra; res.fronteiraH = extra.fronteiraH; res.serie = extra.serie; res.paresPorPers = {};
       for (const k of extra.paresGuerra) for (const i of k.split('-')) { const p = rivais[+i].personalidade; res.paresPorPers[p] = (res.paresPorPers[p] || 0) + 1; } }
+    res.exFinal = Math.max(0, ...rivais.map(f => Math.round(f.exaustao || 0)));
     res.governo = { predios0: gov0.predios, predios: G.resumoFaccao(P, P.governo).predios, sold0: gov0.sold, sold: G.soldados(P, P.governo) };
   } catch (e) { res.erro = (e && e.stack || String(e)).split('\n').slice(0, 3).join(' | '); }
   res.ms = Date.now() - t0;
@@ -137,6 +140,7 @@ for (const s of SEMENTES) for (const d of DIFS) {
   for (const r of res.rivais) console.log('  ', r.nome.padEnd(8), (r.pers || '?').padEnd(11), r.eliminada ? 'ELIMINADA' : '', 'prédios', String(r.predios).padStart(4), '| sold', String(r.soldados).padStart(3), '| $', r.dinheiro, '(mín', r.caixaMin + ') | bat', r.batalhoes, '| veíc', r.veiculos, '| guerras', r.guerras);
   if (res.governo.predios0 !== undefined) console.log('   governo: prédios', res.governo.predios0, '→', res.governo.predios, '| soldados', res.governo.sold0, '→', res.governo.sold);
   if (res.modoGoverno) console.log('   1ª fronteira entre rivais:', res.fronteiraH === null ? 'nunca' : res.fronteiraH + ' h', '| pares que já guerrearam:', res.paresGuerra, '| pazes:', res.pazes, '| cessar-fogos:', res.cessarFogo, '(viraram paz ' + res.cessarParaPaz + ', voltaram à guerra ' + res.cessarParaGuerra + ')', '| prédios das rivais por hora:', Object.entries(res.serie).map(([h, x]) => h + 'h=' + x.rivais.join('/') + ' (sem dono ' + x.semDono + ')').join(' ; '));
+  console.log('   governo por hora:', Object.entries(res.serie).map(([h, x]) => h + 'h=' + x.gov).join(' '), '| exaustão máx/final:', res.exMax + '/' + res.exFinal, '| propostas ao jogador:', res.propJogador || 0, '| coalizão formou/desfez:', (res.coalFormou || 0) + '/' + (res.coalDesfez || 0), '| mudanças de alvo do governo:', res.alvoMud || 0);
   for (const a of res.alertas) console.log('   ⚠', a);
 }
 

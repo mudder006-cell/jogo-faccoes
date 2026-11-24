@@ -163,9 +163,10 @@ function trocaOrdens(P, b, novas) {
 /* ---------- governo antigo: batalhões por região, rondas e reação rápida ---------- */
 const GOV = { reacao: 320, volta: 380, rondaEspera: [15, 30], pensa: 10, maxReagindo: 3,
   // 19.3 (provisório): enfraquece depois de 4 h, soltando 1,5% dos prédios iniciais por hora (primeiro os bairros entre as facções; a cidade velha e os prédios de força ficam) e cortando 1 soldado de cada guarnição de fora do centro a cada 6 h (mínimo 3); a cidade velha e os prédios de força mantêm a guarnição inteira
-  enfraquece: { inicio: 4, taxa: .015, cortaCada: 6, minimo: 3 },
+  // o ritmo cai pela metade a cada 36 h e o governo nunca solta abaixo de 30% dos prédios iniciais (abaixo disso só perde por conquista)
+  enfraquece: { inicio: 4, taxa: .015, cortaCada: 6, minimo: 3, meiaVida: 36, piso: .3 },
   // facção vira alvo com 80+ prédios e (2x a média das outras ou 10% do mapa); deixa de ser abaixo de 80% disso
-  alvo: { minPredios: 80, vezes: 2, parte: .10, sai: .8, reacaoVezes: 2, extraReagindo: 2 } };
+  alvo: { minPredios: 80, vezes: 2, parte: .10, sai: .7, minimoHoras: 12, reacaoVezes: 2, extraReagindo: 2 } };
 const PREDIOS_DE_FORCA = ["governo", "quartel", "cidadela", "delegacia"];
 /* a cada hora: o governo solta prédios e corta guarnições, e marca quem cresceu demais */
 function horaDoGoverno(P) {
@@ -188,9 +189,11 @@ function enfraqueceGoverno(P) {
     dispensaSoldado(P, s); anota(P, s, "Desertou: o governo antigo deixou de pagar a guarnição");
   }
   // prédios: um orçamento por hora (acumula as frações), tirado da zona mais longe do centro; pontos importantes primeiro
-  P.govOrcamento = (P.govOrcamento || 0) + P.govInicial * E.taxa;
+  P.govOrcamento = (P.govOrcamento || 0) + P.govInicial * E.taxa * Math.pow(.5, (h - E.inicio) / E.meiaVida);
   let n = Math.floor(P.govOrcamento); if (n < 1) return;
   P.govOrcamento -= n;
+  const atuais = P.reg.edificios.filter(e => e.dono === gov).length;
+  n = Math.min(n, Math.floor(atuais - P.govInicial * E.piso)); if (n < 1) return;
   // o governo recua primeiro dos bairros que ficam entre as facções (soma das distâncias às duas mais perto): todas têm terra livre ao alcance e as fronteiras aparecem cedo
   const delas = new Map();
   for (const e of P.reg.edificios) if (e.dono && !e.dono.governo && !e.dono.eliminada) { if (!delas.has(e.dono)) delas.set(e.dono, []); delas.get(e.dono).push(e); }
@@ -204,7 +207,7 @@ function enfraqueceGoverno(P) {
     const lista = zn.edificios.filter(e => e.dono === gov && !PREDIOS_DE_FORCA.includes(e.tipo)).sort((a, b) => (TIPOS_CHAVE.includes(b.tipo) ? 1 : 0) - (TIPOS_CHAVE.includes(a.tipo) ? 1 : 0));
     for (const e of lista) {
       if (n <= 0) break;
-      if (P.esquadroes.some(q => q.guarda === e && q.faccao !== gov && ativos(q).length)) continue;   // inimigo dentro: não solta
+      if (P.esquadroes.some(q => q.guarda === e && ativos(q).length && (q.faccao !== gov || q.combate))) continue;   // inimigo dentro ou guarnição em combate: não solta
       soltaPredioDoGoverno(P, e); n--;
     }
   }
@@ -213,10 +216,10 @@ function dispensaSoldado(P, s) { const sq = s.sq; if (sq) { sq.membros = sq.memb
 function soltaPredioDoGoverno(P, e) {
   const gov = P.governo;
   for (const sq of P.esquadroes) if (sq.faccao === gov && sq.guarda === e && ativos(sq).length) {   // a guarnição é dispensada
-    if (sq.combate) continue;
     for (const s of ativos(sq)) dispensaSoldado(P, s);
     sq.guarda = null;
   }
+  e.soltoPeloGoverno = true;   // o contra-ataque não "retoma" o que o próprio governo soltou
   tomaEdificio(P, e, null);
 }
 /* quem passou de um tamanho vira alvo do governo (o jogador também); aviso quando muda */
@@ -227,7 +230,7 @@ function marcaAlvosDoGoverno(P) {
   for (const f of vivas) {
     const p = preds.get(f), outras = vivas.length > 1 ? (soma - p) / (vivas.length - 1) : 0, k = f.alvoDoGoverno ? A.sai : 1;
     const grande = p >= A.minPredios * k && (p >= A.vezes * outras * k || p >= A.parte * total * k);
-    if (grande !== !!f.alvoDoGoverno) { f.alvoDoGoverno = grande; avisa(P, "governoalvo", { fac: f, alvo: grande, predios: p }); }
+    if (grande !== !!f.alvoDoGoverno && P.tempo - (f.alvoMudouEm == null ? -1e9 : f.alvoMudouEm) >= A.minimoHoras * HORA) { f.alvoDoGoverno = grande; f.alvoMudouEm = P.tempo; avisa(P, "governoalvo", { fac: f, alvo: grande, predios: p }); }
   }
   for (const f of P.faccoes) if (f.alvoDoGoverno && (f.eliminada || !vivas.includes(f))) f.alvoDoGoverno = false;
 }

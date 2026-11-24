@@ -3840,7 +3840,7 @@ function contraAtaqueGoverno(P) {
   const alvos = P.faccoes.filter(f => f.alvoDoGoverno && !f.eliminada);
   const emCurso = P.esquadroes.filter(q => q.faccao === gov && q.contra && ativos(q).length && (q.estado === "andando" || q.combate)).length;
   if (emCurso >= (alvos.length ? CONTRA.maxAlvo : CONTRA.maxAoMesmoTempo)) return;
-  let perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
+  let perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && !e.soltoPeloGoverno && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
   let raio = CONTRA.raio, minimo = CONTRA.minimoGuarnicao;
   if (alvos.length) { perdidos = perdidos.concat(P.reg.edificios.filter(e => alvos.includes(e.dono) && !perdidos.includes(e) && TIPOS_CHAVE.includes(e.tipo))); raio = CONTRA.raioAlvo; minimo = CONTRA.minimoAlvo; }
   if (!perdidos.length) return;
@@ -4349,17 +4349,17 @@ const DIPLO = {
   aceitaPacto: 15, aceitaAlianca: 45, aceitaPaz: -25,
   tomarPredio: -6, tomarChave: -15, ferir: -2, matar: -4,
   fronteira: -.45, inimigoComum: 1.1, presentePor: 60, medoAcima: 1.4, medo: -.6,
-  traicao: -12, propostaDura: 6, esperaDepoisDeRecusa: 8, ajudaAliado: 12
+  traicao: -12, propostaDura: 6, esperaDepoisDeRecusa: 8, esperaMesmaProposta: 20, ajudaAliado: 12
 };
 /* exaustão de guerra e coalizão (19.3, números provisórios) */
 const EXAUSTAO = {
   tempo: 1, morte: .8, predio: .25, chave: 1.5, dinheiro: 1 / 500,   // sobe por hora em guerra, por soldado morto, por prédio e por ponto importante perdido, por $ gasto em armas e munição
-  descansa: 1.5, descansaCessar: 2,                                     // desce por hora fora de guerra (e em cessar-fogo)
+  descansa: 3, descansaCessar: 4,                                     // desce por hora fora de guerra (e em cessar-fogo)
   efeito: 40, moral: 12, voluntarios: .5,                               // acima de 40: moral máxima cai até 12 e voluntários até 50%
   busca: 40, aceita: 25, minGuerra: 4,                                  // pede cessar-fogo com exaustão >= 40 + guerra da personalidade; aceita com >= 25 + guerra; só depois de 4 h de guerra
   cessarHoras: 12, paz: 20, pazHoras: 24, pazRelacao: -10              // o cessar-fogo dura 12 h e vira paz se a exaustão média era 20+ (ou a relação já está boa), senão volta a guerra; paz sem nova guerra por 24 h e relação sobe a -10
 };
-const COALIZAO = { vezes: 1.8, sai: 1.4, minPredios: 60, aproxima: 1.5, afasta: 2, guerraAte: -20, cansaco: 30, bonusPaz: 15 };   // cresce demais: >= 1,8x a força média das outras e 60 prédios; sai abaixo de 1,4x
+const COALIZAO = { minimoHoras: 12, vezes: 1.8, sai: 1.25, minPredios: 60, aproxima: 1.5, afasta: 2, guerraAte: -20, cansaco: 30, bonusPaz: 15 };   // cresce demais: >= 1,8x a força média das outras e 60 prédios; sai abaixo de 1,4x
 const INCIDENTES = [
   { texto: "um tiroteio na fronteira deixou feridos", valor: -12 },
   { texto: "acusações de roubar combustível", valor: -8 },
@@ -4406,6 +4406,7 @@ function propoe(P, de, para, tipo) {
   P.propostas = P.propostas || [];
   if (propostaPendente(P, de, para)) return null;
   const p = { de, para, tipo, expira: P.tempo + DIPLO.propostaDura * HORA };
+  (rel(P, de, para).propostaEm ||= {})[tipo] = P.tempo;   // para o cooldown (vença, seja recusada ou aceita)
   P.propostas.push(p);
   avisa(P, "proposta", { p });
   return p;
@@ -4501,11 +4502,12 @@ function prediosDe(P, f) { let n = 0; for (const e of P.reg.edificios) if (e.don
 function atualizaCoalizao(P, vivas, forca) {
   const co = P.coalizao, mediaOutros = t => { const o = vivas.filter(f => f !== t); return o.reduce((n, f) => n + forca.get(f), 0) / Math.max(1, o.length); };
   if (co) {
+    if (vivas.includes(co.alvo) && P.tempo - co.desde < COALIZAO.minimoHoras * HORA) return;   // histerese: fica pelo menos 12 h
     const some = !vivas.includes(co.alvo) || vivas.length < 3 || forca.get(co.alvo) < mediaOutros(co.alvo) * COALIZAO.sai || prediosDe(P, co.alvo) < COALIZAO.minPredios * .8;
-    if (some) { P.coalizao = null; avisa(P, "coalizao", { alvo: co.alvo, formou: false }); }
+    if (some) { P.coalizao = null; P.coalizaoFimEm = P.tempo; avisa(P, "coalizao", { alvo: co.alvo, formou: false }); }
     return;
   }
-  if (vivas.length < 3) return;
+  if (vivas.length < 3 || P.tempo - (P.coalizaoFimEm == null ? -1e9 : P.coalizaoFimEm) < COALIZAO.minimoHoras * HORA) return;
   const top = vivas.reduce((m, f) => forca.get(f) > forca.get(m) ? f : m);
   if (forca.get(top) >= mediaOutros(top) * COALIZAO.vezes && prediosDe(P, top) >= COALIZAO.minPredios) {
     P.coalizao = { alvo: top, desde: P.tempo };
@@ -4581,11 +4583,12 @@ function fimDoCessarFogo(P, a, b) {
 function decideDiplomacia(P, a, b) {
   const r = rel(P, a, b), ia = !a.jogador && !b.jogador, outro = a.jogador ? b : a, eu = a.jogador ? a : b.jogador ? b : null;
   const podeProporAoJogador = eu && !(r.recusouEm > P.tempo - DIPLO.esperaDepoisDeRecusa * HORA) && !propostaPendente(P, outro, eu);
+  const cooldownOk = tipo => !(r.propostaEm && r.propostaEm[tipo] > P.tempo - DIPLO.esperaMesmaProposta * HORA);   // 20 h entre propostas iguais do mesmo par
   // exaustão de guerra: quem está cansado pede cessar-fogo; o outro aceita se também estiver cansado (ou se a relação deixa)
   if (r.estado === "guerra" && P.tempo - r.desde > EXAUSTAO.minGuerra * HORA) {
     for (const [x, y] of [[a, b], [b, a]]) {
       if (x.jogador || exaustaoEm(P, x, y) < limitePede(P, x, y)) continue;
-      if (y.jogador) { if (podeProporAoJogador) propoe(P, x, y, "cessar"); return; }
+      if (y.jogador) { if (podeProporAoJogador && cooldownOk("cessar")) { propoe(P, x, y, "cessar"); return; } continue; }
       if (exaustaoEm(P, y, x) >= limiteAceita(P, y, x) || r.valor >= DIPLO.aceitaPaz + pers(y).guerra) { mudaEstado(P, a, b, "cessarfogo"); return; }
     }
   }
@@ -4598,7 +4601,7 @@ function decideDiplomacia(P, a, b) {
   const quer = r.estado === "neutro" && r.valor >= DIPLO.propoePacto + acordo + Math.min(0, opo) ? "pacto"
     : r.estado === "pacto" && r.valor >= DIPLO.propoeAlianca + acordo + Math.min(0, opo) ? "alianca"
     : r.estado === "guerra" && r.valor >= DIPLO.propoePaz + guerra + opo && P.tempo - r.desde > 6 * HORA ? "paz" : null;
-  if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador) propoe(P, outro, eu, quer); return; }
+  if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador && cooldownOk(quer)) propoe(P, outro, eu, quer); return; }
   if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.declaraGuerra + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "alianca" && r.valor <= DIPLO.rompeAlianca) mudaEstado(P, a, b, "pacto", ia ? a : outro);
@@ -4635,7 +4638,8 @@ function baseCaiu(P, e, antes) {
 }
 function eliminaFaccao(P, fac, ondeCaiu) {
   if (fac.eliminada) return;
-  fac.eliminada = true;
+  fac.eliminada = true; fac.exaustao = 0; fac.alvoDoGoverno = false;   // limpa exaustão, alvo do governo e cessar-fogos
+  for (const [k, r] of (P.diplo || [])) if (k.split("-").includes(String(fac.id))) { r.exaustao = {}; if (r.estado === "cessarfogo") r.estado = "neutro"; }
   for (const e of P.reg.edificios) if (e.dono === fac) { e.dono = null; e.donoAnterior = fac; }
   for (const z of P.reg.zonas) atualizaZona(z);
   for (const s of P.soldados) if (s.faccao === fac && ["ok", "ferido", "reserva", "comando", "fila", "tratando"].includes(s.vida)) { if (s.sq) tiraDoEsquadrao(P, s); s.vida = "desertou"; }
@@ -5869,9 +5873,10 @@ function trocaOrdens(P, b, novas) {
 /* ---------- governo antigo: batalhões por região, rondas e reação rápida ---------- */
 const GOV = { reacao: 320, volta: 380, rondaEspera: [15, 30], pensa: 10, maxReagindo: 3,
   // 19.3 (provisório): enfraquece depois de 4 h, soltando 1,5% dos prédios iniciais por hora (primeiro os bairros entre as facções; a cidade velha e os prédios de força ficam) e cortando 1 soldado de cada guarnição de fora do centro a cada 6 h (mínimo 3); a cidade velha e os prédios de força mantêm a guarnição inteira
-  enfraquece: { inicio: 4, taxa: .015, cortaCada: 6, minimo: 3 },
+  // o ritmo cai pela metade a cada 36 h e o governo nunca solta abaixo de 30% dos prédios iniciais (abaixo disso só perde por conquista)
+  enfraquece: { inicio: 4, taxa: .015, cortaCada: 6, minimo: 3, meiaVida: 36, piso: .3 },
   // facção vira alvo com 80+ prédios e (2x a média das outras ou 10% do mapa); deixa de ser abaixo de 80% disso
-  alvo: { minPredios: 80, vezes: 2, parte: .10, sai: .8, reacaoVezes: 2, extraReagindo: 2 } };
+  alvo: { minPredios: 80, vezes: 2, parte: .10, sai: .7, minimoHoras: 12, reacaoVezes: 2, extraReagindo: 2 } };
 const PREDIOS_DE_FORCA = ["governo", "quartel", "cidadela", "delegacia"];
 /* a cada hora: o governo solta prédios e corta guarnições, e marca quem cresceu demais */
 function horaDoGoverno(P) {
@@ -5894,9 +5899,11 @@ function enfraqueceGoverno(P) {
     dispensaSoldado(P, s); anota(P, s, "Desertou: o governo antigo deixou de pagar a guarnição");
   }
   // prédios: um orçamento por hora (acumula as frações), tirado da zona mais longe do centro; pontos importantes primeiro
-  P.govOrcamento = (P.govOrcamento || 0) + P.govInicial * E.taxa;
+  P.govOrcamento = (P.govOrcamento || 0) + P.govInicial * E.taxa * Math.pow(.5, (h - E.inicio) / E.meiaVida);
   let n = Math.floor(P.govOrcamento); if (n < 1) return;
   P.govOrcamento -= n;
+  const atuais = P.reg.edificios.filter(e => e.dono === gov).length;
+  n = Math.min(n, Math.floor(atuais - P.govInicial * E.piso)); if (n < 1) return;
   // o governo recua primeiro dos bairros que ficam entre as facções (soma das distâncias às duas mais perto): todas têm terra livre ao alcance e as fronteiras aparecem cedo
   const delas = new Map();
   for (const e of P.reg.edificios) if (e.dono && !e.dono.governo && !e.dono.eliminada) { if (!delas.has(e.dono)) delas.set(e.dono, []); delas.get(e.dono).push(e); }
@@ -5910,7 +5917,7 @@ function enfraqueceGoverno(P) {
     const lista = zn.edificios.filter(e => e.dono === gov && !PREDIOS_DE_FORCA.includes(e.tipo)).sort((a, b) => (TIPOS_CHAVE.includes(b.tipo) ? 1 : 0) - (TIPOS_CHAVE.includes(a.tipo) ? 1 : 0));
     for (const e of lista) {
       if (n <= 0) break;
-      if (P.esquadroes.some(q => q.guarda === e && q.faccao !== gov && ativos(q).length)) continue;   // inimigo dentro: não solta
+      if (P.esquadroes.some(q => q.guarda === e && ativos(q).length && (q.faccao !== gov || q.combate))) continue;   // inimigo dentro ou guarnição em combate: não solta
       soltaPredioDoGoverno(P, e); n--;
     }
   }
@@ -5919,10 +5926,10 @@ function dispensaSoldado(P, s) { const sq = s.sq; if (sq) { sq.membros = sq.memb
 function soltaPredioDoGoverno(P, e) {
   const gov = P.governo;
   for (const sq of P.esquadroes) if (sq.faccao === gov && sq.guarda === e && ativos(sq).length) {   // a guarnição é dispensada
-    if (sq.combate) continue;
     for (const s of ativos(sq)) dispensaSoldado(P, s);
     sq.guarda = null;
   }
+  e.soltoPeloGoverno = true;   // o contra-ataque não "retoma" o que o próprio governo soltou
   tomaEdificio(P, e, null);
 }
 /* quem passou de um tamanho vira alvo do governo (o jogador também); aviso quando muda */
@@ -5933,7 +5940,7 @@ function marcaAlvosDoGoverno(P) {
   for (const f of vivas) {
     const p = preds.get(f), outras = vivas.length > 1 ? (soma - p) / (vivas.length - 1) : 0, k = f.alvoDoGoverno ? A.sai : 1;
     const grande = p >= A.minPredios * k && (p >= A.vezes * outras * k || p >= A.parte * total * k);
-    if (grande !== !!f.alvoDoGoverno) { f.alvoDoGoverno = grande; avisa(P, "governoalvo", { fac: f, alvo: grande, predios: p }); }
+    if (grande !== !!f.alvoDoGoverno && P.tempo - (f.alvoMudouEm == null ? -1e9 : f.alvoMudouEm) >= A.minimoHoras * HORA) { f.alvoDoGoverno = grande; f.alvoMudouEm = P.tempo; avisa(P, "governoalvo", { fac: f, alvo: grande, predios: p }); }
   }
   for (const f of P.faccoes) if (f.alvoDoGoverno && (f.eliminada || !vivas.includes(f))) f.alvoDoGoverno = false;
 }

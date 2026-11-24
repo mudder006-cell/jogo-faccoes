@@ -34,17 +34,17 @@ const DIPLO = {
   aceitaPacto: 15, aceitaAlianca: 45, aceitaPaz: -25,
   tomarPredio: -6, tomarChave: -15, ferir: -2, matar: -4,
   fronteira: -.45, inimigoComum: 1.1, presentePor: 60, medoAcima: 1.4, medo: -.6,
-  traicao: -12, propostaDura: 6, esperaDepoisDeRecusa: 8, ajudaAliado: 12
+  traicao: -12, propostaDura: 6, esperaDepoisDeRecusa: 8, esperaMesmaProposta: 20, ajudaAliado: 12
 };
 /* exaustão de guerra e coalizão (19.3, números provisórios) */
 const EXAUSTAO = {
   tempo: 1, morte: .8, predio: .25, chave: 1.5, dinheiro: 1 / 500,   // sobe por hora em guerra, por soldado morto, por prédio e por ponto importante perdido, por $ gasto em armas e munição
-  descansa: 1.5, descansaCessar: 2,                                     // desce por hora fora de guerra (e em cessar-fogo)
+  descansa: 3, descansaCessar: 4,                                     // desce por hora fora de guerra (e em cessar-fogo)
   efeito: 40, moral: 12, voluntarios: .5,                               // acima de 40: moral máxima cai até 12 e voluntários até 50%
   busca: 40, aceita: 25, minGuerra: 4,                                  // pede cessar-fogo com exaustão >= 40 + guerra da personalidade; aceita com >= 25 + guerra; só depois de 4 h de guerra
   cessarHoras: 12, paz: 20, pazHoras: 24, pazRelacao: -10              // o cessar-fogo dura 12 h e vira paz se a exaustão média era 20+ (ou a relação já está boa), senão volta a guerra; paz sem nova guerra por 24 h e relação sobe a -10
 };
-const COALIZAO = { vezes: 1.8, sai: 1.4, minPredios: 60, aproxima: 1.5, afasta: 2, guerraAte: -20, cansaco: 30, bonusPaz: 15 };   // cresce demais: >= 1,8x a força média das outras e 60 prédios; sai abaixo de 1,4x
+const COALIZAO = { minimoHoras: 12, vezes: 1.8, sai: 1.25, minPredios: 60, aproxima: 1.5, afasta: 2, guerraAte: -20, cansaco: 30, bonusPaz: 15 };   // cresce demais: >= 1,8x a força média das outras e 60 prédios; sai abaixo de 1,4x
 const INCIDENTES = [
   { texto: "um tiroteio na fronteira deixou feridos", valor: -12 },
   { texto: "acusações de roubar combustível", valor: -8 },
@@ -91,6 +91,7 @@ function propoe(P, de, para, tipo) {
   P.propostas = P.propostas || [];
   if (propostaPendente(P, de, para)) return null;
   const p = { de, para, tipo, expira: P.tempo + DIPLO.propostaDura * HORA };
+  (rel(P, de, para).propostaEm ||= {})[tipo] = P.tempo;   // para o cooldown (vença, seja recusada ou aceita)
   P.propostas.push(p);
   avisa(P, "proposta", { p });
   return p;
@@ -186,11 +187,12 @@ function prediosDe(P, f) { let n = 0; for (const e of P.reg.edificios) if (e.don
 function atualizaCoalizao(P, vivas, forca) {
   const co = P.coalizao, mediaOutros = t => { const o = vivas.filter(f => f !== t); return o.reduce((n, f) => n + forca.get(f), 0) / Math.max(1, o.length); };
   if (co) {
+    if (vivas.includes(co.alvo) && P.tempo - co.desde < COALIZAO.minimoHoras * HORA) return;   // histerese: fica pelo menos 12 h
     const some = !vivas.includes(co.alvo) || vivas.length < 3 || forca.get(co.alvo) < mediaOutros(co.alvo) * COALIZAO.sai || prediosDe(P, co.alvo) < COALIZAO.minPredios * .8;
-    if (some) { P.coalizao = null; avisa(P, "coalizao", { alvo: co.alvo, formou: false }); }
+    if (some) { P.coalizao = null; P.coalizaoFimEm = P.tempo; avisa(P, "coalizao", { alvo: co.alvo, formou: false }); }
     return;
   }
-  if (vivas.length < 3) return;
+  if (vivas.length < 3 || P.tempo - (P.coalizaoFimEm == null ? -1e9 : P.coalizaoFimEm) < COALIZAO.minimoHoras * HORA) return;
   const top = vivas.reduce((m, f) => forca.get(f) > forca.get(m) ? f : m);
   if (forca.get(top) >= mediaOutros(top) * COALIZAO.vezes && prediosDe(P, top) >= COALIZAO.minPredios) {
     P.coalizao = { alvo: top, desde: P.tempo };
@@ -266,11 +268,12 @@ function fimDoCessarFogo(P, a, b) {
 function decideDiplomacia(P, a, b) {
   const r = rel(P, a, b), ia = !a.jogador && !b.jogador, outro = a.jogador ? b : a, eu = a.jogador ? a : b.jogador ? b : null;
   const podeProporAoJogador = eu && !(r.recusouEm > P.tempo - DIPLO.esperaDepoisDeRecusa * HORA) && !propostaPendente(P, outro, eu);
+  const cooldownOk = tipo => !(r.propostaEm && r.propostaEm[tipo] > P.tempo - DIPLO.esperaMesmaProposta * HORA);   // 20 h entre propostas iguais do mesmo par
   // exaustão de guerra: quem está cansado pede cessar-fogo; o outro aceita se também estiver cansado (ou se a relação deixa)
   if (r.estado === "guerra" && P.tempo - r.desde > EXAUSTAO.minGuerra * HORA) {
     for (const [x, y] of [[a, b], [b, a]]) {
       if (x.jogador || exaustaoEm(P, x, y) < limitePede(P, x, y)) continue;
-      if (y.jogador) { if (podeProporAoJogador) propoe(P, x, y, "cessar"); return; }
+      if (y.jogador) { if (podeProporAoJogador && cooldownOk("cessar")) { propoe(P, x, y, "cessar"); return; } continue; }
       if (exaustaoEm(P, y, x) >= limiteAceita(P, y, x) || r.valor >= DIPLO.aceitaPaz + pers(y).guerra) { mudaEstado(P, a, b, "cessarfogo"); return; }
     }
   }
@@ -283,7 +286,7 @@ function decideDiplomacia(P, a, b) {
   const quer = r.estado === "neutro" && r.valor >= DIPLO.propoePacto + acordo + Math.min(0, opo) ? "pacto"
     : r.estado === "pacto" && r.valor >= DIPLO.propoeAlianca + acordo + Math.min(0, opo) ? "alianca"
     : r.estado === "guerra" && r.valor >= DIPLO.propoePaz + guerra + opo && P.tempo - r.desde > 6 * HORA ? "paz" : null;
-  if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador) propoe(P, outro, eu, quer); return; }
+  if (quer) { if (ia) { mudaEstado(P, a, b, ESTADO_DA_PROPOSTA[quer]); if (quer === "paz") apazigua(P, a, b); } else if (podeProporAoJogador && cooldownOk(quer)) propoe(P, outro, eu, quer); return; }
   if (r.estado === "neutro" && !(r.pazAte > P.tempo) && r.valor <= DIPLO.declaraGuerra + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "pacto" && r.valor <= DIPLO.rompePacto + guerra + Math.max(0, opo)) declaraGuerra(P, quem, contra);
   else if (r.estado === "alianca" && r.valor <= DIPLO.rompeAlianca) mudaEstado(P, a, b, "pacto", ia ? a : outro);
@@ -320,7 +323,8 @@ function baseCaiu(P, e, antes) {
 }
 function eliminaFaccao(P, fac, ondeCaiu) {
   if (fac.eliminada) return;
-  fac.eliminada = true;
+  fac.eliminada = true; fac.exaustao = 0; fac.alvoDoGoverno = false;   // limpa exaustão, alvo do governo e cessar-fogos
+  for (const [k, r] of (P.diplo || [])) if (k.split("-").includes(String(fac.id))) { r.exaustao = {}; if (r.estado === "cessarfogo") r.estado = "neutro"; }
   for (const e of P.reg.edificios) if (e.dono === fac) { e.dono = null; e.donoAnterior = fac; }
   for (const z of P.reg.zonas) atualizaZona(z);
   for (const s of P.soldados) if (s.faccao === fac && ["ok", "ferido", "reserva", "comando", "fila", "tratando"].includes(s.vida)) { if (s.sq) tiraDoEsquadrao(P, s); s.vida = "desertou"; }

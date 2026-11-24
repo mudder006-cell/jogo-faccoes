@@ -1,0 +1,1590 @@
+{
+ "quando": "2026-11-24T12:49:17.813Z",
+ "src": "/home/user/jogo-faccoes/src",
+ "horas": 96,
+ "rivais": 6,
+ "pers": null,
+ "governo": "normal",
+ "fimGoverno": null,
+ "partidas": [
+  {
+   "semente": "B2",
+   "dif": "dificil",
+   "erro": null,
+   "ms": 40434,
+   "rivais": [
+    {
+     "nome": "Rival 0",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 199,
+     "soldados": 9,
+     "dinheiro": 8061,
+     "caixaMin": 269,
+     "comida": 135,
+     "batalhoes": 1,
+     "veiculos": 1,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 1",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 447,
+     "soldados": 9,
+     "dinheiro": 51959,
+     "caixaMin": 0,
+     "comida": 40,
+     "batalhoes": 1,
+     "veiculos": 1,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 2",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 69,
+     "soldados": 16,
+     "dinheiro": 2965,
+     "caixaMin": 276,
+     "comida": 320,
+     "batalhoes": 2,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 3",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 81,
+     "soldados": 9,
+     "dinheiro": 9807,
+     "caixaMin": 558,
+     "comida": 228,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 4",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 566,
+     "soldados": 42,
+     "dinheiro": 1202,
+     "caixaMin": 9,
+     "comida": 59,
+     "batalhoes": 10,
+     "veiculos": 0,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 5",
+     "pers": "oportunista",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -1476,
+     "caixaMin": -1476,
+     "comida": 406,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    }
+   ],
+   "eventos": {
+    "pedidotroca": 97,
+    "trocou": 97,
+    "ordem": 584,
+    "comprou": 135,
+    "edificio": 3582,
+    "desvio": 215,
+    "combate": 632,
+    "plano": 226,
+    "baixa": 206,
+    "tratadocampo": 18,
+    "rendicao": 17,
+    "eliminado": 33,
+    "chegou": 302,
+    "zona": 56,
+    "hora": 96,
+    "fimcombate": 585,
+    "ajuda": 61,
+    "recrutou": 87,
+    "armou": 23,
+    "juntou": 29,
+    "pedido": 51,
+    "pedidocumprido": 23,
+    "incidente": 16,
+    "evento": 62,
+    "semdinheiroauto": 44,
+    "adesao": 50,
+    "tratado": 114,
+    "kitacabou": 3,
+    "abandonou": 17,
+    "semrecruta": 35,
+    "ordemcumprida": 10,
+    "fabricou": 340,
+    "vaibase": 39,
+    "convenceu": 136,
+    "refazer": 139,
+    "distribuiu": 190,
+    "socorro": 24,
+    "contraataque": 29,
+    "fortificado": 7,
+    "novoesquadrao": 4,
+    "transferido": 35,
+    "falta": 87,
+    "coalizao": 1,
+    "diplomacia": 42,
+    "estoqueperdido": 5,
+    "eliminada": 2,
+    "derrota": 1,
+    "governoalvo": 3,
+    "pedidocomando": 11,
+    "novobatalhao": 10,
+    "batalhaomudou": 3,
+    "ataqueconjunto": 11,
+    "dano": 8,
+    "doacao": 16,
+    "reforcado": 12,
+    "vaiajudar": 11,
+    "promovido": 15,
+    "comprouComida": 8,
+    "podeliderar": 9,
+    "desercao": 3,
+    "defendido": 185,
+    "pedeajuda": 1,
+    "pedidoperdido": 17,
+    "liderfugiu": 1,
+    "obra": 12,
+    "obrapronta": 10,
+    "veiculoatribuido": 2,
+    "semmotorista": 1,
+    "motorista": 2,
+    "entregou": 3,
+    "recarregar": 1,
+    "semguerra": 1
+   },
+   "primeiraGuerraH": 16,
+   "governo": {
+    "predios0": 1541,
+    "predios": 374,
+    "sold0": 168,
+    "sold": 5
+   },
+   "exMax": 41,
+   "obrasRivais": {
+    "fortificado": 7
+   },
+   "coalFormou": 1,
+   "alvoMud": 3,
+   "engenheirosRivais": 6,
+   "fortificadosRivais": 42,
+   "modoGoverno": "normal",
+   "paresGuerra": 5,
+   "pazes": 0,
+   "cessarFogo": 8,
+   "cessarParaPaz": 6,
+   "cessarParaGuerra": 0,
+   "fronteiraH": 7,
+   "serie": {
+    "6": {
+     "rivais": [
+      6,
+      1,
+      20,
+      14,
+      13,
+      16
+     ],
+     "semDono": 317,
+     "gov": 1498,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "rivais": [
+      9,
+      3,
+      26,
+      39,
+      28,
+      12
+     ],
+     "semDono": 354,
+     "gov": 1414,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "24": {
+     "rivais": [
+      30,
+      21,
+      43,
+      63,
+      178,
+      7
+     ],
+     "semDono": 286,
+     "gov": 1258,
+     "ex": [
+      0,
+      0,
+      8,
+      6,
+      16,
+      1
+     ]
+    },
+    "48": {
+     "rivais": [
+      23,
+      27,
+      69,
+      68,
+      186,
+      8
+     ],
+     "semDono": 278,
+     "gov": 1227,
+     "ex": [
+      23,
+      21,
+      0,
+      11,
+      35,
+      27
+     ]
+    },
+    "72": {
+     "rivais": [
+      32,
+      359,
+      67,
+      74,
+      268,
+      0
+     ],
+     "semDono": 367,
+     "gov": 719,
+     "ex": [
+      3,
+      4,
+      18,
+      7,
+      18,
+      0
+     ]
+    },
+    "96": {
+     "rivais": [
+      199,
+      447,
+      69,
+      81,
+      566,
+      0
+     ],
+     "semDono": 150,
+     "gov": 374,
+     "ex": [
+      0,
+      18,
+      0,
+      6,
+      21,
+      0
+     ]
+    }
+   },
+   "paresPorPers": {
+    "comerciante": 2,
+    "oportunista": 7,
+    "defensiva": 1
+   },
+   "exFinal": 21,
+   "alertas": [
+    "domínio: maior rival tem 8.2x os prédios da menor",
+    "Rival 2 (comerciante) sem veículos",
+    "Rival 3 (comerciante) sem veículos",
+    "Rival 4 (oportunista) sem veículos",
+    "Rival 5 (oportunista) terminou com caixa negativo",
+    "Rival 5 (oportunista) sem veículos"
+   ]
+  },
+  {
+   "semente": "K7",
+   "dif": "dificil",
+   "erro": null,
+   "ms": 19973,
+   "rivais": [
+    {
+     "nome": "Rival 0",
+     "pers": "oportunista",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -1362,
+     "caixaMin": -1362,
+     "comida": 231,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 1",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 39,
+     "soldados": 9,
+     "dinheiro": 2770,
+     "caixaMin": 29,
+     "comida": 415,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 2",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 51,
+     "soldados": 10,
+     "dinheiro": 3481,
+     "caixaMin": 86,
+     "comida": 415,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 3",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 53,
+     "soldados": 13,
+     "dinheiro": 1888,
+     "caixaMin": -582,
+     "comida": 414,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 4",
+     "pers": "oportunista",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -1316,
+     "caixaMin": -1316,
+     "comida": 172,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 5",
+     "pers": "defensiva",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -1365,
+     "caixaMin": -1365,
+     "comida": 197,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    }
+   ],
+   "eventos": {
+    "pedidotroca": 59,
+    "trocou": 58,
+    "ordem": 432,
+    "socorro": 9,
+    "edificio": 2157,
+    "desvio": 61,
+    "comprou": 122,
+    "combate": 122,
+    "plano": 110,
+    "baixa": 81,
+    "chegou": 316,
+    "ajuda": 37,
+    "fimcombate": 106,
+    "diplomacia": 4,
+    "hora": 96,
+    "rendicao": 5,
+    "recrutou": 13,
+    "armou": 7,
+    "refazer": 71,
+    "juntou": 12,
+    "pedido": 33,
+    "zona": 26,
+    "adesao": 21,
+    "ordemcumprida": 6,
+    "fabricou": 76,
+    "evento": 49,
+    "semdinheiroauto": 21,
+    "semrecruta": 3,
+    "pedidocumprido": 8,
+    "incidente": 14,
+    "estoqueperdido": 4,
+    "liderfugiu": 1,
+    "batalhaomudou": 1,
+    "eliminada": 3,
+    "defendido": 1,
+    "abandonou": 3,
+    "falta": 354,
+    "convenceu": 93,
+    "tratado": 44,
+    "reforcado": 4,
+    "distribuiu": 216,
+    "tratadocampo": 3,
+    "vaibase": 15,
+    "eliminado": 11,
+    "contraataque": 6,
+    "promovido": 2,
+    "transferido": 16,
+    "doacao": 7,
+    "desercao": 17,
+    "fortificado": 4,
+    "recarregar": 2,
+    "novoesquadrao": 1,
+    "pedidoperdido": 14,
+    "ataqueconjunto": 16,
+    "pedeajuda": 1,
+    "proposta": 1,
+    "propostavenceu": 1
+   },
+   "primeiraGuerraH": 69,
+   "governo": {
+    "predios0": 1874,
+    "predios": 1220,
+    "sold0": 174,
+    "sold": 82
+   },
+   "exMax": 25,
+   "obrasRivais": {
+    "fortificado": 4
+   },
+   "propJogador": 1,
+   "engenheirosRivais": 4,
+   "fortificadosRivais": 25,
+   "modoGoverno": "normal",
+   "paresGuerra": 1,
+   "pazes": 0,
+   "cessarFogo": 1,
+   "cessarParaPaz": 0,
+   "cessarParaGuerra": 0,
+   "fronteiraH": null,
+   "serie": {
+    "6": {
+     "rivais": [
+      0,
+      8,
+      38,
+      3,
+      2,
+      0
+     ],
+     "semDono": 484,
+     "gov": 1796,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "rivais": [
+      0,
+      10,
+      51,
+      8,
+      0,
+      0
+     ],
+     "semDono": 594,
+     "gov": 1668,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "24": {
+     "rivais": [
+      0,
+      15,
+      52,
+      9,
+      0,
+      0
+     ],
+     "semDono": 783,
+     "gov": 1472,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "48": {
+     "rivais": [
+      0,
+      32,
+      51,
+      30,
+      0,
+      0
+     ],
+     "semDono": 936,
+     "gov": 1282,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "72": {
+     "rivais": [
+      0,
+      35,
+      56,
+      43,
+      0,
+      0
+     ],
+     "semDono": 924,
+     "gov": 1273,
+     "ex": [
+      0,
+      3,
+      3,
+      0,
+      0,
+      0
+     ]
+    },
+    "96": {
+     "rivais": [
+      0,
+      39,
+      51,
+      53,
+      0,
+      0
+     ],
+     "semDono": 968,
+     "gov": 1220,
+     "ex": [
+      0,
+      17,
+      17,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "paresPorPers": {
+    "defensiva": 2
+   },
+   "exFinal": 17,
+   "alertas": [
+    "Rival 0 (oportunista) terminou com caixa negativo",
+    "Rival 0 (oportunista) sem veículos",
+    "Rival 1 (defensiva) sem veículos",
+    "Rival 2 (defensiva) sem veículos",
+    "Rival 3 (comerciante) sem veículos",
+    "Rival 4 (oportunista) terminou com caixa negativo",
+    "Rival 4 (oportunista) sem veículos",
+    "Rival 5 (defensiva) terminou com caixa negativo",
+    "Rival 5 (defensiva) sem veículos"
+   ]
+  },
+  {
+   "semente": "Q4",
+   "dif": "dificil",
+   "erro": null,
+   "ms": 48269,
+   "rivais": [
+    {
+     "nome": "Rival 0",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 392,
+     "soldados": 72,
+     "dinheiro": 2106,
+     "caixaMin": 0,
+     "comida": 250,
+     "batalhoes": 9,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 1",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 164,
+     "soldados": 10,
+     "dinheiro": 42683,
+     "caixaMin": 311,
+     "comida": 449,
+     "batalhoes": 1,
+     "veiculos": 2,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 2",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 47,
+     "soldados": 7,
+     "dinheiro": 1769,
+     "caixaMin": 174,
+     "comida": 440,
+     "batalhoes": 1,
+     "veiculos": 1,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 3",
+     "pers": "oportunista",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -929,
+     "caixaMin": -929,
+     "comida": 180,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 4",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 197,
+     "soldados": 26,
+     "dinheiro": 1755,
+     "caixaMin": -1358,
+     "comida": 414,
+     "batalhoes": 4,
+     "veiculos": 0,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 5",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 820,
+     "soldados": 51,
+     "dinheiro": 2144,
+     "caixaMin": 23,
+     "comida": 87,
+     "batalhoes": 10,
+     "veiculos": 2,
+     "guerras": 0
+    }
+   ],
+   "eventos": {
+    "pedidotroca": 985,
+    "trocou": 979,
+    "ordem": 720,
+    "comprou": 230,
+    "edificio": 3832,
+    "desvio": 178,
+    "combate": 297,
+    "plano": 328,
+    "baixa": 197,
+    "diplomacia": 37,
+    "hora": 96,
+    "fimcombate": 253,
+    "refazer": 188,
+    "tratadocampo": 13,
+    "ajuda": 61,
+    "recrutou": 242,
+    "rendicao": 16,
+    "chegou": 400,
+    "pedido": 50,
+    "eliminado": 31,
+    "estoqueperdido": 5,
+    "eliminada": 2,
+    "evento": 46,
+    "juntou": 111,
+    "semdinheiroauto": 109,
+    "zona": 52,
+    "tratado": 81,
+    "adesao": 96,
+    "ordemcumprida": 11,
+    "semrecruta": 64,
+    "fabricou": 651,
+    "pedidocumprido": 20,
+    "convenceu": 229,
+    "distribuiu": 611,
+    "vaiajudar": 28,
+    "armou": 48,
+    "reforcado": 18,
+    "falta": 116,
+    "proposta": 1,
+    "podeliderar": 24,
+    "coalizao": 5,
+    "derrota": 1,
+    "socorro": 34,
+    "vaibase": 66,
+    "kitacabou": 3,
+    "transferido": 18,
+    "pedidocomando": 20,
+    "novobatalhao": 20,
+    "governoalvo": 8,
+    "ataqueconjunto": 10,
+    "contraataque": 25,
+    "dano": 2,
+    "desercao": 3,
+    "doacao": 17,
+    "fortificado": 5,
+    "abandonou": 16,
+    "batalhaomudou": 3,
+    "incidente": 9,
+    "novoesquadrao": 3,
+    "promovido": 6,
+    "veiculoatribuido": 5,
+    "motorista": 5,
+    "lidermandou": 1,
+    "entregou": 22,
+    "pedidoperdido": 15,
+    "semmotorista": 2,
+    "consertado": 1,
+    "obra": 6,
+    "semguerra": 3,
+    "defendido": 9,
+    "obrapronta": 6,
+    "pedeajuda": 4,
+    "comprouComida": 2,
+    "reacao": 4,
+    "recarregar": 1,
+    "semsuprimentosestoque": 2
+   },
+   "primeiraGuerraH": 21,
+   "governo": {
+    "predios0": 1497,
+    "predios": 182,
+    "sold0": 126,
+    "sold": 0
+   },
+   "exMax": 46,
+   "propJogador": 1,
+   "coalFormou": 3,
+   "alvoMud": 8,
+   "obrasRivais": {
+    "fortificado": 5,
+    "consertado": 1
+   },
+   "coalDesfez": 2,
+   "engenheirosRivais": 11,
+   "fortificadosRivais": 53,
+   "modoGoverno": "normal",
+   "paresGuerra": 7,
+   "pazes": 1,
+   "cessarFogo": 11,
+   "cessarParaPaz": 2,
+   "cessarParaGuerra": 5,
+   "fronteiraH": 22,
+   "serie": {
+    "6": {
+     "rivais": [
+      14,
+      32,
+      5,
+      0,
+      1,
+      11
+     ],
+     "semDono": 359,
+     "gov": 1439,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "rivais": [
+      46,
+      36,
+      20,
+      0,
+      1,
+      46
+     ],
+     "semDono": 381,
+     "gov": 1331,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "24": {
+     "rivais": [
+      76,
+      38,
+      26,
+      0,
+      3,
+      84
+     ],
+     "semDono": 395,
+     "gov": 1240,
+     "ex": [
+      3,
+      2,
+      3,
+      0,
+      0,
+      0
+     ]
+    },
+    "48": {
+     "rivais": [
+      83,
+      287,
+      30,
+      0,
+      4,
+      106
+     ],
+     "semDono": 332,
+     "gov": 1020,
+     "ex": [
+      25,
+      31,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "72": {
+     "rivais": [
+      383,
+      311,
+      48,
+      0,
+      77,
+      352
+     ],
+     "semDono": 133,
+     "gov": 558,
+     "ex": [
+      13,
+      13,
+      0,
+      0,
+      3,
+      5
+     ]
+    },
+    "96": {
+     "rivais": [
+      392,
+      164,
+      47,
+      0,
+      197,
+      820
+     ],
+     "semDono": 60,
+     "gov": 182,
+     "ex": [
+      34,
+      4,
+      0,
+      0,
+      20,
+      13
+     ]
+    }
+   },
+   "paresPorPers": {
+    "oportunista": 7,
+    "comerciante": 7
+   },
+   "exFinal": 34,
+   "alertas": [
+    "domínio: maior rival tem 17.4x os prédios da menor",
+    "Rival 0 (oportunista) sem veículos",
+    "Rival 3 (oportunista) terminou com caixa negativo",
+    "Rival 3 (oportunista) sem veículos",
+    "Rival 4 (oportunista) sem veículos"
+   ]
+  },
+  {
+   "semente": "A1",
+   "dif": "dificil",
+   "erro": null,
+   "ms": 38973,
+   "rivais": [
+    {
+     "nome": "Rival 0",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 545,
+     "soldados": 30,
+     "dinheiro": 125,
+     "caixaMin": 5,
+     "comida": 0,
+     "batalhoes": 10,
+     "veiculos": 0,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 1",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 1,
+     "soldados": 5,
+     "dinheiro": -4336,
+     "caixaMin": -4336,
+     "comida": 72,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 2",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 49,
+     "soldados": 10,
+     "dinheiro": 5618,
+     "caixaMin": 65,
+     "comida": 160,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 3",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 168,
+     "soldados": 17,
+     "dinheiro": 1514,
+     "caixaMin": -47,
+     "comida": 201,
+     "batalhoes": 3,
+     "veiculos": 0,
+     "guerras": 2
+    },
+    {
+     "nome": "Rival 4",
+     "pers": "agressiva",
+     "eliminada": false,
+     "predios": 389,
+     "soldados": 30,
+     "dinheiro": 461,
+     "caixaMin": 6,
+     "comida": 75,
+     "batalhoes": 7,
+     "veiculos": 0,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 5",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 8,
+     "soldados": 5,
+     "dinheiro": -965,
+     "caixaMin": -1092,
+     "comida": 115,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    }
+   ],
+   "eventos": {
+    "pedidotroca": 185,
+    "trocou": 180,
+    "ordem": 877,
+    "comprou": 247,
+    "edificio": 3693,
+    "desvio": 162,
+    "chegou": 417,
+    "incidente": 13,
+    "hora": 96,
+    "pedido": 50,
+    "combate": 351,
+    "plano": 330,
+    "baixa": 203,
+    "eliminado": 28,
+    "tratadocampo": 16,
+    "fimcombate": 307,
+    "rendicao": 24,
+    "fabricou": 215,
+    "evento": 98,
+    "juntou": 90,
+    "refazer": 225,
+    "zona": 53,
+    "adesao": 37,
+    "semdinheiroauto": 79,
+    "socorro": 37,
+    "ajuda": 76,
+    "dano": 13,
+    "pedidocumprido": 12,
+    "abandonou": 19,
+    "vaibase": 43,
+    "tratado": 121,
+    "convenceu": 49,
+    "kitacabou": 4,
+    "contraataque": 48,
+    "ordemcumprida": 3,
+    "governoalvo": 6,
+    "coalizao": 3,
+    "pedidocomando": 17,
+    "diplomacia": 36,
+    "distribuiu": 27,
+    "novoesquadrao": 4,
+    "fortificado": 5,
+    "comprouComida": 43,
+    "recrutou": 145,
+    "novobatalhao": 17,
+    "semrecruta": 76,
+    "reforcado": 16,
+    "armou": 38,
+    "promovido": 13,
+    "falta": 223,
+    "pedeajuda": 7,
+    "doacao": 11,
+    "proposta": 18,
+    "ataqueconjunto": 1,
+    "desercao": 32,
+    "vaiajudar": 136,
+    "podeliderar": 16,
+    "defendido": 13,
+    "transferido": 24,
+    "batalhaomudou": 1,
+    "propostavenceu": 17,
+    "semtroca": 1,
+    "pedidoperdido": 18,
+    "consertado": 1
+   },
+   "primeiraGuerraH": 17,
+   "governo": {
+    "predios0": 1624,
+    "predios": 597,
+    "sold0": 194,
+    "sold": 14
+   },
+   "exMax": 75,
+   "alvoMud": 6,
+   "coalFormou": 2,
+   "obrasRivais": {
+    "fortificado": 5,
+    "consertado": 1
+   },
+   "propJogador": 18,
+   "coalDesfez": 1,
+   "engenheirosRivais": 8,
+   "fortificadosRivais": 36,
+   "modoGoverno": "normal",
+   "paresGuerra": 6,
+   "pazes": 0,
+   "cessarFogo": 5,
+   "cessarParaPaz": 5,
+   "cessarParaGuerra": 0,
+   "fronteiraH": 10,
+   "serie": {
+    "6": {
+     "rivais": [
+      37,
+      1,
+      40,
+      1,
+      33,
+      2
+     ],
+     "semDono": 303,
+     "gov": 1594,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "rivais": [
+      12,
+      1,
+      45,
+      3,
+      48,
+      14
+     ],
+     "semDono": 391,
+     "gov": 1497,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "24": {
+     "rivais": [
+      78,
+      1,
+      40,
+      12,
+      121,
+      16
+     ],
+     "semDono": 497,
+     "gov": 1246,
+     "ex": [
+      0,
+      7,
+      1,
+      6,
+      7,
+      0
+     ]
+    },
+    "48": {
+     "rivais": [
+      65,
+      1,
+      43,
+      21,
+      89,
+      9
+     ],
+     "semDono": 554,
+     "gov": 1229,
+     "ex": [
+      14,
+      31,
+      26,
+      31,
+      32,
+      25
+     ]
+    },
+    "72": {
+     "rivais": [
+      448,
+      1,
+      46,
+      78,
+      140,
+      8
+     ],
+     "semDono": 365,
+     "gov": 925,
+     "ex": [
+      45,
+      0,
+      3,
+      0,
+      46,
+      14
+     ]
+    },
+    "96": {
+     "rivais": [
+      545,
+      1,
+      49,
+      168,
+      389,
+      8
+     ],
+     "semDono": 254,
+     "gov": 597,
+     "ex": [
+      25,
+      0,
+      0,
+      25,
+      75,
+      0
+     ]
+    }
+   },
+   "paresPorPers": {
+    "oportunista": 4,
+    "agressiva": 5,
+    "defensiva": 3
+   },
+   "exFinal": 75,
+   "alertas": [
+    "domínio: maior rival tem 545.0x os prédios da menor",
+    "Rival 0 (defensiva) sem veículos",
+    "Rival 1 (oportunista) terminou com caixa negativo",
+    "Rival 1 (oportunista) sem veículos",
+    "Rival 2 (oportunista) sem veículos",
+    "Rival 3 (oportunista) sem veículos",
+    "Rival 4 (agressiva) sem veículos",
+    "Rival 5 (defensiva) terminou com caixa negativo",
+    "Rival 5 (defensiva) sem veículos"
+   ]
+  },
+  {
+   "semente": "C3",
+   "dif": "dificil",
+   "erro": null,
+   "ms": 50472,
+   "rivais": [
+    {
+     "nome": "Rival 0",
+     "pers": "agressiva",
+     "eliminada": false,
+     "predios": 71,
+     "soldados": 22,
+     "dinheiro": -266,
+     "caixaMin": -266,
+     "comida": 214,
+     "batalhoes": 4,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 1",
+     "pers": "defensiva",
+     "eliminada": false,
+     "predios": 240,
+     "soldados": 6,
+     "dinheiro": 22393,
+     "caixaMin": 38,
+     "comida": 421,
+     "batalhoes": 1,
+     "veiculos": 1,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 2",
+     "pers": "oportunista",
+     "eliminada": false,
+     "predios": 602,
+     "soldados": 63,
+     "dinheiro": 1725,
+     "caixaMin": 5,
+     "comida": 444,
+     "batalhoes": 11,
+     "veiculos": 1,
+     "guerras": 2
+    },
+    {
+     "nome": "Rival 3",
+     "pers": "agressiva",
+     "eliminada": false,
+     "predios": 122,
+     "soldados": 16,
+     "dinheiro": 369,
+     "caixaMin": -666,
+     "comida": 123,
+     "batalhoes": 3,
+     "veiculos": 0,
+     "guerras": 1
+    },
+    {
+     "nome": "Rival 4",
+     "pers": "oportunista",
+     "eliminada": true,
+     "predios": 0,
+     "soldados": 0,
+     "dinheiro": -2183,
+     "caixaMin": -2183,
+     "comida": 392,
+     "batalhoes": 1,
+     "veiculos": 0,
+     "guerras": 0
+    },
+    {
+     "nome": "Rival 5",
+     "pers": "comerciante",
+     "eliminada": false,
+     "predios": 643,
+     "soldados": 49,
+     "dinheiro": 764,
+     "caixaMin": 1,
+     "comida": 36,
+     "batalhoes": 11,
+     "veiculos": 0,
+     "guerras": 0
+    }
+   ],
+   "eventos": {
+    "pedidotroca": 1135,
+    "trocou": 1132,
+    "ordem": 1202,
+    "comprou": 161,
+    "desvio": 203,
+    "edificio": 4528,
+    "chegou": 641,
+    "diplomacia": 28,
+    "hora": 96,
+    "socorro": 41,
+    "combate": 342,
+    "plano": 355,
+    "baixa": 218,
+    "recrutou": 237,
+    "ajuda": 91,
+    "pedido": 52,
+    "fabricou": 561,
+    "fimcombate": 290,
+    "refazer": 489,
+    "incidente": 10,
+    "evento": 48,
+    "juntou": 131,
+    "semdinheiroauto": 94,
+    "eliminado": 35,
+    "falta": 129,
+    "pedidocumprido": 29,
+    "zona": 47,
+    "adesao": 51,
+    "ordemcumprida": 7,
+    "tratado": 100,
+    "desercao": 7,
+    "semrecruta": 120,
+    "convenceu": 126,
+    "distribuiu": 210,
+    "novoesquadrao": 5,
+    "transferido": 43,
+    "abandonou": 23,
+    "estoqueperdido": 4,
+    "eliminada": 2,
+    "derrota": 1,
+    "rendicao": 25,
+    "contraataque": 29,
+    "armou": 41,
+    "vaibase": 48,
+    "governoalvo": 9,
+    "tratadocampo": 17,
+    "pedidocomando": 24,
+    "novobatalhao": 25,
+    "ataqueconjunto": 41,
+    "vaiajudar": 38,
+    "kitacabou": 6,
+    "dano": 14,
+    "doacao": 23,
+    "coalizao": 1,
+    "reforcado": 10,
+    "promovido": 12,
+    "pedeajuda": 6,
+    "podeliderar": 14,
+    "semsuprimentosestoque": 1,
+    "fortificado": 2,
+    "comprouComida": 2,
+    "pedidoperdido": 13,
+    "lidermandou": 2,
+    "veiculoatribuido": 2,
+    "motorista": 2,
+    "entregou": 10,
+    "recarregar": 5,
+    "semtroca": 1,
+    "defendido": 9,
+    "semguerra": 1,
+    "reacao": 1
+   },
+   "primeiraGuerraH": 23,
+   "governo": {
+    "predios0": 1901,
+    "predios": 324,
+    "sold0": 150,
+    "sold": 5
+   },
+   "exMax": 60,
+   "alvoMud": 9,
+   "coalFormou": 1,
+   "obrasRivais": {
+    "fortificado": 2
+   },
+   "engenheirosRivais": 9,
+   "fortificadosRivais": 52,
+   "modoGoverno": "normal",
+   "paresGuerra": 4,
+   "pazes": 0,
+   "cessarFogo": 6,
+   "cessarParaPaz": 4,
+   "cessarParaGuerra": 0,
+   "fronteiraH": 19,
+   "serie": {
+    "6": {
+     "rivais": [
+      25,
+      15,
+      17,
+      1,
+      1,
+      1
+     ],
+     "semDono": 409,
+     "gov": 1831,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "12": {
+     "rivais": [
+      51,
+      17,
+      33,
+      1,
+      1,
+      41
+     ],
+     "semDono": 473,
+     "gov": 1684,
+     "ex": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "24": {
+     "rivais": [
+      70,
+      21,
+      84,
+      12,
+      3,
+      81
+     ],
+     "semDono": 586,
+     "gov": 1444,
+     "ex": [
+      1,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "48": {
+     "rivais": [
+      153,
+      32,
+      96,
+      27,
+      0,
+      97
+     ],
+     "semDono": 597,
+     "gov": 1299,
+     "ex": [
+      38,
+      5,
+      36,
+      11,
+      0,
+      23
+     ]
+    },
+    "72": {
+     "rivais": [
+      156,
+      177,
+      316,
+      52,
+      0,
+      379
+     ],
+     "semDono": 435,
+     "gov": 786,
+     "ex": [
+      6,
+      0,
+      38,
+      35,
+      0,
+      2
+     ]
+    },
+    "96": {
+     "rivais": [
+      71,
+      240,
+      602,
+      122,
+      0,
+      643
+     ],
+     "semDono": 299,
+     "gov": 324,
+     "ex": [
+      36,
+      53,
+      56,
+      10,
+      0,
+      0
+     ]
+    }
+   },
+   "paresPorPers": {
+    "agressiva": 2,
+    "oportunista": 4,
+    "comerciante": 1,
+    "defensiva": 1
+   },
+   "exFinal": 56,
+   "alertas": [
+    "domínio: maior rival tem 9.1x os prédios da menor",
+    "Rival 0 (agressiva) terminou com caixa negativo",
+    "Rival 0 (agressiva) sem veículos",
+    "Rival 3 (agressiva) sem veículos",
+    "Rival 4 (oportunista) terminou com caixa negativo",
+    "Rival 4 (oportunista) sem veículos",
+    "Rival 5 (comerciante) sem veículos"
+   ]
+  }
+ ]
+}
