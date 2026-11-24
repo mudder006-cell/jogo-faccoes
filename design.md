@@ -194,6 +194,11 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - **Paz recente protegida 24 h também contra a coalizão:** depois de uma paz (comum ou vinda de cessar-fogo), ninguém declara guerra àquela facção por 24 h, nem a coalizão. A fazer no protótipo 19.4.
 - 19.3 juntado ao main em 24/11/2026.
 
+### Números do 19.4 (aprovados pelo Renan em 24/11/2026; proposta em `propostas/2026-11-24-numeros-19-4.md`)
+- Equipe de obras: 2 engenheiros quando o batalhão nasce, +1 a cada 2 esquadrões além do 2º, máximo 4; custo de soldado ($ 5/h) + kit de explosivos ($ 300) cada. Prioridade: bases até 100 → fronteira (até 150 m de quem está em guerra) até 60 → consertar e reconstruir. Cada um num prédio; velocidade e gasto como hoje. Não vai a prédio com inimigo visto a menos de 150 m; foge para a base se levar tiro; não atira primeiro. Rivais iguais.
+- Engenheiro de combate: 1 por esquadrão com 4 ou mais soldados; rival guarda 1 explosivo por esquadrão com 4 ou mais. Fortifica onde o esquadrão fica parado mais de 2 min, só até 50.
+- Obras (tempos iguais): fazenda $ 800, +30 de comida/h; armazém $ 600, +10/h; expandir plantação $ 400, +8/h; melhorar para II $ 1.500 (1,8x) e para III $ 3.500 (2,8x). Rival constrói quando o caixa passa do custo + reserva (agressiva $ 1.000, oportunista $ 700, defensiva $ 500, comerciante $ 300), sem precisar faltar comida; 1 obra por vez (comerciante 2).
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
