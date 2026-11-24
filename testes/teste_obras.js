@@ -177,6 +177,15 @@ console.log('4) Facção zumbi: já teve 10 prédios, hoje tem menos de 5 e caix
   confere('jogador: sem ter tido 10 não cai; depois de ter tido 10 avisa, avisa 1 h antes e dá derrota', livre && q.eu.eliminada && ['zumbi', 'zumbifim', 'derrota'].every(t => evJ.some(([x]) => x === t)), evJ.map(([t]) => t).filter(t => /zumbi|derrota|eliminada/.test(t)).join(','));
 }
 
+{
+  // 19.4 (Renan): depois de 24 h de jogo a contagem vale também para quem nunca chegou a 10 prédios
+  const { P, riv } = novaPartida(semente, 2);
+  const r = riv[0]; r.recursos.dinheiro = -200000;
+  for (let i = 1; i <= 23; i++) { P.tempo += G.HORA; G.verificaZumbi(P, r); }
+  confere('antes de 24 h quem nunca teve 10 não conta', !r.eliminada && r.zumbiDesde == null);
+  for (let i = 24; i <= 37; i++) { P.tempo += G.HORA; G.verificaZumbi(P, r); }
+  confere('depois de 24 h quem nunca teve 10 também se desfaz (12 h depois)', r.eliminada === true && !r.jaTeve10);
+}
 console.log('5) Paz recente de 24 h vale também contra a coalizão');
 {
   const { P, eu, riv } = novaPartida(semente, 3);

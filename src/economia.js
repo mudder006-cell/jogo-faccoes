@@ -22,7 +22,7 @@ const MANUTENCAO = { qg: 15, lider: 8, avancada: 4 };   // $ por hora por base
 const COME_SOLDADO = .1, COME_MORADOR = .04;   // comida por pessoa por hora
 const DISTRIBUIR = { comida: 50, influencia: 8 };
 /* facção "zumbi" (19.4): com menos de 5 prédios e caixa negativo por 12 h seguidas, ela se desfaz (desertam os soldados, os prédios ficam sem dono) */
-const ZUMBI = { predios: 5, horas: 12, avisoFaltando: 1, jaTeve: 10 };   // jaTeve: só vira zumbi a facção que já teve 10 prédios alguma vez
+const ZUMBI = { predios: 5, horas: 12, avisoFaltando: 1, jaTeve: 10, depoisDe: 24 };   // conta para quem já teve 10 prédios alguma vez OU depois de 24 h de jogo
 const CONVENCER = { casa: 24, predio: 36, chave: 120, governo: 1.5 };   // custo em influência (×1,5 se for do governo)
 
 function moradoresDe(e) {
@@ -111,7 +111,7 @@ function verificaZumbi(P, fac) {
   if (fac.governo || fac.eliminada) return;
   let predios = 0; for (const e of P.reg.edificios) if (e.dono === fac) predios++;
   if (predios >= ZUMBI.jaTeve) fac.jaTeve10 = true;
-  if (!fac.jaTeve10) return;   // nunca chegou a 10 prédios: não conta
+  if (!fac.jaTeve10 && P.tempo < ZUMBI.depoisDe * HORA) return;   // começo da partida: só conta quem já chegou a 10 prédios
   if (predios >= ZUMBI.predios || fac.recursos.dinheiro >= 0) {
     if (fac.zumbiDesde != null) { fac.zumbiDesde = null; fac.zumbiAvisou = false; avisa(P, "zumbialivio", { fac }); }
     return;
