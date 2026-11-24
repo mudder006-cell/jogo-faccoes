@@ -2,7 +2,7 @@
 // Uso: node testes/teste_obras.js [semente]
 const fs = require('fs');
 const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
-const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, ativos, batalhoesDe, esquadroesDe, tamanhoDaEquipe, equipesDeObras, EQUIPE_OBRAS, contas, tomaEdificio, obrasRival, OBRAS, FAZENDA_NIVEL, POR_PLANTACAO, COMIDA, comidaDoPredio, ZONAS_DE_CAMPO, PERSONALIDADES, verificaZumbi, ZUMBI, horaDaEconomia, horaDaDiplomacia, rel, mudaEstado, apazigua, fimDoCessarFogo, COALIZAO, EXAUSTAO, fortificacaoDe, textoDoEngenheiroDeObras, basesDe, PRECO, SALARIO, totalEquipeDeObras, criaBatalhao, candidatosACmd, soltaPredioDoGoverno, eliminaFaccao, fortificacoes, entraNoEsquadrao, criaSoldado, SUPRIMENTO, tamanhoDoPredio, moveSoldado, novoEsquadrao };')();
+const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, ativos, batalhoesDe, esquadroesDe, tamanhoDaEquipe, equipesDeObras, EQUIPE_OBRAS, contas, tomaEdificio, obrasRival, OBRAS, FAZENDA_NIVEL, POR_PLANTACAO, COMIDA, comidaDoPredio, ZONAS_DE_CAMPO, PERSONALIDADES, verificaZumbi, ZUMBI, RECURSOS_INICIAIS, horaDaEconomia, horaDaDiplomacia, rel, mudaEstado, apazigua, fimDoCessarFogo, COALIZAO, EXAUSTAO, fortificacaoDe, textoDoEngenheiroDeObras, basesDe, PRECO, SALARIO, totalEquipeDeObras, criaBatalhao, candidatosACmd, soltaPredioDoGoverno, eliminaFaccao, fortificacoes, minimoDaIA, entraNoEsquadrao, criaSoldado, SUPRIMENTO, tamanhoDoPredio, moveSoldado, novoEsquadrao };')();
 const semente = process.argv[2] || 'B2';
 let falhas = 0;
 const confere = (nome, ok, detalhe) => { console.log((ok ? '  ok    ' : '  FALHOU ') + nome + (detalhe ? '  [' + detalhe + ']' : '')); if (!ok) falhas++; };
@@ -24,6 +24,21 @@ console.log('1) Tamanho da equipe de obras (semente ' + semente + ')');
   const t = n => G.tamanhoDaEquipe(n), esperado = [2, 2, 2, 2, 3, 3, 4, 4, 4, 4];
   const lista = esperado.map((_, n) => t(n));
   confere('2 com até 3 esquadrões, 3 com 4 e 5, 4 com 6 ou mais (máximo 4)', JSON.stringify(lista) === JSON.stringify(esperado), 'esquadrões 0..9: ' + lista.join(','));
+  {   // sem folga de caixa, nem no nascimento do batalhão entra engenheiro
+    const reg = G.geraRegiao(semente), P = G.criaPartida(reg), f = G.criaFaccao(1, 'Pobre', 0xf2b233, { jogador: true });
+    const base = reg.edificios.filter(G.podeComecar)[0], antes = G.RECURSOS_INICIAIS.dinheiro; G.RECURSOS_INICIAIS.dinheiro = G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador - 1;
+    G.fundaFaccao(P, f, base); G.RECURSOS_INICIAIS.dinheiro = antes;
+    const pb = G.batalhoesDe(P, f)[0];
+    confere('sem caixa com folga o batalhão nasce sem engenheiro de obras', pb.equipeObras.length === 0, pb.equipeObras.length + ' engenheiros, caixa $ ' + f.recursos.dinheiro);
+    f.recursos.dinheiro = G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador; G.equipesDeObras(P, 1);
+    confere('com kit + reserva entra 1; o 2º só com mais $ ' + (G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador), pb.equipeObras.length === 1 && f.recursos.dinheiro === G.EQUIPE_OBRAS.reservaJogador);
+  }
+  {   // reserva da rival = reserva de obras da personalidade
+    const { P, riv } = novaPartida(semente, 1), r = riv[0], rb = G.batalhoesDe(P, r)[0]; r.personalidade = 'agressiva'; rb.equipeObras.length = 0;
+    r.recursos.dinheiro = G.PRECO.explosivo + 1000 - 1; G.equipesDeObras(P, 1); const sem = rb.equipeObras.length;
+    r.recursos.dinheiro = G.PRECO.explosivo + 1000; G.equipesDeObras(P, 1);
+    confere('rival agressiva: contrata só com $ 300 + reserva 1000', sem === 0 && rb.equipeObras.length === 1, 'sem ' + sem + ', com ' + rb.equipeObras.length);
+  }
   const { P, eu, riv } = novaPartida(semente, 2);
   const b = G.batalhoesDe(P, eu)[0];
   confere('o batalhão do jogador nasce com 2 engenheiros de obras', b.equipeObras.length === 2, b.equipeObras.length + ' engenheiros');
@@ -33,10 +48,14 @@ console.log('1) Tamanho da equipe de obras (semente ' + semente + ')');
   confere('o governo antigo não tem equipe de obras', !(P.batalhoes || []).some(x => x.faccao === P.governo));
   const c = G.contas(P, eu);
   confere('o salário da equipe aparece nas contas ($ ' + G.SALARIO + '/h cada)', c.dinheiro.some(([r, v]) => /equipe de obras/i.test(r) && v === -2 * G.SALARIO), JSON.stringify(c.dinheiro.filter(([r]) => /equipe/i.test(r))));
+  confere('mínimo de suprimentos do jogador inclui a mochila da equipe (40 + 30 x 2)', b.minimo['cx-suprimento'] === 40 + 2 * G.SUPRIMENTO.carga.engenheiro, '' + b.minimo['cx-suprimento']);
+  { const rb2 = G.batalhoesDe(P, riv[0])[0]; G.minimoDaIA(P, riv[0], rb2); const sem = rb2.minimo['cx-suprimento']; const n = rb2.equipeObras.length; rb2.equipeObras.length = 0; G.minimoDaIA(P, riv[0], rb2);
+    confere('mínimo da rival soma 30 por engenheiro de obras', sem - rb2.minimo['cx-suprimento'] === n * G.SUPRIMENTO.carga.engenheiro && n > 0, 'com equipe ' + sem + ', sem ' + rb2.minimo['cx-suprimento']); }
   // sem dinheiro para o kit, não contrata; com dinheiro, completa
   const q2 = novaPartida(semente, 0), b2 = G.batalhoesDe(q2.P, q2.eu)[0];
-  b2.equipeObras.length = 0; q2.eu.recursos.dinheiro = G.PRECO.explosivo - 1; G.equipesDeObras(q2.P, 1);
-  confere('sem caixa para o kit ($ ' + (G.PRECO.explosivo - 1) + ') não contrata', b2.equipeObras.length === 0);
+  const minimoJ = b2.minimo['cx-suprimento'];
+  b2.equipeObras.length = 0; q2.eu.recursos.dinheiro = G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador - 1; G.equipesDeObras(q2.P, 1);
+  confere('jogador: sem kit + reserva ($ ' + (G.PRECO.explosivo + G.EQUIPE_OBRAS.reservaJogador - 1) + ') não contrata', b2.equipeObras.length === 0);
   q2.eu.recursos.dinheiro = 5000; G.equipesDeObras(q2.P, 1);
   confere('com caixa, volta a 2 engenheiros', b2.equipeObras.length === 2 && q2.eu.recursos.dinheiro === 5000 - 2 * G.PRECO.explosivo);
   // esquadrões a mais pedem mais gente
@@ -115,33 +134,46 @@ console.log('3) Obras de comida: valores novos e rival que constrói com caixa s
   }
 }
 
-console.log('4) Facção zumbi: menos de 5 prédios e caixa negativo por 12 h → se desfaz');
+console.log('4) Facção zumbi: já teve 10 prédios, hoje tem menos de 5 e caixa negativo por 12 h → se desfaz');
 {
   const { reg, P, eu, riv, eventos } = novaPartida(semente, 2);
   const r = riv[0], tipos = () => eventos.map(([t]) => t);
-  r.recursos.dinheiro = -200000;   // a economia horária continua somando contas; o caixa fica negativo
   const predios = () => reg.edificios.filter(e => e.dono === r).length;
-  confere('a rival começa com menos de 5 prédios (' + predios() + ')', predios() < G.ZUMBI.predios);
-  let horas = 0, caiu = -1;
-  for (let i = 1; i <= 14 && !r.eliminada; i++) { P.tempo += G.HORA; G.horaDaEconomia(P); horas = i; if (r.eliminada) caiu = i; }
-  confere('a contagem começa na 1ª hora e a facção se desfaz 12 h depois (na hora 13 da checagem)', r.eliminada && caiu === 13, 'eliminada na hora ' + caiu);
+  const doDono = (f, n) => maisPerto(reg.edificios.filter(e => !e.dono), f.base.x, f.base.z).slice(0, n);
+  // nunca chegou a 10: não vira zumbi, mesmo no vermelho
+  r.recursos.dinheiro = -200000;
+  for (let i = 1; i <= 16; i++) { P.tempo += G.HORA; G.verificaZumbi(P, r); }
+  confere('quem nunca teve 10 prédios não vira zumbi (' + predios() + ' prédios, caixa no vermelho por 16 h)', !r.eliminada && r.zumbiDesde == null && !r.jaTeve10);
+  // chega a 10 e depois cai para 1: vira
+  const tomados = doDono(r, 9); for (const e of tomados) G.tomaEdificio(P, e, r);
+  P.tempo += G.HORA; G.verificaZumbi(P, r);
+  confere('com 10 prédios a marca "já teve 10" é guardada e não há contagem', r.jaTeve10 === true && r.zumbiDesde == null && !r.eliminada);
+  for (const e of tomados) { e.dono = null; }
+  confere('a rival volta a menos de 5 prédios (' + predios() + ')', predios() < G.ZUMBI.predios);
+  let caiu = -1;
+  for (let i = 1; i <= 14 && !r.eliminada; i++) { P.tempo += G.HORA; G.horaDaEconomia(P); if (r.eliminada) caiu = i; }
+  confere('a contagem começa na 1ª hora e a facção se desfaz 12 h depois (hora 13 da checagem)', r.eliminada && caiu === 13, 'eliminada na hora ' + caiu);
   confere('os prédios ficam sem dono e os soldados desertam', predios() === 0 && !P.soldados.some(s => s.faccao === r && ['ok', 'ferido', 'reserva'].includes(s.vida)));
   confere('avisos: contagem começou e 1 h antes do fim', eventos.some(([t, d]) => t === 'zumbi' && d.fac === r) && eventos.some(([t, d]) => t === 'zumbifim' && d.fac === r), tipos().filter(t => t.startsWith('zumbi')).join(','));
   // recupera antes de 12 h: a contagem zera
-  const r1 = riv[1]; r1.recursos.dinheiro = -200000;
+  const r1 = riv[1]; r1.jaTeve10 = true; r1.recursos.dinheiro = -200000;
   for (let i = 0; i < 6; i++) { P.tempo += G.HORA; G.verificaZumbi(P, r1); }
   const contando = r1.zumbiDesde != null; r1.recursos.dinheiro = 50; P.tempo += G.HORA; G.verificaZumbi(P, r1);
   confere('caixa positivo antes das 12 h cancela a contagem', contando && r1.zumbiDesde == null && !r1.eliminada);
+  P.governo.jaTeve10 = true; P.governo.recursos = { dinheiro: -1 };
   for (let i = 0; i < 20; i++) { P.tempo += G.HORA; G.verificaZumbi(P, P.governo); }
   confere('não vale para o governo antigo', !P.governo.eliminada);
-  // 5 prédios ou mais, mesmo com caixa negativo, não conta
-  const r2 = riv[1]; for (const e of maisPerto(reg.edificios.filter(e => !e.dono), r2.base.x, r2.base.z).slice(0, 5)) G.tomaEdificio(P, e, r2);
+  const r2 = riv[1]; for (const e of doDono(r2, 5)) G.tomaEdificio(P, e, r2);
   r2.recursos.dinheiro = -5000; for (let i = 0; i < 20; i++) { P.tempo += G.HORA; G.verificaZumbi(P, r2); }
   confere('com 5 prédios ou mais não se desfaz, mesmo no vermelho', !r2.eliminada && r2.zumbiDesde == null);
-  // o jogador também: derrota
+  // o jogador também: derrota, só depois de ter tido 10
   const q = novaPartida(semente, 2), evJ = q.eventos; q.eu.recursos.dinheiro = -9999;
+  for (let i = 0; i < 14; i++) { q.P.tempo += G.HORA; G.verificaZumbi(q.P, q.eu); }
+  const livre = !q.eu.eliminada;
+  const dez = maisPerto(q.reg.edificios.filter(e => !e.dono), q.eu.base.x, q.eu.base.z).slice(0, 9); for (const e of dez) G.tomaEdificio(q.P, e, q.eu);
+  q.P.tempo += G.HORA; G.verificaZumbi(q.P, q.eu); for (const e of dez) e.dono = null;
   for (let i = 0; i < 14 && !q.eu.eliminada; i++) { q.P.tempo += G.HORA; G.verificaZumbi(q.P, q.eu); }
-  confere('vale para o jogador: avisa no começo, 1 h antes e dá derrota', q.eu.eliminada && ['zumbi', 'zumbifim', 'derrota'].every(t => evJ.some(([x]) => x === t)), evJ.map(([t]) => t).filter(t => /zumbi|derrota|eliminada/.test(t)).join(','));
+  confere('jogador: sem ter tido 10 não cai; depois de ter tido 10 avisa, avisa 1 h antes e dá derrota', livre && q.eu.eliminada && ['zumbi', 'zumbifim', 'derrota'].every(t => evJ.some(([x]) => x === t)), evJ.map(([t]) => t).filter(t => /zumbi|derrota|eliminada/.test(t)).join(','));
 }
 
 console.log('5) Paz recente de 24 h vale também contra a coalizão');

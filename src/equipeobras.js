@@ -8,7 +8,7 @@
      atiram primeiro; só fortificam, consertam e reconstruem.
    - Prioridade: 1) as bases (QG e bases avançadas) até fortificação 100;
      2) prédios de fronteira (a até 150 m de prédio de quem está em guerra com a
-     facção) até 60; 3) consertar e reconstruir prédios danificados.
+     facção) até 60 (a guarnição do governo parada não conta como perigo); 3) consertar e reconstruir prédios danificados.
    - Cada engenheiro trabalha num prédio diferente (nenhum outro da facção no mesmo).
      Velocidade (a pé) e gasto de suprimentos são os do engenheiro de esquadrão
      (trabalhaNoPredio, em suprimentos.js): leva 30, enche e repõe nas bases.
@@ -24,6 +24,7 @@ const EQUIPE_OBRAS = {
   raioFronteira: 150, raioInimigo: 150,                               // metros: o que conta como fronteira; inimigo perto do prédio que impede a obra
   raioTiro: 100, descansa: 60,                                        // esquadrão inimigo em combate a menos de 100 m = "levou tiro" (foge); segundos parado na base depois da fuga
   raioBusca: 500,                                                     // só escolhe prédios a até 500 m da base do batalhão
+  reservaJogador: 500, raioBases: 1500,                               // reserva de caixa do jogador para contratar (as rivais usam a reserva de obras da personalidade); bases só até 1.500 m da base do batalhão
   pensa: 5, chega: 12, minimoParaSair: 3                              // segundos entre decisões; chegou a menos de 12 m; só sai da base com 3 suprimentos ou mais
 };
 const tamanhoDaEquipe = nEsquadroes => Math.min(EQUIPE_OBRAS.maximo, EQUIPE_OBRAS.inicial + Math.floor(Math.max(0, nEsquadroes - EQUIPE_OBRAS.esquadroesBase) / EQUIPE_OBRAS.esquadroesPorExtra));
@@ -43,9 +44,11 @@ function contrataEquipeDeObras(P, b) {
   b.equipeObras = b.equipeObras || [];
   if (b.equipeObras.length >= EQUIPE_OBRAS.maximo) return;
   const alvo = tamanhoDaEquipe(esquadroesDe(P, b).length);
-  while (b.equipeObras.length < alvo && fac.recursos.dinheiro >= PRECO.explosivo) {
+  const reserva = fac.jogador ? EQUIPE_OBRAS.reservaJogador : (pers(fac).reservaObras == null ? 700 : pers(fac).reservaObras);
+  while (b.equipeObras.length < alvo && fac.recursos.dinheiro >= PRECO.explosivo + reserva) {   // só contrata com folga: custo do kit + reserva
     fac.recursos.dinheiro -= PRECO.explosivo;
     b.equipeObras.push(novoEngenheiroDeObras(P, b));
+    if (fac.jogador && b.minimo) b.minimo["cx-suprimento"] = (b.minimo["cx-suprimento"] || 0) + SUPRIMENTO.carga.engenheiro;   // o mínimo do jogador inclui a mochila da equipe
   }
 }
 
@@ -54,6 +57,7 @@ function contrataEquipeDeObras(P, b) {
 function inimigoPerto(P, fac, x, z, raio, soCombate) {
   for (const q of P.esquadroes) {
     if (soCombate && !q.combate) continue;
+    if (q.faccao.governo && !q.combate && (q.estado === "guarnição" || q.estado === "parado")) continue;   // guarnição do governo parada não bloqueia a obra (só em combate ou em movimento)
     if (q.faccao === fac || !hostis(P, fac, q.faccao) || !ativos(q).length) continue;
     const [cx, cz] = centroDoEsquadrao(q);
     if (Math.hypot(cx - x, cz - z) < raio) return q;
@@ -82,7 +86,7 @@ function escolheObraDaEquipe(P, b, u) {
   };
   const falta = (e, teto) => precisaDeConserto(e) || (e.fortificado || 0) < teto - 1e-9;
   // 1) bases até fortificação 100
-  let e = primeiro(basesDe(P, fac).filter(x => falta(x, E.tetoBase)));
+  let e = primeiro(basesDe(P, fac).filter(x => Math.hypot(x.x - b.base.x, x.z - b.base.z) <= E.raioBases && falta(x, E.tetoBase)));
   if (e) return { e, teto: E.tetoBase, soConserto: false, classe: "base" };
   const perto = P.reg.edificios.filter(x => x.dono === fac && Math.hypot(x.x - b.base.x, x.z - b.base.z) <= E.raioBusca);
   // 2) fronteira até 60
