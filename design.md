@@ -199,6 +199,7 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Engenheiro de combate: 1 por esquadrão com 4 ou mais soldados; rival guarda 1 explosivo por esquadrão com 4 ou mais. Fortifica onde o esquadrão fica parado mais de 2 min, só até 50.
 - Obras (tempos iguais): fazenda $ 800, +30 de comida/h; armazém $ 600, +10/h; expandir plantação $ 400, +8/h; melhorar para II $ 1.500 (1,8x) e para III $ 3.500 (2,8x). Rival constrói quando o caixa passa do custo + reserva (agressiva $ 1.000, oportunista $ 700, defensiva $ 500, comerciante $ 300), sem precisar faltar comida; 1 obra por vez (comerciante 2).
 - Ajustes depois do teste (Renan, 24/11/2026): a contagem do zumbi só vale para quem já teve 10 prédios alguma vez (jogador também); cada engenheiro de obras só é contratado quando o caixa passa de $ 300 + a reserva das obras da personalidade (o jogador segue a mesma regra automática); engenheiros de obras continuam invisíveis e imortais por agora e viram soldados de verdade junto com a névoa de guerra (19.1).
+- Ajustes depois do teste do caixa (Renan, 24/11/2026; `testes/relatorios/2026-11-24-prot19-4-caixa.md`): engenheiro de obras só é contratado com folga de caixa **e** renda por hora positiva (rival e jogador). **Países compram o excedente de comida a $ 1,50 por unidade**, para a comida virar dinheiro e a obra se pagar; a rival só constrói obra de comida que dá lucro.
 
 ## Em aberto
 - Valores dos bônus do controle total.
