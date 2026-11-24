@@ -1,6 +1,6 @@
 # Salam Aleikum (nome provisório, decidido pelo Renan em 18/11/2026): decisões de design
 
-Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 24/11/2026 (protótipo 19.3 no main).
+Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 24/11/2026 (protótipo 19.4 no main).
 
 ## Ideia
 O jogador comanda uma facção numa zona de guerra. Administra a região que controla (leis, construções, população, modos de produção como fábricas e fazendas) e o exército (recrutamento, squads, arsenal). As tropas agem sozinhas; o jogador dá missões e ordens gerais. A IA rival deve ser esperta. Terá drones, mísseis e blindados.
