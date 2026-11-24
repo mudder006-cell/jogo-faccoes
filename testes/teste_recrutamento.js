@@ -1,6 +1,6 @@
 // Recrutamento e armas sem tela: dois dias de jogo
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + `return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, contas, convence, podeConvencer,
   criaSorteio, resumoFaccao, ativos, recrutaVoluntario, recrutaMercenario, recrutaCla, convencePrisioneiro, zonasComVoluntarios, podeRecrutar, compra, encomenda, fabrica,
   podeFabricar, mandaEmissario, ordenaRecuar, textoArsenal, pertoDoQG, semArma, PAISES };`)();

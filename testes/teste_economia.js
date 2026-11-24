@@ -1,6 +1,6 @@
 // Economia sem tela: um dia de jogo para o jogador e as rivais
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, contas, convence, podeConvencer, distribuiComida, criaSorteio, resumoFaccao };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg), r = G.criaSorteio('e');
 const eu = G.criaFaccao(1, 'Jogador', 0xf2b233, { jogador: true });

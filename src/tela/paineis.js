@@ -405,6 +405,11 @@ function painelZona(p, zn) {
 }
 
 const VIDA = { ok: "Pronto", ferido: "Ferido", morto: "Morto", rendido: "Prisioneiro", tratando: "Em tratamento", fila: "Esperando tratamento", reserva: "Esperando numa base", desertou: "Desertou", comando: "No comando, numa base", motorista: "Motorista de veículo de logística" };
+/* atualiza só o texto de "Mirando em" (o resto do painel não precisa refazer a cada segundo) */
+function atualizaMira() {
+  if (!contexto || contexto.tipo !== "soldado") return;
+  const t = document.querySelector("#contexto .txt-mira"); if (t) t.textContent = textoMira(partida, contexto.alvo) || "Sem alvo";
+}
 function mostraSoldado(s) { zonaDestacada = null; marca(anelEscolha, caixaEscolha, null); abreContexto("soldado", s); }
 function fichaArma(s) {
   const d = cria("div", "ficha-arma" + (s.arma ? "" : " sem"));
@@ -438,6 +443,7 @@ function painelSoldado(p, s) {
   linha(g, s.vida === "ok" ? "check_circle" : "healing", "Situação", s.vida === "ok" && s.sq && s.sq.combate ? "Lutando" : VIDA[s.vida] + (s.vida === "tratando" ? " (" + s.ondeTrata + ", falta " + Math.max(0, Math.ceil((s.fimTrat - partida.tempo) / HORA * 10) / 10) + " h)" : ""));
   if (s.vida === "ok") barra(g, "mood", "Moral", s.moral, 130, s.moral < 30 ? "#ff6a4a" : null);
   p.appendChild(g);
+  if (s.vida === "ok" && PERCEPCAO.ligada) { const m = cria("div", "bonus-pat mira"); m.appendChild(ico("target")); m.appendChild(cria("span", "txt-mira", textoMira(partida, s) || "Sem alvo")); p.appendChild(m); }
   const at = cria("div", "secao"); at.appendChild(cria("div", "rotulo-peq", "Atributos (sobem com a prática)"));
   for (const [k, n] of Object.entries(ATRIBUTOS)) barra(at, ICONE_ATR[k], n, s.atr[k]);
   p.appendChild(at);

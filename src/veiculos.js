@@ -1,6 +1,7 @@
 "use strict";
 /* ============================================================
    VEÍCULOS DE LOGÍSTICA
+   (Protótipo 19: o número do veículo é contado por facção, não mais global.)
    Levam armas, kits e munição entre as bases. Nível I, II e III:
    quanto maior, mais carga e mais vida. Cada um é pilotado por um
    soldado do batalhão a que está atribuído; o líder decide as viagens:
@@ -22,7 +23,6 @@ const LOGISTICA = {
   motorista: .04, motoristaRpg: .25, capturaPerto: 40, avancadaRaio: 700, guardaRota: 6 * HORA,
   rival: { aCada: [3, 6], alcance: 1200 }
 };
-let ultimoVeiculo = 0;
 const capacidade = v => VEICULOS[v.nivel - 1].carga;
 const espacoDe = k => ESPACO[baseDe(k)] || 1;
 function volumeCarga(c) {
@@ -39,9 +39,10 @@ function textoCarga(c) {
   return l.join(", ") || "vazio";
 }
 
+/* o número do veículo é contado por facção (antes era global e passava de uma partida para a outra) */
 function novoVeiculo(fac, nivel) {
   const b = fac.base;
-  const v = { id: ++ultimoVeiculo, nivel, faccao: fac, bat: null, motorista: null, x: b ? entradaDe(b)[0] : 0, z: b ? entradaDe(b)[1] : 0, rumo: 0,
+  const v = { id: fac.id + "." + (fac.nVeiculos = (fac.nVeiculos || 0) + 1), nivel, faccao: fac, bat: null, motorista: null, x: b ? entradaDe(b)[0] : 0, z: b ? entradaDe(b)[1] : 0, rumo: 0,
     em: b || null, estado: "parado", carga: criaEstoque(), vida: VEICULOS[nivel - 1].vida, plano: null, rota: null, i: 0, danoDe: new Map(), proxima: 0 };
   (fac.veiculos || (fac.veiculos = [])).push(v);
   return v;

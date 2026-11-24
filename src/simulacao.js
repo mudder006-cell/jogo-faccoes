@@ -3,6 +3,8 @@
    SIMULAÇÃO DA PARTIDA (sem tela)
    Tempo real com pausa. O jogador só dá ordens ao esquadrão
    (avançar até um prédio ou segurar posição); o combate é automático.
+   Protótipo 19: a grade de caminhada é feita ao criar a partida (não no
+   primeiro passo do jogo). Percepção do soldado: ver percepcao.js.
    ============================================================ */
 const HORA = 60;                      // uma hora do jogo dura 60 segundos na velocidade 1x
 const VELOCIDADE_A_PE = 2.4, VELOCIDADE_CORRENDO = 3.4;   // metros por segundo
@@ -18,6 +20,7 @@ function criaPartida(reg) {
   const P = { reg, faccoes: [], esquadroes: [], soldados: [], tempo: 0, velocidade: 1, pausado: false, ouvintes: [], efeitos: [],
     proximaIA: 0, proximoContato: 0, proximaCaptura: 0, proximaHora: HORA, proximaOfensiva: 4 * HORA, proximoContra: 10 * HORA, proximoEvento: 3 * HORA };
   P.r = criaSorteio(reg.semente + "-partida");
+  gradeAPe(reg);   // a grade de caminhada leva ~40 ms; feita aqui (carregando) e não no primeiro passo do jogo
   P.governo = criaFaccao(0, "Governo antigo", COR_GOVERNO, { governo: true, arsenal: criaArsenal(), prisioneiros: [], reserva: [], fila: [], caixa: CAIXA_GOVERNO });
   P.faccoes.push(P.governo);
   for (const e of territorioInicial(reg, P.governo, P.r)) {

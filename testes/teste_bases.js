@@ -1,6 +1,6 @@
 // Pedidos de troca: o esquadrão vai a uma base (QG ou casa de líder) para trocar
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, HORA, daMissao, ativos, pedeFuncao, pedeTransferencia, recrutaMercenario, basesDe, tomaEdificio };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg);
 const eu = G.criaFaccao(1, 'J', 0xf2b233, { jogador: true });

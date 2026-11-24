@@ -1,6 +1,8 @@
 "use strict";
 /* ============================================================
    ROTAS: os esquadrões andam pelas ruas, becos, estradas e trilhas
+   Protótipo 19: a busca de caminho a pé reaproveita os vetores de trabalho
+   (antes criava três de 120 mil posições a cada rota: picos de ~100 ms).
    ============================================================ */
 function criaRedeViaria(reg) {
   const nos = [], hash = criaHash(20);
@@ -109,6 +111,7 @@ function gradeAPe(reg) {
   }
   return (reg.gradePe = { N, C, bloq, alt, via });
 }
+const VIZ_DI = [1, -1, 0, 0, 1, 1, -1, -1], VIZ_DJ = [0, 0, 1, -1, 1, -1, 1, -1], VIZ_DL = [1, 1, 1, 1, Math.SQRT2, Math.SQRT2, Math.SQRT2, Math.SQRT2];
 function rotaPelaGrade(reg, ax, az, bx, bz, evita) {
   const G = gradeAPe(reg), { N, C, bloq, alt, via } = G;
   const cel = (x, z) => [Math.max(0, Math.min(N - 1, Math.floor((x + METADE) / C))), Math.max(0, Math.min(N - 1, Math.floor((z + METADE) / C)))];
@@ -117,22 +120,31 @@ function rotaPelaGrade(reg, ax, az, bx, bz, evita) {
   if (A < 0 || B < 0) return null;
   let caro = null;
   if (evita && evita.length) { caro = new Uint8Array(N * N); const r = Math.ceil(EVITA.raio / C); for (const [ex, ez] of evita) { const [ci, cj] = cel(ex, ez); for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { const ii = ci + di, jj = cj + dj; if (ii >= 0 && jj >= 0 && ii < N && jj < N && di * di + dj * dj <= r * r) caro[jj * N + ii] = 1; } } }
-  const g = new Float32Array(N * N).fill(Infinity), de = new Int32Array(N * N).fill(-1), fech = new Uint8Array(N * N);
-  const hk = [], hp = [];
-  const empurra = (k, p) => { hk.push(k); hp.push(p); let i = hk.length - 1; while (i > 0) { const pai = (i - 1) >> 1; if (hp[pai] <= hp[i]) break; [hk[pai], hk[i]] = [hk[i], hk[pai]]; [hp[pai], hp[i]] = [hp[i], hp[pai]]; i = pai; } };
-  const tira = () => { const k = hk[0], uk = hk.pop(), up = hp.pop(); if (hk.length) { hk[0] = uk; hp[0] = up; let i = 0; for (;;) { const l = 2 * i + 1, r2 = l + 1; let m = i; if (l < hk.length && hp[l] < hp[m]) m = l; if (r2 < hk.length && hp[r2] < hp[m]) m = r2; if (m === i) break; [hk[m], hk[i]] = [hk[i], hk[m]]; [hp[m], hp[i]] = [hp[i], hp[m]]; i = m; } } return k; };
-  const bI = B % N, bJ = (B / N) | 0, h = k => { const i = k % N, j = (k / N) | 0; return Math.hypot(i - bI, j - bJ) * C * GRADE_PE.custoVia; };
+  // buffers reaproveitados entre chamadas (antes: 3 vetores de 120 mil posições novos a cada rota, causa dos picos de ~100 ms)
+  const NN = N * N, W = G.work || (G.work = { g: new Float32Array(NN), de: new Int32Array(NN), fech: new Uint8Array(NN), hk: new Int32Array(1 << 16), hp: new Float64Array(1 << 16) });
+  const g = W.g, de = W.de, fech = W.fech; g.fill(Infinity); de.fill(-1); fech.fill(0);
+  let hk = W.hk, hp = W.hp, hn = 0;
+  const empurra = (k, p) => {
+    if (hn >= hk.length) { const nk = new Int32Array(hn * 2), np = new Float64Array(hn * 2); nk.set(hk); np.set(hp); hk = W.hk = nk; hp = W.hp = np; }
+    let i = hn++; hk[i] = k; hp[i] = p;
+    while (i > 0) { const pai = (i - 1) >> 1; if (hp[pai] <= hp[i]) break; const tk = hk[pai], tp = hp[pai]; hk[pai] = hk[i]; hp[pai] = hp[i]; hk[i] = tk; hp[i] = tp; i = pai; }
+  };
+  const tira = () => {
+    const k = hk[0]; hn--; const uk = hk[hn], up = hp[hn];
+    if (hn) { hk[0] = uk; hp[0] = up; let i = 0; for (;;) { const l = 2 * i + 1, r2 = l + 1; let m = i; if (l < hn && hp[l] < hp[m]) m = l; if (r2 < hn && hp[r2] < hp[m]) m = r2; if (m === i) break; const tk = hk[m], tp = hp[m]; hk[m] = hk[i]; hp[m] = hp[i]; hk[i] = tk; hp[i] = tp; i = m; } }
+    return k;
+  };
+  const bI = B % N, bJ = (B / N) | 0, h = k => Math.hypot((k % N) - bI, ((k / N) | 0) - bJ) * C * GRADE_PE.custoVia;
   g[A] = 0; empurra(A, h(A)); let passos = 0;
-  const viz = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
-  while (hk.length) {
+  while (hn) {
     const k = tira(); if (fech[k]) continue; fech[k] = 1;
     if (k === B || ++passos > 60000) break;
     const i = k % N, j = (k / N) | 0;
-    for (const [di, dj, L] of viz) {
-      const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= N || jj >= N) continue;
+    for (let q = 0; q < 8; q++) {
+      const di = VIZ_DI[q], dj = VIZ_DJ[q], ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= N || jj >= N) continue;
       const m = jj * N + ii; if (bloq[m] || fech[m]) continue;
       if (di && dj && (bloq[j * N + ii] || bloq[jj * N + i])) continue;   // não corta quina de prédio
-      const dist = L * C, inc = Math.abs(alt[m] - alt[k]) / dist; if (inc > GRADE_PE.declive) continue;
+      const dist = VIZ_DL[q] * C, inc = Math.abs(alt[m] - alt[k]) / dist; if (inc > GRADE_PE.declive) continue;
       let c = dist * (via[m] ? GRADE_PE.custoVia : 1) * (1 + inc * GRADE_PE.custoMorro);
       if (caro && caro[m]) c *= EVITA.custo;
       const ng = g[k] + c; if (ng < g[m]) { g[m] = ng; de[m] = k; empurra(m, ng + h(m)); }

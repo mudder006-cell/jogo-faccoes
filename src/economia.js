@@ -3,6 +3,8 @@
    ECONOMIA: dinheiro, influência e comida
    Contas por hora de jogo. Cada facção (menos o governo, que só
    tem o caixa negativo) recebe e gasta a cada hora.
+   Protótipo 19: "convencer algo" da rival confere só os prédios da própria
+   facção em vez de varrer o mapa inteiro a cada prédio (pico de ~70 ms).
    ============================================================ */
 const RECURSOS_INICIAIS = { dinheiro: 3000, influencia: 20, comida: 200 };
 // imposto fixo por prédio ($ por hora)
@@ -104,12 +106,12 @@ function custoConvencer(e) {
   return Math.round(c);
 }
 /* Dá para convencer os moradores? (sem defensores, e a facção já tem algo perto) */
-function podeConvencer(P, fac, e) {
+function podeConvencer(P, fac, e, meus) {   // meus (opcional): lista dos prédios da facção, para não varrer o mapa inteiro a cada prédio
   if (e.dono === fac) return "o prédio já é seu";
   if (e.dono && !e.dono.governo && (estadoEntre(P, fac, e.dono) === "pacto" || estadoEntre(P, fac, e.dono) === "alianca")) return "é de " + e.dono.nome + ", com quem você tem " + ESTADOS[estadoEntre(P, fac, e.dono)].n.toLowerCase();
   if (defensores(P, e, fac).length) return "tem guarnição inimiga";
   if (!moradoresDe(e) && !TIPOS_CHAVE.includes(e.tipo)) return "não tem moradores para convencer";
-  const perto = P.reg.edificios.some(o => o.dono === fac && (o.zona === e.zona || Math.hypot(o.x - e.x, o.z - e.z) < 150));
+  const perto = (meus || P.reg.edificios).some(o => o.dono === fac && (o.zona === e.zona || Math.hypot(o.x - e.x, o.z - e.z) < 150));
   if (!perto) return "você não tem presença nesta área";
   if (fac.recursos.influencia < custoConvencer(e)) return "influência insuficiente";
   return null;
@@ -138,7 +140,7 @@ function convenceAlgo(P, fac) {
   const meus = P.reg.edificios.filter(e => e.dono === fac);
   let melhor = null, md = Infinity;
   for (const e of P.reg.edificios) {
-    if (e.dono === fac || podeConvencer(P, fac, e)) continue;
+    if (e.dono === fac || podeConvencer(P, fac, e, meus)) continue;
     let d = Infinity; for (const m of meus) d = Math.min(d, Math.hypot(m.x - e.x, m.z - e.z));
     const nota = d - (TIPOS_CHAVE.includes(e.tipo) ? 80 : 0);
     if (nota < md) { md = nota; melhor = e; }

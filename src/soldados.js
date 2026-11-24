@@ -4,6 +4,8 @@
    Cada soldado tem atributos que sobem com a prática e um jeito de
    lutar próprio (preferências) que muda conforme o que deu certo ou
    errado para ele. Tudo isso vale só para a partida atual.
+   Protótipo 19: cada soldado tem memória própria (s.mem: última posição
+   conhecida de cada inimigo, com hora e origem), ver percepcao.js.
    ============================================================ */
 const NOMES_SOLDADO = ["Ahmad", "Karim", "Omar", "Yusuf", "Khalil", "Samir", "Tariq", "Bilal", "Hamza", "Nabil", "Rami", "Fadi",
   "Walid", "Ziad", "Hassan", "Ali", "Mahmoud", "Imad", "Jamal", "Salim", "Faris", "Adnan", "Basel", "Majid", "Nizar", "Qasim",
@@ -55,7 +57,8 @@ function criaSoldado(P, fac, funcao, base) {
   const s = { id: P.soldados.length, nome, faccao: fac, sq: null, funcao, arma: FUNCOES[funcao].arma, item: FUNCOES[funcao].item || null,
     x: 0, z: 0, rumo: 0, vida: "ok", atr, xp: 0, moral: atr.coragem + 30, pref: { cobertura: r.entre(.3, .7), flanco: r.entre(.2, .6), obedece: r.entre(.5, .9) },
     acao: "parado", alvo: null, destino: null, recarga: r.entre(0, 1.5), sobFogo: 0, dentro: null, pensa: r.entre(0, .5), episodio: null,
-    abates: 0, acertos: 0, ferimentos: 0, combates: 0, diario: [], caiuEm: 0, rosto: criaRosto(r, fac), nivel: 1, nivelItem: 1, municao: 0 };
+    abates: 0, acertos: 0, ferimentos: 0, combates: 0, diario: [], caiuEm: 0, rosto: criaRosto(r, fac), nivel: 1, nivelItem: 1, municao: 0,
+    mem: new Map(), sup: null, mira: null };   // percepção: última posição conhecida de cada inimigo, alvo de supressão e o que mostra a tela
   s.municao = cargaDe(s);
   P.soldados.push(s);
   return s;

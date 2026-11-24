@@ -3,6 +3,9 @@
    COMBATE AUTOMÁTICO
    Cada soldado vê (campo de visão e linha de visada), avalia,
    ouve o plano do líder (obedece ou não), age e aprende.
+   Protótipo 19: só atira em quem vê, em quem um colega avisou, de onde
+   levou tiro ou onde viu o inimigo se abrigar (percepcao.js). A busca de
+   quem está perto usa a grade espacial. (Números provisórios.)
    ============================================================ */
 const MEMORIA_INIMIGO = 8;   // segundos que o esquadrão lembra onde viu um inimigo
 
@@ -17,7 +20,7 @@ function saiDoCombate(P, sq) {
   const vivos = ativos(sq);
   const lutou = (sq.tirosNoCombate || 0) > 0 || sq.perdasNoCombate > 0;   // só conta se houve troca de tiros
   for (const s of vivos) {
-    s.destino = null; s.alvo = null;
+    s.destino = null; s.alvo = null; s.sup = null; s.mira = null;
     if (!lutou) { s.episodio = null; continue; }
     s.combates++;
     aprende(P, s, "reacao", 2, "sobreviveu a um combate");
@@ -49,7 +52,14 @@ function linhaLivre(P, ax, az, bx, bz) {
 }
 function procuraContato(P) {
   const l = P.esquadroes.filter(sq => ativos(sq).length);
-  for (let i = 0; i < l.length; i++) for (let j = i + 1; j < l.length; j++) {
+  const cs = l.map(centroDoEsquadrao);   // fotografia do início: só serve para achar vizinhos
+  let grade = null, vizinhos = null;
+  if (PERCEPCAO.grade) {   // só compara esquadrões em quadradinhos vizinhos (mesma ordem de antes: i, depois j crescente)
+    grade = criaGrade(DISTANCIA_DE_CONTATO + 40);
+    cs.forEach(([x, z], i) => poeNaGrade(grade, x, z, i));
+    vizinhos = i => { const r = []; buscaNaGrade(grade, cs[i][0], cs[i][1], DISTANCIA_DE_CONTATO + 40, j => { if (j > i) r.push(j); }); return r.sort((p, q) => p - q); };
+  }
+  for (let i = 0; i < l.length; i++) for (const j of grade ? vizinhos(i) : rangeDe(i + 1, l.length)) {
     const a = l[i], b = l[j];
     if (!hostis(P, a.faccao, b.faccao) || (a.combate && b.combate)) continue;
     const [ax, az] = centroDoEsquadrao(a), [bx, bz] = centroDoEsquadrao(b);
@@ -63,13 +73,18 @@ function procuraContato(P) {
     }
   }
 }
+function* rangeDe(a, b) { for (let i = a; i < b; i++) yield i; }
 function inimigosPerto(P, sq) {
   const [x, z] = centroDoEsquadrao(sq), l = [];
-  for (const o of P.esquadroes) {
-    if (!hostis(P, o.faccao, sq.faccao)) continue;
-    const [ox, oz] = centroDoEsquadrao(o); if (Math.hypot(ox - x, oz - z) > 340) continue;
+  const confere = o => {
+    if (!hostis(P, o.faccao, sq.faccao)) return;
+    const [ox, oz] = centroDoEsquadrao(o); if (Math.hypot(ox - x, oz - z) > 340) return;
     for (const s of ativos(o)) l.push(s);
-  }
+  };
+  if (!PERCEPCAO.grade) { for (const o of P.esquadroes) confere(o); return l; }
+  // grade feita no início do passo: margem de 40 m cobre o que os esquadrões andam num passo; ordem do esquadrão preservada
+  const idx = []; buscaNaGrade(gradeDeEsquadroes(P), x, z, 340 + 40, i => idx.push(i));
+  idx.sort((a, b) => a - b); for (const i of idx) confere(P.esquadroes[i]);
   return l;
 }
 
@@ -132,14 +147,17 @@ function pensa(P, s, sq, inimigos) {
     if (olhando && linhaLivre(P, s.x, s.z, o.x, o.z)) { vistos.push([o, d]); sq.conhecidos.set(o, { x: o.x, z: o.z, t: P.tempo }); }
   }
   if (vistos.length) sq.semContato = 0;
+  if (PERCEPCAO.ligada) percebe(P, s, vistos);   // memória do soldado, aviso aos colegas e lugar suspeito para supressão
   let alvo = vistos.length ? vistos[0][0] : null;
   if (s.funcao === "antitanque" && vistos.length) { const dentro = vistos.find(([o]) => o.dentro); if (dentro) alvo = dentro[0]; }
+  if (PERCEPCAO.ligada) defineMira(P, s, alvo);
   let ameaca = alvo;
   if (!ameaca) { let md = Infinity; for (const [o, k] of sq.conhecidos) if (o.vida === "ok" && P.tempo - k.t < MEMORIA_INIMIGO) { const d = Math.hypot(k.x - s.x, k.z - s.z); if (d < md) { md = d; ameaca = { x: k.x, z: k.z, faccao: o.faccao }; } } }
+  if (!ameaca && s.sup) ameaca = { x: s.sup.x, z: s.sup.z, faccao: s.sup.o.faccao };
   const dAmeaca = ameaca ? Math.hypot(ameaca.x - s.x, ameaca.z - s.z) : Infinity;
 
   // rendição: moral no chão e inimigo perto
-  if (s.moral < 12 && ameaca && dAmeaca < 55 && P.r() < .5) { rende(P, s, ameaca.faccao); return; }
+  if (s.moral < 12 && ameaca && dAmeaca < 55 && P.r() < .5) { rende(P, s, ameaca.faccao); s.sup = null; s.mira = null; return; }
 
   const lider = sq.lider;
   const chance = limita(.3 + s.atr.disciplina / 250 + s.pref.obedece * .35 + (lider && lider !== s ? lider.atr.lideranca / 500 : 0), .2, .97);
@@ -155,7 +173,7 @@ function pensa(P, s, sq, inimigos) {
   if (s.funcao === "metralhador" && alvo && (acao === "avancar" || acao === "flanquear")) acao = "atirar";   // cobre o avanço dos outros
   if (s.funcao === "medico" && s.item === "kit" && acao !== "recuar") {
     const ferido = sq.membros.filter(o => o.vida === "ferido" && (!o.medico || o.medico === s) && Math.hypot(o.x - s.x, o.z - s.z) < 70).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
-    if (ferido) { ferido.medico = s; s.paciente = ferido; s.destino = [ferido.x, ferido.z]; s.acao = "socorrer"; s.alvo = null; return; }
+    if (ferido) { ferido.medico = s; s.paciente = ferido; s.destino = [ferido.x, ferido.z]; s.acao = "socorrer"; s.alvo = null; s.sup = null; s.mira = null; return; }
   }
   s.paciente = null;
   if (obedece && s !== lider && acao !== s.acao) aprende(P, s, "disciplina", .3);
@@ -216,6 +234,10 @@ function age(P, s, sq, dt) {
     if (!s.destino) s.rumo = Math.atan2(a.z - s.z, a.x - s.x);
     s.recarga -= dt;
     if (s.recarga <= 0 && (!s.destino || P.r() < .4)) dispara(P, s, a);
+  } else if (PERCEPCAO.ligada && s.sup && s.acao !== "recuar") {   // sem ver: tiro de supressão no lugar suspeito
+    if (!s.destino) s.rumo = Math.atan2(s.sup.z - s.z, s.sup.x - s.x);
+    s.recarga -= dt;
+    if (s.recarga <= 0 && (!s.destino || P.r() < .4)) suprime(P, s, s.sup);
   }
 }
 
@@ -232,6 +254,7 @@ function dispara(P, s, alvo) {
   const acerta = P.r() < chance;
   aprende(P, s, "pontaria", .05);
   alvo.atacadoPor = s; alvo.atacadoEm = P.tempo;
+  if (PERCEPCAO.ligada) ouveTiro(P, alvo, s, d);
   if (alvo.sq) entraEmCombate(P, alvo.sq);
   // explosivos: com amigo perto do alvo, quem é disciplinado segura o tiro
   if (w.area && ativos(s.sq || { membros: [] }).some(m => m !== s && Math.hypot(m.x - alvo.x, m.z - alvo.z) < w.area + 1.5) && P.r() < .35 + s.atr.disciplina / 150) { s.recarga = .8; return; }

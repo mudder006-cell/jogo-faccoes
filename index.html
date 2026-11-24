@@ -1790,6 +1790,8 @@ function escolhaRival(reg, r, tomadas) {
 "use strict";
 /* ============================================================
    ROTAS: os esquadrões andam pelas ruas, becos, estradas e trilhas
+   Protótipo 19: a busca de caminho a pé reaproveita os vetores de trabalho
+   (antes criava três de 120 mil posições a cada rota: picos de ~100 ms).
    ============================================================ */
 function criaRedeViaria(reg) {
   const nos = [], hash = criaHash(20);
@@ -1898,6 +1900,7 @@ function gradeAPe(reg) {
   }
   return (reg.gradePe = { N, C, bloq, alt, via });
 }
+const VIZ_DI = [1, -1, 0, 0, 1, 1, -1, -1], VIZ_DJ = [0, 0, 1, -1, 1, -1, 1, -1], VIZ_DL = [1, 1, 1, 1, Math.SQRT2, Math.SQRT2, Math.SQRT2, Math.SQRT2];
 function rotaPelaGrade(reg, ax, az, bx, bz, evita) {
   const G = gradeAPe(reg), { N, C, bloq, alt, via } = G;
   const cel = (x, z) => [Math.max(0, Math.min(N - 1, Math.floor((x + METADE) / C))), Math.max(0, Math.min(N - 1, Math.floor((z + METADE) / C)))];
@@ -1906,22 +1909,31 @@ function rotaPelaGrade(reg, ax, az, bx, bz, evita) {
   if (A < 0 || B < 0) return null;
   let caro = null;
   if (evita && evita.length) { caro = new Uint8Array(N * N); const r = Math.ceil(EVITA.raio / C); for (const [ex, ez] of evita) { const [ci, cj] = cel(ex, ez); for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { const ii = ci + di, jj = cj + dj; if (ii >= 0 && jj >= 0 && ii < N && jj < N && di * di + dj * dj <= r * r) caro[jj * N + ii] = 1; } } }
-  const g = new Float32Array(N * N).fill(Infinity), de = new Int32Array(N * N).fill(-1), fech = new Uint8Array(N * N);
-  const hk = [], hp = [];
-  const empurra = (k, p) => { hk.push(k); hp.push(p); let i = hk.length - 1; while (i > 0) { const pai = (i - 1) >> 1; if (hp[pai] <= hp[i]) break; [hk[pai], hk[i]] = [hk[i], hk[pai]]; [hp[pai], hp[i]] = [hp[i], hp[pai]]; i = pai; } };
-  const tira = () => { const k = hk[0], uk = hk.pop(), up = hp.pop(); if (hk.length) { hk[0] = uk; hp[0] = up; let i = 0; for (;;) { const l = 2 * i + 1, r2 = l + 1; let m = i; if (l < hk.length && hp[l] < hp[m]) m = l; if (r2 < hk.length && hp[r2] < hp[m]) m = r2; if (m === i) break; [hk[m], hk[i]] = [hk[i], hk[m]]; [hp[m], hp[i]] = [hp[i], hp[m]]; i = m; } } return k; };
-  const bI = B % N, bJ = (B / N) | 0, h = k => { const i = k % N, j = (k / N) | 0; return Math.hypot(i - bI, j - bJ) * C * GRADE_PE.custoVia; };
+  // buffers reaproveitados entre chamadas (antes: 3 vetores de 120 mil posições novos a cada rota, causa dos picos de ~100 ms)
+  const NN = N * N, W = G.work || (G.work = { g: new Float32Array(NN), de: new Int32Array(NN), fech: new Uint8Array(NN), hk: new Int32Array(1 << 16), hp: new Float64Array(1 << 16) });
+  const g = W.g, de = W.de, fech = W.fech; g.fill(Infinity); de.fill(-1); fech.fill(0);
+  let hk = W.hk, hp = W.hp, hn = 0;
+  const empurra = (k, p) => {
+    if (hn >= hk.length) { const nk = new Int32Array(hn * 2), np = new Float64Array(hn * 2); nk.set(hk); np.set(hp); hk = W.hk = nk; hp = W.hp = np; }
+    let i = hn++; hk[i] = k; hp[i] = p;
+    while (i > 0) { const pai = (i - 1) >> 1; if (hp[pai] <= hp[i]) break; const tk = hk[pai], tp = hp[pai]; hk[pai] = hk[i]; hp[pai] = hp[i]; hk[i] = tk; hp[i] = tp; i = pai; }
+  };
+  const tira = () => {
+    const k = hk[0]; hn--; const uk = hk[hn], up = hp[hn];
+    if (hn) { hk[0] = uk; hp[0] = up; let i = 0; for (;;) { const l = 2 * i + 1, r2 = l + 1; let m = i; if (l < hn && hp[l] < hp[m]) m = l; if (r2 < hn && hp[r2] < hp[m]) m = r2; if (m === i) break; const tk = hk[m], tp = hp[m]; hk[m] = hk[i]; hp[m] = hp[i]; hk[i] = tk; hp[i] = tp; i = m; } }
+    return k;
+  };
+  const bI = B % N, bJ = (B / N) | 0, h = k => Math.hypot((k % N) - bI, ((k / N) | 0) - bJ) * C * GRADE_PE.custoVia;
   g[A] = 0; empurra(A, h(A)); let passos = 0;
-  const viz = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
-  while (hk.length) {
+  while (hn) {
     const k = tira(); if (fech[k]) continue; fech[k] = 1;
     if (k === B || ++passos > 60000) break;
     const i = k % N, j = (k / N) | 0;
-    for (const [di, dj, L] of viz) {
-      const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= N || jj >= N) continue;
+    for (let q = 0; q < 8; q++) {
+      const di = VIZ_DI[q], dj = VIZ_DJ[q], ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= N || jj >= N) continue;
       const m = jj * N + ii; if (bloq[m] || fech[m]) continue;
       if (di && dj && (bloq[j * N + ii] || bloq[jj * N + i])) continue;   // não corta quina de prédio
-      const dist = L * C, inc = Math.abs(alt[m] - alt[k]) / dist; if (inc > GRADE_PE.declive) continue;
+      const dist = VIZ_DL[q] * C, inc = Math.abs(alt[m] - alt[k]) / dist; if (inc > GRADE_PE.declive) continue;
       let c = dist * (via[m] ? GRADE_PE.custoVia : 1) * (1 + inc * GRADE_PE.custoMorro);
       if (caro && caro[m]) c *= EVITA.custo;
       const ng = g[k] + c; if (ng < g[m]) { g[m] = ng; de[m] = k; empurra(m, ng + h(m)); }
@@ -1944,6 +1956,8 @@ function rotaAPe(reg, ax, az, bx, bz, evita) {
    Cada soldado tem atributos que sobem com a prática e um jeito de
    lutar próprio (preferências) que muda conforme o que deu certo ou
    errado para ele. Tudo isso vale só para a partida atual.
+   Protótipo 19: cada soldado tem memória própria (s.mem: última posição
+   conhecida de cada inimigo, com hora e origem), ver percepcao.js.
    ============================================================ */
 const NOMES_SOLDADO = ["Ahmad", "Karim", "Omar", "Yusuf", "Khalil", "Samir", "Tariq", "Bilal", "Hamza", "Nabil", "Rami", "Fadi",
   "Walid", "Ziad", "Hassan", "Ali", "Mahmoud", "Imad", "Jamal", "Salim", "Faris", "Adnan", "Basel", "Majid", "Nizar", "Qasim",
@@ -1995,7 +2009,8 @@ function criaSoldado(P, fac, funcao, base) {
   const s = { id: P.soldados.length, nome, faccao: fac, sq: null, funcao, arma: FUNCOES[funcao].arma, item: FUNCOES[funcao].item || null,
     x: 0, z: 0, rumo: 0, vida: "ok", atr, xp: 0, moral: atr.coragem + 30, pref: { cobertura: r.entre(.3, .7), flanco: r.entre(.2, .6), obedece: r.entre(.5, .9) },
     acao: "parado", alvo: null, destino: null, recarga: r.entre(0, 1.5), sobFogo: 0, dentro: null, pensa: r.entre(0, .5), episodio: null,
-    abates: 0, acertos: 0, ferimentos: 0, combates: 0, diario: [], caiuEm: 0, rosto: criaRosto(r, fac), nivel: 1, nivelItem: 1, municao: 0 };
+    abates: 0, acertos: 0, ferimentos: 0, combates: 0, diario: [], caiuEm: 0, rosto: criaRosto(r, fac), nivel: 1, nivelItem: 1, municao: 0,
+    mem: new Map(), sup: null, mira: null };   // percepção: última posição conhecida de cada inimigo, alvo de supressão e o que mostra a tela
   s.municao = cargaDe(s);
   P.soldados.push(s);
   return s;
@@ -2130,6 +2145,8 @@ function municaoMedia(sq) { const l = ativos(sq).filter(s => s.arma); return l.l
    SIMULAÇÃO DA PARTIDA (sem tela)
    Tempo real com pausa. O jogador só dá ordens ao esquadrão
    (avançar até um prédio ou segurar posição); o combate é automático.
+   Protótipo 19: a grade de caminhada é feita ao criar a partida (não no
+   primeiro passo do jogo). Percepção do soldado: ver percepcao.js.
    ============================================================ */
 const HORA = 60;                      // uma hora do jogo dura 60 segundos na velocidade 1x
 const VELOCIDADE_A_PE = 2.4, VELOCIDADE_CORRENDO = 3.4;   // metros por segundo
@@ -2145,6 +2162,7 @@ function criaPartida(reg) {
   const P = { reg, faccoes: [], esquadroes: [], soldados: [], tempo: 0, velocidade: 1, pausado: false, ouvintes: [], efeitos: [],
     proximaIA: 0, proximoContato: 0, proximaCaptura: 0, proximaHora: HORA, proximaOfensiva: 4 * HORA, proximoContra: 10 * HORA, proximoEvento: 3 * HORA };
   P.r = criaSorteio(reg.semente + "-partida");
+  gradeAPe(reg);   // a grade de caminhada leva ~40 ms; feita aqui (carregando) e não no primeiro passo do jogo
   P.governo = criaFaccao(0, "Governo antigo", COR_GOVERNO, { governo: true, arsenal: criaArsenal(), prisioneiros: [], reserva: [], fila: [], caixa: CAIXA_GOVERNO });
   P.faccoes.push(P.governo);
   for (const e of territorioInicial(reg, P.governo, P.r)) {
@@ -2527,6 +2545,9 @@ function resumoFaccao(P, fac) {
    COMBATE AUTOMÁTICO
    Cada soldado vê (campo de visão e linha de visada), avalia,
    ouve o plano do líder (obedece ou não), age e aprende.
+   Protótipo 19: só atira em quem vê, em quem um colega avisou, de onde
+   levou tiro ou onde viu o inimigo se abrigar (percepcao.js). A busca de
+   quem está perto usa a grade espacial. (Números provisórios.)
    ============================================================ */
 const MEMORIA_INIMIGO = 8;   // segundos que o esquadrão lembra onde viu um inimigo
 
@@ -2541,7 +2562,7 @@ function saiDoCombate(P, sq) {
   const vivos = ativos(sq);
   const lutou = (sq.tirosNoCombate || 0) > 0 || sq.perdasNoCombate > 0;   // só conta se houve troca de tiros
   for (const s of vivos) {
-    s.destino = null; s.alvo = null;
+    s.destino = null; s.alvo = null; s.sup = null; s.mira = null;
     if (!lutou) { s.episodio = null; continue; }
     s.combates++;
     aprende(P, s, "reacao", 2, "sobreviveu a um combate");
@@ -2573,7 +2594,14 @@ function linhaLivre(P, ax, az, bx, bz) {
 }
 function procuraContato(P) {
   const l = P.esquadroes.filter(sq => ativos(sq).length);
-  for (let i = 0; i < l.length; i++) for (let j = i + 1; j < l.length; j++) {
+  const cs = l.map(centroDoEsquadrao);   // fotografia do início: só serve para achar vizinhos
+  let grade = null, vizinhos = null;
+  if (PERCEPCAO.grade) {   // só compara esquadrões em quadradinhos vizinhos (mesma ordem de antes: i, depois j crescente)
+    grade = criaGrade(DISTANCIA_DE_CONTATO + 40);
+    cs.forEach(([x, z], i) => poeNaGrade(grade, x, z, i));
+    vizinhos = i => { const r = []; buscaNaGrade(grade, cs[i][0], cs[i][1], DISTANCIA_DE_CONTATO + 40, j => { if (j > i) r.push(j); }); return r.sort((p, q) => p - q); };
+  }
+  for (let i = 0; i < l.length; i++) for (const j of grade ? vizinhos(i) : rangeDe(i + 1, l.length)) {
     const a = l[i], b = l[j];
     if (!hostis(P, a.faccao, b.faccao) || (a.combate && b.combate)) continue;
     const [ax, az] = centroDoEsquadrao(a), [bx, bz] = centroDoEsquadrao(b);
@@ -2587,13 +2615,18 @@ function procuraContato(P) {
     }
   }
 }
+function* rangeDe(a, b) { for (let i = a; i < b; i++) yield i; }
 function inimigosPerto(P, sq) {
   const [x, z] = centroDoEsquadrao(sq), l = [];
-  for (const o of P.esquadroes) {
-    if (!hostis(P, o.faccao, sq.faccao)) continue;
-    const [ox, oz] = centroDoEsquadrao(o); if (Math.hypot(ox - x, oz - z) > 340) continue;
+  const confere = o => {
+    if (!hostis(P, o.faccao, sq.faccao)) return;
+    const [ox, oz] = centroDoEsquadrao(o); if (Math.hypot(ox - x, oz - z) > 340) return;
     for (const s of ativos(o)) l.push(s);
-  }
+  };
+  if (!PERCEPCAO.grade) { for (const o of P.esquadroes) confere(o); return l; }
+  // grade feita no início do passo: margem de 40 m cobre o que os esquadrões andam num passo; ordem do esquadrão preservada
+  const idx = []; buscaNaGrade(gradeDeEsquadroes(P), x, z, 340 + 40, i => idx.push(i));
+  idx.sort((a, b) => a - b); for (const i of idx) confere(P.esquadroes[i]);
   return l;
 }
 
@@ -2656,14 +2689,17 @@ function pensa(P, s, sq, inimigos) {
     if (olhando && linhaLivre(P, s.x, s.z, o.x, o.z)) { vistos.push([o, d]); sq.conhecidos.set(o, { x: o.x, z: o.z, t: P.tempo }); }
   }
   if (vistos.length) sq.semContato = 0;
+  if (PERCEPCAO.ligada) percebe(P, s, vistos);   // memória do soldado, aviso aos colegas e lugar suspeito para supressão
   let alvo = vistos.length ? vistos[0][0] : null;
   if (s.funcao === "antitanque" && vistos.length) { const dentro = vistos.find(([o]) => o.dentro); if (dentro) alvo = dentro[0]; }
+  if (PERCEPCAO.ligada) defineMira(P, s, alvo);
   let ameaca = alvo;
   if (!ameaca) { let md = Infinity; for (const [o, k] of sq.conhecidos) if (o.vida === "ok" && P.tempo - k.t < MEMORIA_INIMIGO) { const d = Math.hypot(k.x - s.x, k.z - s.z); if (d < md) { md = d; ameaca = { x: k.x, z: k.z, faccao: o.faccao }; } } }
+  if (!ameaca && s.sup) ameaca = { x: s.sup.x, z: s.sup.z, faccao: s.sup.o.faccao };
   const dAmeaca = ameaca ? Math.hypot(ameaca.x - s.x, ameaca.z - s.z) : Infinity;
 
   // rendição: moral no chão e inimigo perto
-  if (s.moral < 12 && ameaca && dAmeaca < 55 && P.r() < .5) { rende(P, s, ameaca.faccao); return; }
+  if (s.moral < 12 && ameaca && dAmeaca < 55 && P.r() < .5) { rende(P, s, ameaca.faccao); s.sup = null; s.mira = null; return; }
 
   const lider = sq.lider;
   const chance = limita(.3 + s.atr.disciplina / 250 + s.pref.obedece * .35 + (lider && lider !== s ? lider.atr.lideranca / 500 : 0), .2, .97);
@@ -2679,7 +2715,7 @@ function pensa(P, s, sq, inimigos) {
   if (s.funcao === "metralhador" && alvo && (acao === "avancar" || acao === "flanquear")) acao = "atirar";   // cobre o avanço dos outros
   if (s.funcao === "medico" && s.item === "kit" && acao !== "recuar") {
     const ferido = sq.membros.filter(o => o.vida === "ferido" && (!o.medico || o.medico === s) && Math.hypot(o.x - s.x, o.z - s.z) < 70).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
-    if (ferido) { ferido.medico = s; s.paciente = ferido; s.destino = [ferido.x, ferido.z]; s.acao = "socorrer"; s.alvo = null; return; }
+    if (ferido) { ferido.medico = s; s.paciente = ferido; s.destino = [ferido.x, ferido.z]; s.acao = "socorrer"; s.alvo = null; s.sup = null; s.mira = null; return; }
   }
   s.paciente = null;
   if (obedece && s !== lider && acao !== s.acao) aprende(P, s, "disciplina", .3);
@@ -2740,6 +2776,10 @@ function age(P, s, sq, dt) {
     if (!s.destino) s.rumo = Math.atan2(a.z - s.z, a.x - s.x);
     s.recarga -= dt;
     if (s.recarga <= 0 && (!s.destino || P.r() < .4)) dispara(P, s, a);
+  } else if (PERCEPCAO.ligada && s.sup && s.acao !== "recuar") {   // sem ver: tiro de supressão no lugar suspeito
+    if (!s.destino) s.rumo = Math.atan2(s.sup.z - s.z, s.sup.x - s.x);
+    s.recarga -= dt;
+    if (s.recarga <= 0 && (!s.destino || P.r() < .4)) suprime(P, s, s.sup);
   }
 }
 
@@ -2756,6 +2796,7 @@ function dispara(P, s, alvo) {
   const acerta = P.r() < chance;
   aprende(P, s, "pontaria", .05);
   alvo.atacadoPor = s; alvo.atacadoEm = P.tempo;
+  if (PERCEPCAO.ligada) ouveTiro(P, alvo, s, d);
   if (alvo.sq) entraEmCombate(P, alvo.sq);
   // explosivos: com amigo perto do alvo, quem é disciplinado segura o tiro
   if (w.area && ativos(s.sq || { membros: [] }).some(m => m !== s && Math.hypot(m.x - alvo.x, m.z - alvo.z) < w.area + 1.5) && P.r() < .35 + s.atr.disciplina / 150) { s.recarga = .8; return; }
@@ -2881,9 +2922,183 @@ function verificaCapturas(P) {
 
 "use strict";
 /* ============================================================
+   PERCEPÇÃO: ver ou saber (protótipo 19)
+   O soldado só escolhe alvo em quatro casos:
+     (a) vê o inimigo (linha de visada, cone e alcance: regra de sempre, em combate.js);
+     (b) um colega a poucos metros gritou "contato" e deu a posição (aviso);
+     (c) levou tiro e sabe de que lado veio (direção com erro);
+     (d) lembra de ter visto o inimigo se abrigar e ainda não o viu sair.
+   Em (b), (c) e (d) o tiro é de supressão: gasta munição, quase não acerta e
+   segura a cabeça do inimigo (baixa a moral dele). Sem nenhum dos quatro, não atira.
+   Cada soldado guarda a última posição conhecida de cada inimigo (s.mem), com hora e
+   origem (viu, aviso, tiro, abrigo); a lembrança esmaece com o tempo. As rivais usam
+   exatamente a mesma regra. A grade espacial (quadradinhos do mapa) evita comparar
+   cada esquadrão com todos os outros. (Números provisórios.)
+   ============================================================ */
+const PERCEPCAO = {
+  ligada: true,        // desligada: volta ao comportamento antigo (só atira em quem vê; memória só do esquadrão)
+  grade: true,         // desligada: busca "todos contra todos" de antes
+  aviso: 60,           // m: alcance do grito "contato" de um colega
+  memoria: 60,         // s: a lembrança some depois disto
+  janelaSupressao: 20, // s: atira em lugar suspeito (aviso ou tiro) enquanto a informação for mais nova que isto
+  janelaAbrigo: 40,    // s: idem para quem lembra de ter visto o inimigo se abrigar
+  recemVisto: 1.5,     // s: até aqui o inimigo ainda conta como "visto agora"; depois só vale se estava em abrigo
+  erroTiro: .12,       // erro da direção de quem levou tiro: fração da distância (mais 4 m)
+  desvioSup: 3,        // m: espalhamento do tiro de supressão em volta do ponto lembrado (mais 5% da distância)
+  precisaoSup: .2,     // chance de acerto da supressão, comparada a mirar de verdade
+  raioSup: 6,          // m: o tiro de supressão só pode acertar quem está a até isto do ponto de impacto
+  moralSup: .8,        // pontos de moral que o inimigo perde por tiro de supressão que passa perto (antes da coragem)
+  celula: 120          // m: lado do quadradinho da grade espacial
+};
+const RANGO_ORIGEM = { viu: 3, aviso: 2, tiro: 1 };
+
+/* ---------- grade espacial ---------- */
+function criaGrade(celula) { return { c: celula, m: new Map() }; }
+function poeNaGrade(G, x, z, obj) {
+  const k = Math.floor(x / G.c) * 100003 + Math.floor(z / G.c); let l = G.m.get(k);
+  if (!l) G.m.set(k, l = []); l.push(obj);
+}
+/* chama fn(obj) para tudo que está nos quadradinhos que tocam o quadrado de lado 2*raio em volta de (x, z) */
+function buscaNaGrade(G, x, z, raio, fn) {
+  const i0 = Math.floor((x - raio) / G.c), i1 = Math.floor((x + raio) / G.c), j0 = Math.floor((z - raio) / G.c), j1 = Math.floor((z + raio) / G.c);
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const l = G.m.get(i * 100003 + j); if (l) for (const o of l) fn(o); }
+}
+/* grade dos soldados em pé, refeita a cada passo de tempo em que alguém pede */
+function gradeDeSoldados(P) {
+  if (P.gradeSold && P.gradeSold.t === P.tempo) return P.gradeSold;
+  const G = criaGrade(PERCEPCAO.celula); G.t = P.tempo;
+  for (const s of P.soldados) if (s.vida === "ok") poeNaGrade(G, s.x, s.z, s);
+  return (P.gradeSold = G);
+}
+/* grade dos esquadrões (pelo centro), feita no início do passo; quem pergunta confere o centro de novo */
+function gradeDeEsquadroes(P) {
+  if (P.gradeEsq && P.gradeEsq.t === P.tempo) return P.gradeEsq;
+  const G = criaGrade(PERCEPCAO.celula * 2); G.t = P.tempo;
+  P.esquadroes.forEach((sq, i) => { if (ativos(sq).length) { const [x, z] = centroDoEsquadrao(sq); poeNaGrade(G, x, z, i); } });
+  return (P.gradeEsq = G);
+}
+
+/* ---------- memória por soldado ---------- */
+/* guarda onde o soldado s soube que o inimigo o está; origem: viu, aviso ou tiro */
+function lembra(P, s, o, x, z, origem) {
+  const mem = s.mem, ant = mem.get(o);
+  if (ant && ant.t > P.tempo - PERCEPCAO.recemVisto * 2 && RANGO_ORIGEM[ant.origem] > RANGO_ORIGEM[origem]) return;   // não troca visão recente por palpite
+  const abrigo = origem === "viu" && (!!o.dentro || P.reg.oc.edificioPerto(o.x, o.z, 4));   // visto dentro ou junto de um prédio: se abrigou
+  mem.set(o, { x, z, t: P.tempo, origem, abrigo });
+  if (mem.size > 24) for (const [k, v] of mem) if (P.tempo - v.t > PERCEPCAO.memoria || k.vida !== "ok") mem.delete(k);
+  if (s.sq) s.sq.conhecidos.set(o, { x, z, t: P.tempo });   // o esquadrão soma o que os soldados sabem
+}
+/* de onde vem a informação hoje: "viu" antigo de quem entrou em abrigo vira "abrigo" */
+function origemAgora(P, k) {
+  if (k.origem !== "viu") return k.origem;
+  if (P.tempo - k.t <= PERCEPCAO.recemVisto) return "viu";
+  return k.abrigo ? "abrigo" : "perdido";
+}
+/* o colega grita "contato": quem está a poucos metros anota a posição */
+function avisaColegas(P, s, o) {
+  buscaNaGrade(gradeDeSoldados(P), s.x, s.z, PERCEPCAO.aviso, f => {
+    if (f === s || f.faccao !== s.faccao || Math.hypot(f.x - s.x, f.z - s.z) > PERCEPCAO.aviso) return;
+    lembra(P, f, o, o.x, o.z, "aviso");
+  });
+}
+/* levou tiro: sabe de que lado veio, com erro */
+function ouveTiro(P, alvo, atirador, d) {
+  if (!alvo.mem || alvo.vida !== "ok") return;
+  const e = PERCEPCAO.erroTiro * d + 4;
+  lembra(P, alvo, atirador, atirador.x + P.r.entre(-e, e), atirador.z + P.r.entre(-e, e), "tiro");
+}
+/* melhor lugar suspeito para atirar de supressão (casos b, c, d); null se não há */
+function alvoDeSupressao(P, s) {
+  const w = ARMAS[s.arma]; if (!w || w.area || s.municao <= 0) return null;
+  let melhor = null, md = Infinity;
+  for (const [o, k] of s.mem) {
+    if (o.vida !== "ok") continue;
+    const idade = P.tempo - k.t, orig = origemAgora(P, k);
+    if (orig === "viu" || orig === "perdido") continue;
+    if (idade > (orig === "abrigo" ? PERCEPCAO.janelaAbrigo : PERCEPCAO.janelaSupressao)) continue;
+    const d = Math.hypot(k.x - s.x, k.z - s.z); if (d > w.alcance || d >= md) continue;
+    md = d; melhor = { x: k.x, z: k.z, o, origem: orig, t: k.t };
+  }
+  return melhor;
+}
+/* tiro de supressão: vai para o ponto lembrado; só acerta quem estiver de fato por perto */
+function suprime(P, s, k) {
+  const w = ARMAS[s.arma];
+  if (!w || w.area || s.municao <= 0 || k.o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.janelaAbrigo) { s.sup = null; s.recarga = 1; return; }   // inimigo caiu: para de atirar nele
+  const d = Math.hypot(k.x - s.x, k.z - s.z), nv = (s.nivel || 1) - 1;
+  if (d > w.alcance) { s.recarga = .5; return; }
+  s.recarga = w.cadencia * (1.15 - s.atr.reacao / 250) * P.r.entre(.85, 1.15);
+  s.municao--; if (s.sq) s.sq.tirosNoCombate = (s.sq.tirosNoCombate || 0) + 1;
+  s.supTiros = (s.supTiros || 0) + 1;
+  const dv = PERCEPCAO.desvioSup + d * .05, ix = k.x + P.r.entre(-dv, dv), iz = k.z + P.r.entre(-dv, dv);
+  P.efeitos.push({ tipo: "tiro", ax: s.x, az: s.z, bx: ix, bz: iz, cor: s.faccao.cor, arma: s.arma });
+  const o = k.o; if (o.vida !== "ok") return;
+  const dr = Math.hypot(o.x - ix, o.z - iz); if (dr > PERCEPCAO.raioSup) return;   // errou o lugar: o inimigo nem percebe
+  const cob = protecao(P, o, s);
+  const chance = limita(.22 * w.precisao * NIVEL.precisao[nv] * bonusDe(s).precisao * (.45 + s.atr.pontaria / 90) * (1 - .65 * d / w.alcance) * cob * PERCEPCAO.precisaoSup * (1 - dr / PERCEPCAO.raioSup), .005, .3);
+  o.atacadoPor = s; o.atacadoEm = P.tempo;
+  ouveTiro(P, o, s, d);
+  if (o.sq) entraEmCombate(P, o.sq);
+  o.moral -= PERCEPCAO.moralSup * (1 - o.atr.coragem / 150) * bonusDe(o).calma;
+  if (P.r() < chance) atingido(P, o, s);
+  else o.sobFogo = Math.max(o.sobFogo, 2);
+}
+
+/* ---------- o que o soldado enxerga, sabe ou lembra agora (usado por pensa em combate.js) ---------- */
+function percebe(P, s, vistos) {
+  if (s.mem.size) for (const [o, k] of s.mem) if (o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.memoria) s.mem.delete(o);
+  for (const [o] of vistos) { lembra(P, s, o, o.x, o.z, "viu"); avisaColegas(P, s, o); }
+  s.sup = vistos.length || !s.arma ? null : alvoDeSupressao(P, s);
+}
+/* o que aparece no painel e nos ícones: alvo real (vendo) ou lugar suspeito (supressão) */
+function defineMira(P, s, alvo) {
+  s.mira = alvo ? { tipo: "vendo", o: alvo, t: P.tempo, origem: "viu" } : s.sup ? { tipo: "supressao", o: s.sup.o, t: s.sup.t, origem: s.sup.origem } : null;
+}
+
+/* ---------- para a tela e os testes ---------- */
+/* a mira só vale para quem está de pé e em combate */
+const miraVale = s => s.vida === "ok" && !!s.sq && s.sq.combate;
+/* texto do painel do soldado */
+function textoMira(P, s) {
+  const m = miraVale(s) ? s.mira : null;
+  if (!m) return miraVale(s) ? "Sem alvo: não vê nem sabe onde está o inimigo" : null;
+  if (m.tipo === "vendo") return "Mirando em: " + m.o.nome + " (vendo)";
+  const fac = m.o.faccao.jogador ? "seus soldados" : m.o.faccao.nome, h = Math.max(0, Math.round(P.tempo - m.t));
+  if (m.origem === "abrigo") return "Supressão onde viu " + fac + " se abrigar há " + h + " s";
+  if (m.origem === "aviso") return "Supressão onde um colega avisou ter visto " + fac + " há " + h + " s";
+  return "Supressão na direção do tiro de " + fac + ", há " + h + " s";
+}
+/* ícone sobre o soldado: olho (vendo), orelha (ouviu ou levou tiro), interrogação (lugar suspeito, abrigo) */
+function iconeMira(s) {
+  const m = miraVale(s) ? s.mira : null; if (!m) return null;
+  if (m.tipo === "vendo") return "olho";
+  return m.origem === "abrigo" ? "interrogacao" : "orelha";
+}
+/* última posição conhecida de cada inimigo, pelos soldados da facção (a mais nova de cada um); refeita no máximo a cada segundo */
+function ultimasPosicoes(P, fac) {
+  const c = P.ultimas || (P.ultimas = new Map()), ant = c.get(fac);
+  if (ant && P.tempo - ant.t < 1) return ant.lista;
+  const por = new Map();
+  for (const s of P.soldados) {
+    if (s.faccao !== fac || s.vida !== "ok" || !s.mem || !s.mem.size) continue;
+    for (const [o, k] of s.mem) {
+      if (o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.memoria) continue;
+      const a = por.get(o);
+      if (!a || k.t > a.t) por.set(o, { o, x: k.x, z: k.z, t: k.t, origem: origemAgora(P, k), por: s });
+    }
+  }
+  const lista = [...por.values()].filter(u => P.tempo - u.t > PERCEPCAO.recemVisto);   // quem está à vista aparece como soldado, não como marca
+  c.set(fac, { t: P.tempo, lista });
+  return lista;
+}
+
+"use strict";
+/* ============================================================
    ECONOMIA: dinheiro, influência e comida
    Contas por hora de jogo. Cada facção (menos o governo, que só
    tem o caixa negativo) recebe e gasta a cada hora.
+   Protótipo 19: "convencer algo" da rival confere só os prédios da própria
+   facção em vez de varrer o mapa inteiro a cada prédio (pico de ~70 ms).
    ============================================================ */
 const RECURSOS_INICIAIS = { dinheiro: 3000, influencia: 20, comida: 200 };
 // imposto fixo por prédio ($ por hora)
@@ -2985,12 +3200,12 @@ function custoConvencer(e) {
   return Math.round(c);
 }
 /* Dá para convencer os moradores? (sem defensores, e a facção já tem algo perto) */
-function podeConvencer(P, fac, e) {
+function podeConvencer(P, fac, e, meus) {   // meus (opcional): lista dos prédios da facção, para não varrer o mapa inteiro a cada prédio
   if (e.dono === fac) return "o prédio já é seu";
   if (e.dono && !e.dono.governo && (estadoEntre(P, fac, e.dono) === "pacto" || estadoEntre(P, fac, e.dono) === "alianca")) return "é de " + e.dono.nome + ", com quem você tem " + ESTADOS[estadoEntre(P, fac, e.dono)].n.toLowerCase();
   if (defensores(P, e, fac).length) return "tem guarnição inimiga";
   if (!moradoresDe(e) && !TIPOS_CHAVE.includes(e.tipo)) return "não tem moradores para convencer";
-  const perto = P.reg.edificios.some(o => o.dono === fac && (o.zona === e.zona || Math.hypot(o.x - e.x, o.z - e.z) < 150));
+  const perto = (meus || P.reg.edificios).some(o => o.dono === fac && (o.zona === e.zona || Math.hypot(o.x - e.x, o.z - e.z) < 150));
   if (!perto) return "você não tem presença nesta área";
   if (fac.recursos.influencia < custoConvencer(e)) return "influência insuficiente";
   return null;
@@ -3019,7 +3234,7 @@ function convenceAlgo(P, fac) {
   const meus = P.reg.edificios.filter(e => e.dono === fac);
   let melhor = null, md = Infinity;
   for (const e of P.reg.edificios) {
-    if (e.dono === fac || podeConvencer(P, fac, e)) continue;
+    if (e.dono === fac || podeConvencer(P, fac, e, meus)) continue;
     let d = Infinity; for (const m of meus) d = Math.min(d, Math.hypot(m.x - e.x, m.z - e.z));
     const nota = d - (TIPOS_CHAVE.includes(e.tipo) ? 80 : 0);
     if (nota < md) { md = nota; melhor = e; }
@@ -4647,6 +4862,7 @@ function compraAutomatica(P, fac, b, k, quantos, reservado) {
 "use strict";
 /* ============================================================
    VEÍCULOS DE LOGÍSTICA
+   (Protótipo 19: o número do veículo é contado por facção, não mais global.)
    Levam armas, kits e munição entre as bases. Nível I, II e III:
    quanto maior, mais carga e mais vida. Cada um é pilotado por um
    soldado do batalhão a que está atribuído; o líder decide as viagens:
@@ -4668,7 +4884,6 @@ const LOGISTICA = {
   motorista: .04, motoristaRpg: .25, capturaPerto: 40, avancadaRaio: 700, guardaRota: 6 * HORA,
   rival: { aCada: [3, 6], alcance: 1200 }
 };
-let ultimoVeiculo = 0;
 const capacidade = v => VEICULOS[v.nivel - 1].carga;
 const espacoDe = k => ESPACO[baseDe(k)] || 1;
 function volumeCarga(c) {
@@ -4685,9 +4900,10 @@ function textoCarga(c) {
   return l.join(", ") || "vazio";
 }
 
+/* o número do veículo é contado por facção (antes era global e passava de uma partida para a outra) */
 function novoVeiculo(fac, nivel) {
   const b = fac.base;
-  const v = { id: ++ultimoVeiculo, nivel, faccao: fac, bat: null, motorista: null, x: b ? entradaDe(b)[0] : 0, z: b ? entradaDe(b)[1] : 0, rumo: 0,
+  const v = { id: fac.id + "." + (fac.nVeiculos = (fac.nVeiculos || 0) + 1), nivel, faccao: fac, bat: null, motorista: null, x: b ? entradaDe(b)[0] : 0, z: b ? entradaDe(b)[1] : 0, rumo: 0,
     em: b || null, estado: "parado", carga: criaEstoque(), vida: VEICULOS[nivel - 1].vida, plano: null, rota: null, i: 0, danoDe: new Map(), proxima: 0 };
   (fac.veiculos || (fac.veiculos = [])).push(v);
   return v;
@@ -6375,12 +6591,93 @@ function atualizaTropas(T, P, reg, agora) {
 
 "use strict";
 /* ============================================================
+   MARCAS DE PERCEPÇÃO NO MAPA 3D (protótipo 19)
+   - Última posição conhecida: onde os soldados do jogador viram, ouviram
+     ou suspeitam que um inimigo está. Anel e seta na cor da facção dele,
+     com um ícone de como se soube; esmaece em 60 s e some.
+   - Ícones sobre o soldado selecionado e sobre quem está em combate (do
+     jogador): olho = vendo; orelha = ouviu o aviso ou levou tiro;
+     interrogação = atira em lugar suspeito (onde viu o inimigo se abrigar).
+   (Números provisórios.)
+   ============================================================ */
+const MARCAS = { max: 40, icones: 90, tamanhoIcone: 2.6 };
+function desenhaIconePercepcao(tipo) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"), cor = { olho: "#3d8f5a", orelha: "#d4a02a", interrogacao: "#d9622b" }[tipo];
+  g.fillStyle = cor; g.beginPath(); g.arc(32, 32, 29, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = "#fff"; g.fillStyle = "#fff"; g.lineWidth = 4.5; g.lineCap = "round"; g.lineJoin = "round";
+  if (tipo === "olho") {
+    g.beginPath(); g.moveTo(10, 32); g.quadraticCurveTo(32, 10, 54, 32); g.quadraticCurveTo(32, 54, 10, 32); g.stroke();
+    g.beginPath(); g.arc(32, 32, 7, 0, Math.PI * 2); g.fill();
+  } else if (tipo === "orelha") {
+    g.beginPath(); g.moveTo(25, 51); g.bezierCurveTo(14, 38, 15, 13, 32, 13); g.bezierCurveTo(49, 13, 51, 31, 39, 38); g.bezierCurveTo(33, 42, 35, 48, 29, 52); g.stroke();
+    g.beginPath(); g.moveTo(27, 31); g.bezierCurveTo(27, 22, 40, 22, 40, 30); g.stroke();
+  } else {
+    g.font = "bold 44px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 32, 35);
+  }
+  return new THREE.CanvasTexture(c);
+}
+function criaMarcasPercepcao() {
+  const grupo = new THREE.Group(), tex = {};
+  for (const t of ["olho", "orelha", "interrogacao"]) tex[t] = desenhaIconePercepcao(t);
+  const novoIcone = () => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.olho, transparent: true, depthTest: false, depthWrite: false }));
+    sp.visible = false; sp.renderOrder = 8; grupo.add(sp); return sp;
+  };
+  const geoAnel = new THREE.RingGeometry(2.2, 3, 28); geoAnel.rotateX(-Math.PI / 2);
+  const geoSeta = new THREE.ConeGeometry(1.4, 4.5, 8); geoSeta.rotateX(Math.PI);
+  const marcas = [];
+  for (let i = 0; i < MARCAS.max; i++) {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8, depthTest: false, depthWrite: false });
+    const anel = new THREE.Mesh(geoAnel, mat), seta = new THREE.Mesh(geoSeta, mat);
+    anel.renderOrder = seta.renderOrder = 7; anel.visible = seta.visible = false; grupo.add(anel); grupo.add(seta);
+    marcas.push({ anel, seta, mat, icone: novoIcone() });
+  }
+  const icones = []; for (let i = 0; i < MARCAS.icones; i++) icones.push(novoIcone());
+  return { grupo, tex, marcas, icones };
+}
+function poeIcone(M, sp, tipo, x, y, z, esc) {
+  if (sp.material.map !== M.tex[tipo]) { sp.material.map = M.tex[tipo]; sp.material.needsUpdate = true; }
+  sp.position.set(x, y, z); sp.scale.set(esc, esc, 1); sp.visible = true;
+}
+function atualizaMarcasPercepcao(M, P, reg) {
+  const f = eu(), escala = Math.max(1, cam.dist / 380), iconeEsc = MARCAS.tamanhoIcone * Math.max(1, cam.dist / 200);
+  let nm = 0, ni = 0;
+  // última posição conhecida dos inimigos (só do que os soldados do jogador sabem)
+  if (f && PERCEPCAO.ligada && P.tempo > 0) {
+    for (const u of ultimasPosicoes(P, f)) {
+      if (nm >= M.marcas.length) break;
+      const m = M.marcas[nm++], idade = P.tempo - u.t, y = alturaEm(reg, u.x, u.z);
+      m.mat.color.setHex(u.o.faccao.cor); m.mat.opacity = limita(.9 - .8 * idade / PERCEPCAO.memoria, .1, .9);
+      m.anel.position.set(u.x, y + .5, u.z); m.anel.scale.setScalar(escala); m.anel.visible = true;
+      m.seta.position.set(u.x, y + 5 * escala, u.z); m.seta.scale.setScalar(escala); m.seta.visible = true;
+      poeIcone(M, m.icone, u.origem === "abrigo" ? "interrogacao" : u.origem === "viu" ? "olho" : "orelha", u.x, y + 10 * escala, u.z, iconeEsc * .8);
+    }
+  }
+  for (let i = nm; i < M.marcas.length; i++) { const m = M.marcas[i]; m.anel.visible = m.seta.visible = m.icone.visible = false; }
+  // ícones sobre o soldado selecionado e sobre quem está em combate
+  if (PERCEPCAO.ligada) {
+    const quem = new Set();
+    if (contexto && contexto.tipo === "soldado" && contexto.alvo.vida === "ok") quem.add(contexto.alvo);
+    if (f) for (const sq of P.esquadroes) if (sq.faccao === f && sq.combate) for (const s of sq.membros) if (s.vida === "ok") quem.add(s);
+    for (const s of selecao) for (const o of s.membros) if (o.vida === "ok" && s.combate) quem.add(o);
+    for (const s of quem) {
+      if (ni >= M.icones.length) break;
+      const t = iconeMira(s); if (!t) continue;
+      poeIcone(M, M.icones[ni++], t, s.x, alturaEm(reg, s.x, s.z) + 4.6 + (iconeEsc - MARCAS.tamanhoIcone) * .4, s.z, iconeEsc);
+    }
+  }
+  for (let i = ni; i < M.icones.length; i++) M.icones[i].visible = false;
+}
+
+"use strict";
+/* ============================================================
    CENA 3D: mapa, câmera, seleção no mapa, rótulos e marcadores
    ============================================================ */
 const $ = id => document.getElementById(id);
 let renderer, cena, camera, sol, raio, anelFoco, anelEscolha, caixaFoco, caixaEscolha, linhaRota, linhaPrevia;
 let regiao = null, partida = null, camada = null, tropas = null, geoTerreno = null;
-let grupoMapa = null, alvosClique = [], rotulos = [], marcadores = [], vTmp, ponteiro, ultimaCamada = 0;
+let marcasP = null, grupoMapa = null, alvosClique = [], rotulos = [], marcadores = [], vTmp, ponteiro, ultimaCamada = 0;
 const cam = { x: 0, z: 0, y: 30, dist: 1500, giro: .5, incl: .9, ax: 0, az: 0, ad: 1500 };
 const corCss = c => "#" + c.toString(16).padStart(6, "0");
 
@@ -6958,6 +7255,11 @@ function painelZona(p, zn) {
 }
 
 const VIDA = { ok: "Pronto", ferido: "Ferido", morto: "Morto", rendido: "Prisioneiro", tratando: "Em tratamento", fila: "Esperando tratamento", reserva: "Esperando numa base", desertou: "Desertou", comando: "No comando, numa base", motorista: "Motorista de veículo de logística" };
+/* atualiza só o texto de "Mirando em" (o resto do painel não precisa refazer a cada segundo) */
+function atualizaMira() {
+  if (!contexto || contexto.tipo !== "soldado") return;
+  const t = document.querySelector("#contexto .txt-mira"); if (t) t.textContent = textoMira(partida, contexto.alvo) || "Sem alvo";
+}
 function mostraSoldado(s) { zonaDestacada = null; marca(anelEscolha, caixaEscolha, null); abreContexto("soldado", s); }
 function fichaArma(s) {
   const d = cria("div", "ficha-arma" + (s.arma ? "" : " sem"));
@@ -6991,6 +7293,7 @@ function painelSoldado(p, s) {
   linha(g, s.vida === "ok" ? "check_circle" : "healing", "Situação", s.vida === "ok" && s.sq && s.sq.combate ? "Lutando" : VIDA[s.vida] + (s.vida === "tratando" ? " (" + s.ondeTrata + ", falta " + Math.max(0, Math.ceil((s.fimTrat - partida.tempo) / HORA * 10) / 10) + " h)" : ""));
   if (s.vida === "ok") barra(g, "mood", "Moral", s.moral, 130, s.moral < 30 ? "#ff6a4a" : null);
   p.appendChild(g);
+  if (s.vida === "ok" && PERCEPCAO.ligada) { const m = cria("div", "bonus-pat mira"); m.appendChild(ico("target")); m.appendChild(cria("span", "txt-mira", textoMira(partida, s) || "Sem alvo")); p.appendChild(m); }
   const at = cria("div", "secao"); at.appendChild(cria("div", "rotulo-peq", "Atributos (sobem com a prática)"));
   for (const [k, n] of Object.entries(ATRIBUTOS)) barra(at, ICONE_ATR[k], n, s.atr[k]);
   p.appendChild(at);
@@ -7979,6 +8282,7 @@ function trocaRegiao(reg) {
   grupoMapa = montaMapa(reg); cena.add(grupoMapa);
   partida = criaPartida(reg); partida.pausado = true; partida.dificuldade = dificuldadeEscolhida; ouveA(partida);
   camada = criaCamadaTerritorio(reg, geoTerreno); grupoMapa.add(camada.malha); camada.atualiza();
+  marcasP = criaMarcasPercepcao(); grupoMapa.add(marcasP.grupo);
   tropas = criaTropas(); grupoMapa.add(tropas.grupo); atualizaTropas(tropas, partida, reg, performance.now() / 1000);
   linhaRota = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: COR_JOGADOR, depthTest: false, transparent: true, opacity: .9 }));
   linhaRota.visible = false; linhaRota.renderOrder = 5; grupoMapa.add(linhaRota);
@@ -8068,9 +8372,10 @@ function inicia() {
     if (estado === "jogo" && partida) {
       passoDaPartida(partida, dt);
       $("relogio").textContent = relogio(partida);
-      if (agora > proximoPainel) { proximoPainel = agora + 1000; mostraEsquadroes(); mostraRotaSelecionada(); mostraCombates(); }
+      if (agora > proximoPainel) { proximoPainel = agora + 1000; mostraEsquadroes(); mostraRotaSelecionada(); mostraCombates(); atualizaMira(); }
     }
     if (tropas && partida) atualizaTropas(tropas, partida, regiao, agora / 1000);
+    if (marcasP && partida) atualizaMarcasPercepcao(marcasP, partida, regiao);
     if (camada && camada.sujo && agora - ultimaCamada > 250) { ultimaCamada = agora; camada.atualiza(); }
     teclado(); atualizaCamera(); atualizaRotulos(); atualizaTutorial();
     renderer.render(cena, camera);

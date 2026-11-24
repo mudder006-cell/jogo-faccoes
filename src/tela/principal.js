@@ -375,6 +375,7 @@ function trocaRegiao(reg) {
   grupoMapa = montaMapa(reg); cena.add(grupoMapa);
   partida = criaPartida(reg); partida.pausado = true; partida.dificuldade = dificuldadeEscolhida; ouveA(partida);
   camada = criaCamadaTerritorio(reg, geoTerreno); grupoMapa.add(camada.malha); camada.atualiza();
+  marcasP = criaMarcasPercepcao(); grupoMapa.add(marcasP.grupo);
   tropas = criaTropas(); grupoMapa.add(tropas.grupo); atualizaTropas(tropas, partida, reg, performance.now() / 1000);
   linhaRota = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: COR_JOGADOR, depthTest: false, transparent: true, opacity: .9 }));
   linhaRota.visible = false; linhaRota.renderOrder = 5; grupoMapa.add(linhaRota);
@@ -464,9 +465,10 @@ function inicia() {
     if (estado === "jogo" && partida) {
       passoDaPartida(partida, dt);
       $("relogio").textContent = relogio(partida);
-      if (agora > proximoPainel) { proximoPainel = agora + 1000; mostraEsquadroes(); mostraRotaSelecionada(); mostraCombates(); }
+      if (agora > proximoPainel) { proximoPainel = agora + 1000; mostraEsquadroes(); mostraRotaSelecionada(); mostraCombates(); atualizaMira(); }
     }
     if (tropas && partida) atualizaTropas(tropas, partida, regiao, agora / 1000);
+    if (marcasP && partida) atualizaMarcasPercepcao(marcasP, partida, regiao);
     if (camada && camada.sujo && agora - ultimaCamada > 250) { ultimaCamada = agora; camada.atualiza(); }
     teclado(); atualizaCamera(); atualizaRotulos(); atualizaTutorial();
     renderer.render(cena, camera);

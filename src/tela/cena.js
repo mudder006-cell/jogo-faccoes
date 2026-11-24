@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 let renderer, cena, camera, sol, raio, anelFoco, anelEscolha, caixaFoco, caixaEscolha, linhaRota, linhaPrevia;
 let regiao = null, partida = null, camada = null, tropas = null, geoTerreno = null;
-let grupoMapa = null, alvosClique = [], rotulos = [], marcadores = [], vTmp, ponteiro, ultimaCamada = 0;
+let marcasP = null, grupoMapa = null, alvosClique = [], rotulos = [], marcadores = [], vTmp, ponteiro, ultimaCamada = 0;
 const cam = { x: 0, z: 0, y: 30, dist: 1500, giro: .5, incl: .9, ax: 0, az: 0, ad: 1500 };
 const corCss = c => "#" + c.toString(16).padStart(6, "0");
 
