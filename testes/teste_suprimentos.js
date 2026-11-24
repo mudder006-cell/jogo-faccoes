@@ -1,7 +1,7 @@
 // Protótipo 19.2: suprimentos (médico, engenheiro, hospital), resistência dos prédios e determinismo.
 // Uso: node testes/teste_suprimentos.js [semente]
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','suprimentos','veiculos','comando','ia','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, ativos, ARMAS, SUPRIMENTO, PREDIO, TRATAMENTO_QG, danificaPredio, fortificacoes, trataNoCampo, temSuprimento, gastaTratamento, evacua, tratamentos, criaSoldado, entraNoEsquadrao, ocupa, tomaEdificio, batalhoesDe, tamanhoDoPredio, totalSuprimentos, cargaSuprimento, equipaNaBase };')();
 const semente = process.argv[2] || 'B2';
 let falhas = 0;
@@ -101,11 +101,42 @@ console.log('4) Engenheiro reconstrói prédio destruído e gasta suprimentos');
   confere('depois de pronto, fortifica (e continua gastando)', e.fortificado > f0, 'fortificação ' + Math.round(e.fortificado * 100));
 }
 
+console.log('4b) Jogador: esquadrão com engenheiro parado perto de prédio seu danificado conserta');
+{
+  const { reg, P, eu, sq } = novaPartida(semente);
+  const e = reg.edificios.filter(x => x.tipo === 'casa' && !x.dono).sort((a, b) => Math.hypot(a.x - sq.x, a.z - sq.z) - Math.hypot(b.x - sq.x, b.z - sq.z))[0];
+  G.tomaEdificio(P, e, eu);
+  const eng = G.criaSoldado(P, eu, 'engenheiro'); G.entraNoEsquadrao(sq, eng); eng.item = 'explosivo'; eng.nivelItem = 1; eng.suprimentos = 30;
+  sq.estado = 'parado'; sq.x = e.x + 10; sq.z = e.z; sq.guarda = null; sq.missao = null; sq.fixo = false;
+  e.dano = .6; e.destruido = false;
+  for (let i = 0; i < 400; i++) { P.tempo += 1; G.fortificacoes(P, 1); }
+  confere('conserta o prédio vizinho sem sair do lugar', e.dano === 0 && eng.suprimentos < 30, 'dano ' + e.dano + ', mochila ' + eng.suprimentos.toFixed(1));
+  // a 150 m: vai até ele
+  const e2 = reg.edificios.filter(x => x.tipo === 'casa' && !x.dono && Math.hypot(x.x - sq.x, x.z - sq.z) > 90 && Math.hypot(x.x - sq.x, x.z - sq.z) < 200)[0];
+  if (e2) { G.tomaEdificio(P, e2, eu); e2.dano = .5; P.tempo += 20; G.fortificacoes(P, 1); confere('parado sem missão, vai até prédio seu danificado a até 220 m', sq.estado === 'andando' || sq.estado === 'guarnição'); }
+}
+
+console.log('4c) Rival: mesma regra do jogador (esquadrão com engenheiro conserta prédio seu danificado)');
+{
+  const { reg, P } = novaPartida(semente, 1);
+  const riv = P.faccoes.find(f => f.recursos && !f.jogador), sq = P.esquadroes.find(q => q.faccao === riv);
+  const e = reg.edificios.filter(x => x.tipo === 'casa' && !x.dono).sort((a, b) => Math.hypot(a.x - sq.x, a.z - sq.z) - Math.hypot(b.x - sq.x, b.z - sq.z))[0];
+  G.tomaEdificio(P, e, riv);
+  const eng = G.criaSoldado(P, riv, 'engenheiro'); G.entraNoEsquadrao(sq, eng); eng.item = 'explosivo'; eng.nivelItem = 1; eng.suprimentos = 30;
+  sq.estado = 'parado'; sq.x = e.x + 10; sq.z = e.z; sq.guarda = null; sq.missao = null;
+  e.dano = .6;
+  let ev = 0; P.ouvintes.push(t => { if (t === 'consertado') ev++; });
+  for (let i = 0; i < 400; i++) { P.tempo += 1; G.fortificacoes(P, 1); }
+  confere('a rival também conserta (evento "consertado")', e.dano === 0 && ev === 1);
+}
+
 console.log('5) Determinismo: mesma semente duas vezes dá o mesmo resultado');
 {
   const resumo = () => {
     const { reg, P, eu } = novaPartida(semente, 3);
+    const ev = {}; P.ouvintes.push((t, d) => { if (['reconstruido', 'consertado', 'fortificado'].includes(t)) { const f = d.sq.faccao.nome; ev[f] = ev[f] || {}; ev[f][t] = (ev[f][t] || 0) + 1; } });
     P.velocidade = 20; for (let k = 0; k < 4000; k++) G.passoDaPartida(P, .1);
+    console.log('   obras (eventos):', JSON.stringify(ev));
     const por = f => ({ sup: G.totalSuprimentos(P, f), din: Math.round(f.recursos ? f.recursos.dinheiro : 0), mun: f.municao ? Object.values(f.municao).join(',') : '-' });
     const maos = Math.round(P.soldados.reduce((t, s) => t + (s.suprimentos || 0), 0) * 1000);
     const predios = reg.edificios.reduce((t, e) => t + Math.round(((e.dano || 0) * 1000 + (e.fortificado || 0) * 777)) + (e.destruido ? 5 : 0), 0);

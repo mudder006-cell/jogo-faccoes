@@ -171,6 +171,7 @@ function armasRival(P, fac) {
   // armas e munição do dia a dia vêm do estoque mínimo dos batalhões (compra automática), como o jogador
   if (!podeFabricar(P, fac, "cx-bala") && fac.producao.length < 2 && R.dinheiro > 400) fabrica(P, fac, fac.municao.bala < 400 ? "cx-bala" : "fuzil");
   // suprimentos: fabrica caixas quando o estoque (QG e batalhões) está baixo; o resto vem do mínimo dos batalhões (compra automática)
-  if (!podeFabricar(P, fac, "cx-suprimento") && fac.producao.length < 3 && totalSuprimentos(P, fac) < 60 && R.dinheiro > 600) fabrica(P, fac, "cx-suprimento");
+  const queroSup = batalhoesDe(P, fac).reduce((t, b) => t + (b.minimo["cx-suprimento"] || 0), 0);   // só fabrica se o estoque está abaixo do mínimo e não há caixa na fila
+  if (!fac.producao.some(o => o.item === "cx-suprimento") && totalSuprimentos(P, fac) < queroSup && R.dinheiro > 1500 && !podeFabricar(P, fac, "cx-suprimento")) fabrica(P, fac, "cx-suprimento");
   if (R.influencia > 200) { const p = PAISES.reduce((a, b) => (fac.paises[b.id].relacao > fac.paises[a.id].relacao ? b : a)); mandaEmissario(P, fac, p.id); }
 }

@@ -68,7 +68,9 @@ function pensaMissao(P, sq) {
   // 1) se refazer: perdeu muita gente, ficou pequeno ou tem gente sem arma → QG
   sq.maior = Math.max(sq.maior || 0, ativos(sq).length);
   const baseSup = precisaSuprimentos(P, sq);   // médico ou engenheiro sem suprimentos e uma base com estoque
-  const recarregar = precisaRecarregar(sq, P) || !!baseSup, alvoRec = recarregar && organizada(fac) ? (baseParaRecarregar(P, sq) || baseSup) : null;
+  const precisaMun = precisaRecarregar(sq, P), recarregar = precisaMun || !!baseSup;
+  // só falta suprimento: vai à base que tem suprimento (evita ir e voltar entre duas bases); falta munição: à base com munição
+  const alvoRec = recarregar && organizada(fac) ? (precisaMun ? (baseParaRecarregar(P, sq) || baseSup) : baseSup) : null;
   if (!recarregar && poucaMunicao(sq) >= Math.ceil(ativos(sq).length / 2)) {
     if (!sq.avisouEstoque) { sq.avisouEstoque = true; const s = ativos(sq).find(s => s.arma && s.municao < cargaDe(s) * POUCA_MUNICAO); if (s) avisa(P, "semestoque", { sq, tipo: MUNICAO_DA[s.arma] }); }
   } else if (municaoMedia(sq) > .5) sq.avisouEstoque = false;

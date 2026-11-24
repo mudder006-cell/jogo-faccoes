@@ -1,6 +1,6 @@
 // Missões e iniciativa: o jogador só dá missões e postura
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','recrutamento','armas','acao','missoes','logistica','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, relogio, resumoFaccao, HORA, daMissao, ativos, trocaFuncao, recrutaMercenario, moveSoldado };')();
 const reg = G.geraRegiao(process.argv[2] || 'B2'), P = G.criaPartida(reg);
 const eu = G.criaFaccao(1, 'Jogador', 0xf2b233, { jogador: true });

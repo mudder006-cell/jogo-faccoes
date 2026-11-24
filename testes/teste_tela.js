@@ -14,7 +14,7 @@ global.THREE = { BoxGeometry: geo, CylinderGeometry: geo, ConeGeometry: geo, Sph
   InstancedMesh: class extends stub { constructor(g, m, n) { super(); this.n = n; this.set = 0; } setMatrixAt() { this.set++; } setColorAt() {} },
   Group: stub, MeshLambertMaterial: class {}, CanvasTexture: class {},
   Matrix4: class { makeScale() { return this; } setPosition() { return this; } }, Color: class { setHex() { return this; } multiplyScalar() { return this; } } };
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','tela/edificios','tela/terreno'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + '\nreturn { geraRegiao, preparaFormas, malhasDosEdificios, malhaTerreno, malhasDaVegetacao, partesDe, pintaEdificio };')();
 G.preparaFormas();
 for (const sd of (process.argv[2] || 'A,B2,K7,FUNDO').split(',')) {

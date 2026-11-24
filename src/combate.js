@@ -308,7 +308,7 @@ function danificaPredio(P, e, dano, s) {
   const efetivo = dano * limita(PREDIO.tamanhoRef / tamanhoDoPredio(e), PREDIO.tamanhoMinFator, 1) / resistenciaDoPredio(e);
   e.dano = Math.min(DANO_DESTROI, (e.dano || 0) + efetivo);
   if (e.fortificado) e.fortificado = Math.max(0, e.fortificado - efetivo * PREDIO.perdaFortificacao);   // o estrago também derruba a fortificação
-  if (e.dano >= DANO_DESTROI - 1e-9) { e.dano = DANO_DESTROI; e.destruido = true; e.reconstrucao = 0; avisa(P, "destruido", { e, s }); }
+  if (e.dano >= DANO_DESTROI - 1e-9) { e.dano = DANO_DESTROI; e.destruido = true; e.fortificado = 0; e.reconstrucao = 0; avisa(P, "destruido", { e, s }); }
   else avisa(P, "dano", { e });
 }
 

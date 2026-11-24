@@ -78,6 +78,7 @@ function minimoDaIA(P, fac, b) {
     fuzil: dinheiro > 1200 ? 2 : 1,
     kit: 1
   };
+  if (sold.length >= 5) b.minimo.explosivo = 1;   // 19.2: com 5 ou mais o líder põe um engenheiro (fortifica e conserta) se houver explosivos no estoque
   if (ar || sold.length >= 8) { b.minimo.metralhadora = 1; b.minimo["cx-cinta"] = Math.max(1, ar) * 400 * fator; }
   if (noArsenal(b, "rpg") || sold.some(s => s.arma === "rpg")) b.minimo["cx-foguete"] = 3;
   // suprimentos (19.2): mesma regra do jogador: o suficiente para encher a mochila de cada médico e engenheiro, mais uma folga de 20

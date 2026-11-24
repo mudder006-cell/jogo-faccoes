@@ -1,6 +1,6 @@
 // Batalhas sem tela: o jogador ataca um prédio defendido pelo governo.
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','suprimentos','veiculos','comando','ia','ordens'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const G = new Function(src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, ordenaIr, passoDaPartida, relogio, resumoFaccao, criaSorteio, defensores, ativos, patente, FUNCOES, trocaFuncao, moveSoldado };')();
 const sd = process.argv[2] || 'B2';
 const reg = G.geraRegiao(sd), P = G.criaPartida(reg);

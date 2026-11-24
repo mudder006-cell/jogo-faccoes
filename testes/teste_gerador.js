@@ -1,5 +1,5 @@
 const fs = require('fs');
-const src = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio'].map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
+const src = require('./arquivos.js').map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf8')).join('\n');
 const fn = new Function(src + '\nreturn { geraRegiao, alturaEm, xDoRio, raioVelha, METADE, MUNDO, declive, escolhaRival };');
 const G = fn();
 const sd = process.argv[2] || 'A';

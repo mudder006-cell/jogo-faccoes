@@ -18,7 +18,7 @@ const N_RIVAIS = +arg('rivais', 3);
 const PERS = arg('pers', '');
 const SAIDA = arg('json', '');
 
-const ARQS = ['dados','base','relevo','caminhos','ocupacao','regiao','territorio','rotas','soldados','catalogo','simulacao','combate','percepcao','economia','comida','recrutamento','armas','acao','missoes','logistica','diplomacia','batalhoes','estoques','suprimentos','veiculos','comando','ia','ordens'];
+const ARQS = require('./arquivos.js');
 const codigo = ARQS.map(f => fs.readFileSync(path.join(SRC, f + '.js'), 'utf8')).join('\n');
 const G = new Function(codigo + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, resumoFaccao, batalhoesDe, estadoEntre, contas, forcaDaFaccao, PERSONALIDADES };')();
 
@@ -42,7 +42,7 @@ function umaPartida(semente, dif) {
     }
     const rivais = P.faccoes.filter(f => !f.jogador && !f.governo);
     const gov0 = { predios: G.resumoFaccao(P, P.governo).predios, sold: G.forcaDaFaccao(P, P.governo) };
-    P.ouvintes.push((t) => { res.eventos[t] = (res.eventos[t] || 0) + 1; });
+    P.ouvintes.push((t, d) => { res.eventos[t] = (res.eventos[t] || 0) + 1; if (['reconstruido', 'consertado', 'fortificado'].includes(t) && d.sq && !d.sq.faccao.jogador) { res.obrasRivais = res.obrasRivais || {}; res.obrasRivais[t] = (res.obrasRivais[t] || 0) + 1; } });
     const caixaMin = new Map(rivais.map(f => [f, Infinity]));
     let estragado = null;
     while (P.tempo < HORAS * G.HORA) {
@@ -54,6 +54,8 @@ function umaPartida(semente, dif) {
         caixaMin.set(f, Math.min(caixaMin.get(f), r.dinheiro));
       }
     }
+    res.engenheirosRivais = P.soldados.filter(x => !x.faccao.jogador && x.faccao.recursos && x.funcao === 'engenheiro' && x.vida === 'ok').length;
+    res.fortificadosRivais = P.reg.edificios.filter(e => e.dono && !e.dono.jogador && e.dono.recursos && (e.fortificado || 0) > 0).length;
     if (estragado) res.erro = estragado;
     for (const f of rivais) {
       const r = G.resumoFaccao(P, f);
@@ -89,6 +91,7 @@ const todos = [];
 for (const s of SEMENTES) for (const d of DIFS) {
   const res = umaPartida(s, d); res.alertas = alertas(res); todos.push(res);
   console.log('\n== semente', s, '| dif', d, '|', (res.ms / 1000).toFixed(1), 's | 1ª guerra entre rivais:', res.primeiraGuerraH === null ? 'nunca' : res.primeiraGuerraH + ' h');
+  console.log('   obras das rivais (eventos):', JSON.stringify(res.obrasRivais || {}), '| engenheiros vivos no fim:', res.engenheirosRivais, '| prédios de rivais com fortificação > 0:', res.fortificadosRivais);
   for (const r of res.rivais) console.log('  ', r.nome.padEnd(8), (r.pers || '?').padEnd(11), r.eliminada ? 'ELIMINADA' : '', 'prédios', String(r.predios).padStart(4), '| sold', String(r.soldados).padStart(3), '| $', r.dinheiro, '(mín', r.caixaMin + ') | bat', r.batalhoes, '| veíc', r.veiculos, '| guerras', r.guerras);
   if (res.governo.predios0 !== undefined) console.log('   governo: prédios', res.governo.predios0, '→', res.governo.predios, '| soldados', res.governo.sold0, '→', res.governo.sold);
   for (const a of res.alertas) console.log('   ⚠', a);
