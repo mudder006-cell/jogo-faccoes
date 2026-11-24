@@ -17,5 +17,5 @@ Todas as decisões e números estão em `design.md` (protótipo 17, 18/11/2026).
 ## Pendências
 - [ ] Instalar o Setor Jogo no Renan OS (PC): ver `agentes/equipes-renan/INTEGRACAO.md`.
 - [ ] Em andamento: IA rival completa (rivais usando batalhões, missões, estoque por base e logística).
-- [ ] GitHub Pages ligado? Link: https://mudder006-cell.github.io/jogo-faccoes/
+- [x] GitHub Pages ligado pelo Renan em 24/11/2026 (ramo main, pasta raiz). Link: https://mudder006-cell.github.io/jogo-faccoes/
 - Demais pontos em aberto do jogo: ver "Em aberto" no design.md.

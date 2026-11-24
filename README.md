@@ -2,7 +2,7 @@
 
 Jogo de estratégia em tempo real para o navegador: você comanda uma facção numa zona de guerra gerada a cada partida, com batalhões, diplomacia, logística, economia (dinheiro, influência e comida) e combate soldado por soldado. Feito com three.js r128.
 
-**Jogar:** https://mudder006-cell.github.io/jogo-faccoes/ (depois de ligar o GitHub Pages)
+**Jogar:** https://mudder006-cell.github.io/jogo-faccoes/ (GitHub Pages ligado em 24/11/2026)
 
 ## Como o código está organizado
 - `src/`: o código separado em arquivos (dados, relevo, território, soldados, combate, economia, comida, recrutamento, armas, diplomacia, batalhões, estoques, veículos, comando, ordens) e a interface em `src/tela/`.
