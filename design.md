@@ -173,6 +173,14 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Suprimentos (24/11/2026): vêm de fábricas, compra (mercado), comércio e tratados com grandes potências pagos com influência. Novo: comércio de armas e munição entre facções (só com quem não está em guerra, como a comida) e tratado formal com os países (paga influência, recebe entregas fixas). Entra depois da névoa (19.1).
 - Ordem: 19 percepção e última posição conhecida; 19.1 névoa de guerra; 20 marcas e ódio; 21 habilidades e mapa; 22 general; 23 vínculos (opcional).
 
+### Suprimentos (decidido pelo Renan em 24/11/2026)
+- Recurso novo: **suprimentos**, guardados no estoque do QG e das bases como a munição.
+- Médico gasta suprimentos para tratar ferido no campo; ferido tratado no hospital ou no QG também gasta.
+- Engenheiro gasta suprimentos para fortificar prédios, reconstruir casas danificadas ou destruídas e reconstruir estradas.
+- Fortificação de 0 a 100: quanto mais fortificado, mais acertos de RPG e granada (e, no futuro, metralhadoras superpesadas) o prédio aguenta.
+- Casa sem fortificação cai com 3 acertos de RPG (hoje ~7); com fortificação 100 aguenta bem mais (número provisório).
+- Fontes: fábricas, compra no mercado, comércio entre facções e tratados com grandes potências pagos com influência.
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
