@@ -15,7 +15,8 @@ Chefe `chefe-jogo` + fichas em `agentes/equipes-renan/skills/chefe-jogo/`. Pacot
 Todas as decisões e números estão em `design.md` (protótipo 17, 18/11/2026).
 
 ## Pendências
-- [ ] Instalar o Setor Jogo no Renan OS (PC): ver `agentes/equipes-renan/INTEGRACAO.md`.
+- [x] Setor Jogo instalado no plugin equipes-renan 0.5.1 (conferido em 24/11/2026).
+- [ ] Plugin 0.5.2: alinhamento DEC-021 do chefe-jogo e agente `testador-ia-jogo` (ver `agentes/CAIXA-DE-SAIDA.md`).
 - [ ] Em andamento: IA rival completa (rivais usando batalhões, missões, estoque por base e logística).
 - [x] GitHub Pages ligado pelo Renan em 24/11/2026 (ramo main, pasta raiz). Link: https://mudder006-cell.github.io/jogo-faccoes/
 - Demais pontos em aberto do jogo: ver "Em aberto" no design.md.

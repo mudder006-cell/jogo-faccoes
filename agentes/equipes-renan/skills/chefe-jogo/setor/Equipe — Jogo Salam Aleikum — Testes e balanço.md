@@ -5,6 +5,7 @@ Provar que o jogo funciona e medir se os números estão bons, antes de o Renan 
 
 ## Subequipe — Simulações em Node
 - `testes/*.js`: partidas sem tela. Rodar da raiz: `node testes/<teste>.js <semente>` (semente padrão `B2`).
+- Estresse da IA rival: `node testes/estresse_ia.js` (sementes, dificuldades, `--pers`, `--rivais`, `--src` de outra versão, `--json`). Quem roda: agente `testador-ia-jogo` (Sonnet), relatórios em `testes/relatorios/`.
 - Mais úteis hoje: `teste_comando.js` (batalhões e defesa), `teste_logistica.js`, `teste_batalhao.js`, `teste_rival.js` (protótipo 18: `node testes/teste_rival.js B2 normal 48`).
 - Cada teste tem a própria lista de arquivos de `src/`; arquivo novo precisa entrar nela.
 
@@ -38,5 +39,6 @@ Provar que o jogo funciona e medir se os números estão bons, antes de o Renan 
 - Comparar sementes diferentes.
 
 ## Pendências
+- IA rival (estresse 24/11, 9 partidas, 72 h): 6 de 9 sem guerra entre rivais, quase nenhum veículo, domínio de 5x a 14x, defensiva e oportunista com caixa negativo; rival eliminada ainda com 6 soldados (K7 difícil).
 - Atualizar as listas de arquivos dos testes antigos.
 - Protótipo 18: medir de novo depois de corrigir o caixa das rivais, nas 3 dificuldades.
