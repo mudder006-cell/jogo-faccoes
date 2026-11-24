@@ -170,6 +170,7 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Névoa de guerra: o jogador vê só onde tem controle (território) e o que os soldados estão vendo; certas construções dão visão de uma área. Futuro: sistema de espionagem.
 - O jogador pode ordenar direto a um esquadrão passando por cima do general, com custo (influência e confiança do general).
 - Plataforma: continua no navegador; reavaliar Godot no protótipo 21 com 1.000 soldados.
+- Suprimentos (24/11/2026): vêm de fábricas, compra (mercado), comércio e tratados com grandes potências pagos com influência. Novo: comércio de armas e munição entre facções (só com quem não está em guerra, como a comida) e tratado formal com os países (paga influência, recebe entregas fixas). Entra depois da névoa (19.1).
 - Ordem: 19 percepção e última posição conhecida; 19.1 névoa de guerra; 20 marcas e ódio; 21 habilidades e mapa; 22 general; 23 vínculos (opcional).
 
 ## Em aberto
