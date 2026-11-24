@@ -3328,7 +3328,7 @@ const POR_PLANTACAO = 8;                 // comida por hora de cada expansão de
 const ZONAS_DE_CAMPO = ["vila", "rural"];
 /* 19.4: os países compram o excedente quando ninguém na região compra (limite por facção por hora, para não virar dinheiro infinito) */
 const PAISES_COMIDA = { preco: 1.5, porHora: 100, paybackMax: 36 };
-const MERCADO_COMIDA = { base: 2, minimo: 1, importa: 6, reserva: 40, horasDeFolga: 3, rivalVendeAcima: 180, rivalGuarda: 120, relacaoPor100: 1, colchao: 60 };
+const MERCADO_COMIDA = { base: 2, minimo: 1.5, importa: 6, reserva: 40, horasDeFolga: 3, rivalVendeAcima: 180, rivalGuarda: 120, relacaoPor100: 1, colchao: 60 };   // 19.4: piso = preço dos países (sem comprar a $ 1 e revender a $ 1,50)
 
 /* ---------- alimentar e confiança ---------- */
 const alimenta = (fac, zn) => !(fac.semAlimentar && fac.semAlimentar.has(zn));
