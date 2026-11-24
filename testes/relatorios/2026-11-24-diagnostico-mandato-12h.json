@@ -1,0 +1,787 @@
+{
+ "sementes": [
+  "B2",
+  "K7",
+  "Q4",
+  "A1",
+  "D4",
+  "E5"
+ ],
+ "horas": 12,
+ "tabela": {
+  "jogador|proteger:proteger": {
+   "amostras": 1206,
+   "%dentro": 100,
+   "%fora": 0,
+   "fora:combate": 0,
+   "fora:na base": 0,
+   "fora:andando": 0,
+   "fora:parado outro": 0
+  },
+  "rival|tomar": {
+   "amostras": 2494,
+   "%dentro": 55.8,
+   "%fora": 44.2,
+   "fora:combate": 0.4,
+   "fora:na base": 10.1,
+   "fora:andando": 33.6,
+   "fora:parado outro": 0.1
+  },
+  "rival|proteger": {
+   "amostras": 1246,
+   "%dentro": 83.3,
+   "%fora": 16.7,
+   "fora:combate": 0.4,
+   "fora:na base": 5.4,
+   "fora:andando": 10.8,
+   "fora:parado outro": 0.1
+  },
+  "jogador|proteger+incursao:proteger": {
+   "amostras": 1071,
+   "%dentro": 61.3,
+   "%fora": 38.7,
+   "fora:combate": 12.7,
+   "fora:na base": 4.9,
+   "fora:andando": 21,
+   "fora:parado outro": 0.1
+  },
+  "jogador|tomar:tomar": {
+   "amostras": 496,
+   "%dentro": 93.8,
+   "%fora": 6.3,
+   "fora:combate": 0,
+   "fora:na base": 6.3,
+   "fora:andando": 0,
+   "fora:parado outro": 0
+  },
+  "rival|frente": {
+   "amostras": 223,
+   "%dentro": 61.4,
+   "%fora": 38.6,
+   "fora:combate": 0,
+   "fora:na base": 0.9,
+   "fora:andando": 36.8,
+   "fora:parado outro": 0.9
+  },
+  "jogador|tomar:proteger": {
+   "amostras": 746,
+   "%dentro": 80,
+   "%fora": 20,
+   "fora:combate": 2.1,
+   "fora:na base": 8.2,
+   "fora:andando": 9.7,
+   "fora:parado outro": 0
+  }
+ },
+ "motivos": {
+  "jogador|proteger": [],
+  "jogador|proteger+incursao": [
+   {
+    "motivo": "ataca esquadrão inimigo [reacao<missaoReacao]",
+    "n": 12,
+    "%saidas": 66.7,
+    "media fora (s; 60 s = 1 h)": 257.5,
+    "mediana (s)": 290.0000000000659
+   },
+   {
+    "motivo": "ataca esquadrão inimigo [rumo<pensaMissao]",
+    "n": 3,
+    "%saidas": 16.7,
+    "media fora (s; 60 s = 1 h)": 260,
+    "mediana (s)": 170.0000000000386
+   },
+   {
+    "motivo": "ataca esquadrão inimigo [socorro<missaoRonda]",
+    "n": 3,
+    "%saidas": 16.7,
+    "media fora (s; 60 s = 1 h)": 180,
+    "mediana (s)": 260.00000000005906
+   }
+  ],
+  "jogador|tomar": [
+   {
+    "motivo": "vai à base [missaoExpandir]",
+    "n": 6,
+    "%saidas": 37.5,
+    "media fora (s; 60 s = 1 h)": 20,
+    "mediana (s)": 10.000000000002274
+   },
+   {
+    "motivo": "vai à base [pensaMissao]",
+    "n": 4,
+    "%saidas": 25,
+    "media fora (s; 60 s = 1 h)": 122.5,
+    "mediana (s)": 170.00000000003865
+   },
+   {
+    "motivo": "vai à base [logistica]",
+    "n": 2,
+    "%saidas": 12.5,
+    "media fora (s; 60 s = 1 h)": 65,
+    "mediana (s)": 100.00000000002274
+   },
+   {
+    "motivo": "ataca esquadrão inimigo [socorro<missaoRonda]",
+    "n": 2,
+    "%saidas": 12.5,
+    "media fora (s; 60 s = 1 h)": 260,
+    "mediana (s)": 270.00000000006133
+   },
+   {
+    "motivo": "sem ordem de movimento para fora (estado andando)",
+    "n": 1,
+    "%saidas": 6.3,
+    "media fora (s; 60 s = 1 h)": 40,
+    "mediana (s)": 40.000000000009095
+   },
+   {
+    "motivo": "sem ordem de movimento para fora (estado guarnição)",
+    "n": 1,
+    "%saidas": 6.3,
+    "media fora (s; 60 s = 1 h)": 300,
+    "mediana (s)": 300.00000000006816
+   }
+  ],
+  "rival": [
+   {
+    "motivo": "ataca esquadrão inimigo [socorro<missaoRonda]",
+    "n": 4,
+    "%saidas": 36.4,
+    "media fora (s; 60 s = 1 h)": 97.5,
+    "mediana (s)": 130.00000000002956
+   },
+   {
+    "motivo": "vai à base [pensaMissao]",
+    "n": 3,
+    "%saidas": 27.3,
+    "media fora (s; 60 s = 1 h)": 243.3,
+    "mediana (s)": 180.00000000004093
+   },
+   {
+    "motivo": "ataca prédio fora do setor [missaoExpandir<pensaMissao]",
+    "n": 2,
+    "%saidas": 18.2,
+    "media fora (s; 60 s = 1 h)": 99.9,
+    "mediana (s)": 99.90000000002271
+   },
+   {
+    "motivo": "sem ordem de movimento para fora (estado andando)",
+    "n": 1,
+    "%saidas": 9.1,
+    "media fora (s; 60 s = 1 h)": 10,
+    "mediana (s)": 10.000000000002274
+   },
+   {
+    "motivo": "vai à base [missaoExpandir]",
+    "n": 1,
+    "%saidas": 9.1,
+    "media fora (s; 60 s = 1 h)": 10,
+    "mediana (s)": 10.000000000002274
+   }
+  ]
+ },
+ "capsRes": {
+  "jogador|proteger": {
+   "todos": {
+    "tomados": 0,
+    "na zona da ordem": 0,
+    "perdidos": 0,
+    "%perdidos": null,
+    "perdidos que estavam vazios": 0,
+    "% do tempo vazio": null,
+    "vaz>0 & perdido": 0,
+    "tempo p/ perder (h de jogo, media)": null
+   },
+   "chave": {
+    "tomados": 0,
+    "na zona da ordem": 0,
+    "perdidos": 0,
+    "%perdidos": null,
+    "perdidos que estavam vazios": 0,
+    "% do tempo vazio": null,
+    "vaz>0 & perdido": 0,
+    "tempo p/ perder (h de jogo, media)": null
+   }
+  },
+  "jogador|proteger+incursao": {
+   "todos": {
+    "tomados": 108,
+    "na zona da ordem": 5,
+    "perdidos": 24,
+    "%perdidos": 22.2,
+    "perdidos que estavam vazios": 14,
+    "% do tempo vazio": 33.8,
+    "vaz>0 & perdido": 15,
+    "tempo p/ perder (h de jogo, media)": 3.1
+   },
+   "chave": {
+    "tomados": 10,
+    "na zona da ordem": 0,
+    "perdidos": 5,
+    "%perdidos": 50,
+    "perdidos que estavam vazios": 3,
+    "% do tempo vazio": 16.3,
+    "vaz>0 & perdido": 3,
+    "tempo p/ perder (h de jogo, media)": 3.2
+   }
+  },
+  "jogador|tomar": {
+   "todos": {
+    "tomados": 112,
+    "na zona da ordem": 51,
+    "perdidos": 27,
+    "%perdidos": 24.1,
+    "perdidos que estavam vazios": 13,
+    "% do tempo vazio": 35.6,
+    "vaz>0 & perdido": 14,
+    "tempo p/ perder (h de jogo, media)": 1.3
+   },
+   "chave": {
+    "tomados": 17,
+    "na zona da ordem": 12,
+    "perdidos": 2,
+    "%perdidos": 11.8,
+    "perdidos que estavam vazios": 1,
+    "% do tempo vazio": 49.7,
+    "vaz>0 & perdido": 2,
+    "tempo p/ perder (h de jogo, media)": 1.8
+   }
+  },
+  "rival": {
+   "todos": {
+    "tomados": 946,
+    "na zona da ordem": 20,
+    "perdidos": 302,
+    "%perdidos": 31.9,
+    "perdidos que estavam vazios": 184,
+    "% do tempo vazio": 54.8,
+    "vaz>0 & perdido": 230,
+    "tempo p/ perder (h de jogo, media)": 3.9
+   },
+   "chave": {
+    "tomados": 164,
+    "na zona da ordem": 2,
+    "perdidos": 38,
+    "%perdidos": 23.2,
+    "perdidos que estavam vazios": 25,
+    "% do tempo vazio": 64.6,
+    "vaz>0 & perdido": 30,
+    "tempo p/ perder (h de jogo, media)": 3.7
+   }
+  }
+ },
+ "ev": {
+  "jogador": {
+   "reacao": 26,
+   "socorro": 24,
+   "ajuda": 43,
+   "refazer": 26,
+   "vaiajudar": 14,
+   "recarregar": 3
+  },
+  "rival": {
+   "socorro": 25,
+   "refazer": 61,
+   "ajuda": 94,
+   "vaiajudar": 14
+  }
+ },
+ "tr": {
+  "jogador": 0,
+  "rival": 52
+ },
+ "rodadas": [
+  {
+   "raids": [],
+   "semente": "B2",
+   "cenario": "proteger",
+   "ms": 2716,
+   "esq": 3,
+   "zona": "Ain al-Sabil",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     12,
+     3
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 3,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 3,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 3,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 2,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    }
+   ],
+   "semente": "B2",
+   "cenario": "proteger+incursao",
+   "ms": 2740,
+   "esq": 3,
+   "zona": "Ain al-Sabil",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     22,
+     16
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "B2",
+   "cenario": "tomar",
+   "ms": 1853,
+   "esq": 0,
+   "zona": "Hayy al-Qamar",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     20,
+     1
+    ],
+    "rival": [
+     10,
+     3
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "K7",
+   "cenario": "proteger",
+   "ms": 2341,
+   "esq": 3,
+   "zona": "Deir al-Qantara",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     43,
+     4
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 2
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 1,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 1,
+     "esqVivos": 3
+    }
+   ],
+   "semente": "K7",
+   "cenario": "proteger+incursao",
+   "ms": 2813,
+   "esq": 3,
+   "zona": "Deir al-Qantara",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     41,
+     9
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "K7",
+   "cenario": "tomar",
+   "ms": 2283,
+   "esq": 4,
+   "zona": "Marj al-Sindiyan",
+   "donoFinal": "Jogador",
+   "tomadaFora": {
+    "jogador": [
+     2,
+     0
+    ],
+    "rival": [
+     32,
+     4
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "Q4",
+   "cenario": "proteger",
+   "ms": 1763,
+   "esq": 3,
+   "zona": "Marj al-Najm",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     20,
+     3
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 1,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 1,
+     "esqVivos": 2
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 2,
+     "esqVivos": 2
+    }
+   ],
+   "semente": "Q4",
+   "cenario": "proteger+incursao",
+   "ms": 2162,
+   "esq": 2,
+   "zona": "Marj al-Najm",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     42,
+     47
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "Q4",
+   "cenario": "tomar",
+   "ms": 2143,
+   "esq": 4,
+   "zona": "Hayy al-Tin",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     16,
+     5
+    ],
+    "rival": [
+     43,
+     3
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "A1",
+   "cenario": "proteger",
+   "ms": 2400,
+   "esq": 3,
+   "zona": "Bir al-Ghazal",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     40,
+     28
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 3,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 1,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 2,
+     "esqVivos": 3
+    }
+   ],
+   "semente": "A1",
+   "cenario": "proteger+incursao",
+   "ms": 2381,
+   "esq": 3,
+   "zona": "Bir al-Ghazal",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     41,
+     36
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "A1",
+   "cenario": "tomar",
+   "ms": 2441,
+   "esq": 4,
+   "zona": "Jabal al-Hajar",
+   "donoFinal": "Jogador",
+   "tomadaFora": {
+    "jogador": [
+     6,
+     0
+    ],
+    "rival": [
+     40,
+     21
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "D4",
+   "cenario": "proteger",
+   "ms": 2126,
+   "esq": 3,
+   "zona": "Khirbet al-Ramla",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     21,
+     0
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 0,
+     "defensorPerto": 0,
+     "esqVivos": 2
+    }
+   ],
+   "semente": "D4",
+   "cenario": "proteger+incursao",
+   "ms": 3060,
+   "esq": 1,
+   "zona": "Khirbet al-Ramla",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     2,
+     20
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "D4",
+   "cenario": "tomar",
+   "ms": 2219,
+   "esq": 3,
+   "zona": "Wadi al-Ghurab",
+   "donoFinal": "Jogador",
+   "tomadaFora": {
+    "jogador": [
+     2,
+     0
+    ],
+    "rival": [
+     32,
+     1
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "E5",
+   "cenario": "proteger",
+   "ms": 2022,
+   "esq": 3,
+   "zona": "Khirbet al-Ward",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     32,
+     13
+    ]
+   }
+  },
+  {
+   "raids": [
+    {
+     "perdeu": false,
+     "invasoresVivos": 5,
+     "defensorPerto": 3,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": false,
+     "invasoresVivos": 6,
+     "defensorPerto": 0,
+     "esqVivos": 3
+    },
+    {
+     "perdeu": true,
+     "invasoresVivos": 6,
+     "defensorPerto": 0,
+     "esqVivos": 0
+    },
+    {
+     "perdeu": true,
+     "invasoresVivos": 6,
+     "defensorPerto": 0,
+     "esqVivos": 0
+    }
+   ],
+   "semente": "E5",
+   "cenario": "proteger+incursao",
+   "ms": 2080,
+   "esq": 0,
+   "zona": "Khirbet al-Ward",
+   "donoFinal": null,
+   "tomadaFora": {
+    "jogador": [
+     0,
+     0
+    ],
+    "rival": [
+     14,
+     64
+    ]
+   }
+  },
+  {
+   "raids": [],
+   "semente": "E5",
+   "cenario": "tomar",
+   "ms": 2354,
+   "esq": 3,
+   "zona": "Wadi al-Tin",
+   "donoFinal": "Jogador",
+   "tomadaFora": {
+    "jogador": [
+     5,
+     0
+    ],
+    "rival": [
+     32,
+     13
+    ]
+   }
+  }
+ ]
+}
