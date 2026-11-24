@@ -8,7 +8,7 @@ let src = ARQS.map(f => fs.readFileSync(__dirname + '/../src/' + f + '.js', 'utf
 src = src.replace('function dispara(P, s, alvo) {', 'function dispara(P, s, alvo) { __espia.dispara(P, s, alvo); return dispara__o(P, s, alvo); }\nfunction dispara__o(P, s, alvo) {')
          .replace('function suprime(P, s, k) {', 'function suprime(P, s, k) { __espia.suprime(P, s, k); return suprime__o(P, s, k); }\nfunction suprime__o(P, s, k) {');
 const espia = { dispara() {}, suprime() {} };
-const G = new Function('__espia', src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, resumoFaccao, PERCEPCAO, ARMAS, ultimasPosicoes };')(espia);
+const G = new Function('__espia', src + 'return { geraRegiao, criaPartida, criaFaccao, fundaFaccao, escolhaRival, podeComecar, passoDaPartida, HORA, resumoFaccao, PERCEPCAO, ARMAS, ultimasPosicoes, hostis };')(espia);
 
 const SEMENTES = (process.argv[2] || 'B2,K7').split(','), HORAS = +(process.argv[3] || 24);
 let falhas = 0;
@@ -27,7 +27,7 @@ function partida(sem, espiao) {
     if (!G.PERCEPCAO.ligada) st.disparosAntigos++;
   };
   espia.suprime = (P2, s, k) => {
-    if (k.o.vida !== 'ok' || s.municao <= 0) return;   // a função sai sem atirar
+    if (k.o.vida !== 'ok' || s.municao <= 0 || !G.hostis(P2, s.faccao, k.o.faccao)) return;   // a função sai sem atirar
     const m = s.mira, idade = P2.tempo - k.t;
     const jan = k.origem === 'abrigo' ? G.PERCEPCAO.janelaAbrigo : G.PERCEPCAO.janelaSupressao;
     st[k.origem] = (st[k.origem] || 0) + 1;

@@ -100,7 +100,7 @@ const EVENTOS = [
 ];
 function eventoAleatorio(P) {
   for (const f of P.faccoes) {
-    if (f.governo || !f.recursos || !f.base) continue;
+    if (f.governo || f.eliminada || !f.recursos || !f.base) continue;   // facção eliminada não recebe desertores nem eventos
     if (!f.jogador && P.r() < .5) continue;
     const l = EVENTOS.filter(ev => ev.pode(P, f)); if (!l.length) continue;
     let t = P.r() * l.reduce((n, ev) => n + ev.peso, 0), ev = l[0];

@@ -296,6 +296,9 @@ function evacua(P, s) {
   else { s.vida = "morto"; anota(P, s, "Morreu: não havia onde tratar o ferimento"); }
 }
 function tratamentos(P) {
+  // facção eliminada: quem ainda estava ferido ou em tratamento deserta (não volta a lutar por ela)
+  for (const s of P.soldados) if (s.faccao.eliminada && ["ok", "ferido", "tratando", "fila", "reserva", "comando"].includes(s.vida)) { if (s.sq) tiraDoEsquadrao(P, s); s.vida = "desertou"; }
+  for (const fac of P.faccoes) if (fac.eliminada) { fac.reserva = []; fac.fila = []; }
   for (const fac of P.faccoes) {
     if (!fac.fila) continue;
     const noQG = P.soldados.filter(s => s.faccao === fac && s.vida === "tratando" && s.ondeTrata === "QG").length;
@@ -370,6 +373,7 @@ function subpasso(P, dt) {
     else { if (sq.estado === "andando") anda(P, sq, VELOCIDADE_A_PE * dt); acompanha(P, sq, dt); }
   }
   for (const s of P.soldados) if (s.vida === "ferido" && P.tempo - s.caiuEm > (s.sq && s.sq.combate !== undefined && temMedico(s.sq, s) ? 30 : 5)) evacua(P, s);
+  if (PERCEPCAO.ligada && P.tempo >= (P.proximaPoda || 0)) { P.proximaPoda = P.tempo + 5; podaMemorias(P); }
   if (P.tempo >= P.proximoContato) { P.proximoContato = P.tempo + 1; procuraContato(P); tratamentos(P); }
   if (P.tempo >= P.proximaCaptura) { P.proximaCaptura = P.tempo + 1; verificaCapturas(P); varredura(P); for (const sq of P.esquadroes) if (ativos(sq).length) armaNoQG(P, sq); if (P.faccoes.some(f => f.jogador)) acaoNoMapa(P); batalhoesDoSegundo(P); missoesDoSegundo(P); adesoes(P); veiculosDoSegundo(P); fortificacoes(P, 1); }
   if (P.tempo >= P.proximaIA) {

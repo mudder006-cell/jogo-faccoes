@@ -9,7 +9,7 @@
      interrogação = atira em lugar suspeito (onde viu o inimigo se abrigar).
    (Números provisórios.)
    ============================================================ */
-const MARCAS = { max: 40, icones: 90, tamanhoIcone: 2.6 };
+const MARCAS = { recente: 10, max: 40, icones: 90, tamanhoIcone: 2.6 };
 function desenhaIconePercepcao(tipo) {
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d"), cor = { olho: "#3d8f5a", orelha: "#d4a02a", interrogacao: "#d9622b" }[tipo];
@@ -60,7 +60,9 @@ function atualizaMarcasPercepcao(M, P, reg) {
       m.mat.color.setHex(u.o.faccao.cor); m.mat.opacity = limita(.9 - .8 * idade / PERCEPCAO.memoria, .1, .9);
       m.anel.position.set(u.x, y + .5, u.z); m.anel.scale.setScalar(escala); m.anel.visible = true;
       m.seta.position.set(u.x, y + 5 * escala, u.z); m.seta.scale.setScalar(escala); m.seta.visible = true;
-      poeIcone(M, m.icone, u.origem === "abrigo" ? "interrogacao" : u.origem === "viu" ? "olho" : "orelha", u.x, y + 10 * escala, u.z, iconeEsc * .8);
+      // olho: visto há pouco; orelha: soube por aviso ou tiro; interrogação: viu se abrigar; perdido (visto e depois sumiu): só o anel
+      const t = u.origem === "abrigo" ? "interrogacao" : u.base === "viu" ? (idade <= MARCAS.recente ? "olho" : null) : "orelha";
+      if (t) poeIcone(M, m.icone, t, u.x, y + 10 * escala, u.z, iconeEsc * .8); else m.icone.visible = false;
     }
   }
   for (let i = nm; i < M.marcas.length; i++) { const m = M.marcas[i]; m.anel.visible = m.seta.visible = m.icone.visible = false; }

@@ -61,8 +61,14 @@ function gradeDeEsquadroes(P) {
 function lembra(P, s, o, x, z, origem) {
   const mem = s.mem, ant = mem.get(o);
   if (ant && ant.t > P.tempo - PERCEPCAO.recemVisto * 2 && RANGO_ORIGEM[ant.origem] > RANGO_ORIGEM[origem]) return;   // não troca visão recente por palpite
-  const abrigo = origem === "viu" && (!!o.dentro || P.reg.oc.edificioPerto(o.x, o.z, 4));   // visto dentro ou junto de um prédio: se abrigou
-  mem.set(o, { x, z, t: P.tempo, origem, abrigo });
+  // abrigo: visto dentro de um prédio, ou parado junto de um (a menos de 4 m), ou chegando nele (antes longe, agora junto). Visto saindo: deixa de ser abrigo.
+  let abrigo = false, perto4 = false;
+  if (origem === "viu") {
+    perto4 = P.reg.oc.edificioPerto(o.x, o.z, 4);
+    const vistoAntes = ant && ant.origem === "viu" && P.tempo - ant.t < 3;
+    abrigo = !!o.dentro || (perto4 && (!!vistoAntes && (Math.hypot(o.x - ant.x, o.z - ant.z) < .8 || !ant.perto4)));
+  }
+  mem.set(o, { x, z, t: P.tempo, origem, abrigo, perto4 });
   if (mem.size > 24) for (const [k, v] of mem) if (P.tempo - v.t > PERCEPCAO.memoria || k.vida !== "ok") mem.delete(k);
   if (s.sq) s.sq.conhecidos.set(o, { x, z, t: P.tempo });   // o esquadrão soma o que os soldados sabem
 }
@@ -92,7 +98,7 @@ function alvoDeSupressao(P, s) {
   for (const [o, k] of s.mem) {
     if (o.vida !== "ok") continue;
     const idade = P.tempo - k.t, orig = origemAgora(P, k);
-    if (orig === "viu" || orig === "perdido") continue;
+    if (orig === "viu" || orig === "perdido" || !hostis(P, s.faccao, o.faccao)) continue;   // só contra quem ainda é inimigo (pacto e aliança mudam isso)
     if (idade > (orig === "abrigo" ? PERCEPCAO.janelaAbrigo : PERCEPCAO.janelaSupressao)) continue;
     const d = Math.hypot(k.x - s.x, k.z - s.z); if (d > w.alcance || d >= md) continue;
     md = d; melhor = { x: k.x, z: k.z, o, origem: orig, t: k.t };
@@ -102,7 +108,7 @@ function alvoDeSupressao(P, s) {
 /* tiro de supressão: vai para o ponto lembrado; só acerta quem estiver de fato por perto */
 function suprime(P, s, k) {
   const w = ARMAS[s.arma];
-  if (!w || w.area || s.municao <= 0 || k.o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.janelaAbrigo) { s.sup = null; s.recarga = 1; return; }   // inimigo caiu: para de atirar nele
+  if (!w || w.area || s.municao <= 0 || k.o.vida !== "ok" || !hostis(P, s.faccao, k.o.faccao) || P.tempo - k.t > PERCEPCAO.janelaAbrigo) { s.sup = null; s.recarga = 1; return; }   // inimigo caiu: para de atirar nele
   const d = Math.hypot(k.x - s.x, k.z - s.z), nv = (s.nivel || 1) - 1;
   if (d > w.alcance) { s.recarga = .5; return; }
   s.recarga = w.cadencia * (1.15 - s.atr.reacao / 250) * P.r.entre(.85, 1.15);
@@ -114,14 +120,17 @@ function suprime(P, s, k) {
   const dr = Math.hypot(o.x - ix, o.z - iz); if (dr > PERCEPCAO.raioSup) return;   // errou o lugar: o inimigo nem percebe
   const cob = protecao(P, o, s);
   const chance = limita(.22 * w.precisao * NIVEL.precisao[nv] * bonusDe(s).precisao * (.45 + s.atr.pontaria / 90) * (1 - .65 * d / w.alcance) * cob * PERCEPCAO.precisaoSup * (1 - dr / PERCEPCAO.raioSup), .005, .3);
-  o.atacadoPor = s; o.atacadoEm = P.tempo;
-  ouveTiro(P, o, s, d);
+  ouveTiro(P, o, s, d);   // sabe só a direção, com erro (não marca atacadoPor: isso daria a posição exata)
   if (o.sq) entraEmCombate(P, o.sq);
   o.moral -= PERCEPCAO.moralSup * (1 - o.atr.coragem / 150) * bonusDe(o).calma;
   if (P.r() < chance) atingido(P, o, s);
   else o.sobFogo = Math.max(o.sobFogo, 2);
 }
 
+/* poda a memória de todos (chamado a cada poucos segundos, também fora de combate) */
+function podaMemorias(P) {
+  for (const s of P.soldados) if (s.mem.size) for (const [o, k] of s.mem) if (o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.memoria) s.mem.delete(o);
+}
 /* ---------- o que o soldado enxerga, sabe ou lembra agora (usado por pensa em combate.js) ---------- */
 function percebe(P, s, vistos) {
   if (s.mem.size) for (const [o, k] of s.mem) if (o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.memoria) s.mem.delete(o);
@@ -162,7 +171,7 @@ function ultimasPosicoes(P, fac) {
     for (const [o, k] of s.mem) {
       if (o.vida !== "ok" || P.tempo - k.t > PERCEPCAO.memoria) continue;
       const a = por.get(o);
-      if (!a || k.t > a.t) por.set(o, { o, x: k.x, z: k.z, t: k.t, origem: origemAgora(P, k), por: s });
+      if (!a || k.t > a.t) por.set(o, { o, x: k.x, z: k.z, t: k.t, origem: origemAgora(P, k), base: k.origem, por: s });
     }
   }
   const lista = [...por.values()].filter(u => P.tempo - u.t > PERCEPCAO.recemVisto);   // quem está à vista aparece como soldado, não como marca
