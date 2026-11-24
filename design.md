@@ -161,12 +161,24 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - O governo antigo ganha batalhões também (organiza as guarnições, com rondas e reação rápida), mas continua sem dinheiro.
 - O jogador não vê nada além do mapa (a personalidade e os planos das rivais não aparecem).
 
+### Soldados com vivência e cadeia de comando (decidido pelo Renan em 24/11/2026)
+- O jogador é o líder da facção e não comanda a guerra soldado por soldado: quem luta decide sozinho; o jogador dá intenções aos generais e líderes. Proposta completa: `propostas/2026-11-24-soldados-com-vivencia.md`.
+- Cada soldado tem percepção, memória e habilidades próprias; vivências únicas por partida. Sem rede neural: regras e números por soldado.
+- Só atira se vê o inimigo, se um colega avisou, se levou tiro de lá ou se lembra onde o inimigo se abrigou (tiro de supressão).
+- Última posição conhecida do inimigo aparece no mapa, para os soldados usarem e para o jogador ver.
+- Ódio por facção muda só escolha de alvo e aceitar rendição; nunca desobediência nem fogo contra aliado.
+- Névoa de guerra: o jogador vê só onde tem controle (território) e o que os soldados estão vendo; certas construções dão visão de uma área. Futuro: sistema de espionagem.
+- O jogador pode ordenar direto a um esquadrão passando por cima do general, com custo (influência e confiança do general).
+- Plataforma: continua no navegador; reavaliar Godot no protótipo 21 com 1.000 soldados.
+- Ordem: 19 percepção e última posição conhecida; 19.1 névoa de guerra; 20 marcas e ódio; 21 habilidades e mapa; 22 general; 23 vínculos (opcional).
+
 ## Em aberto
 - Valores dos bônus do controle total.
 - Vantagem inicial de cada tipo de edifício.
 - Outros usos para prisioneiros (troca, resgate).
 - Doação de facção aliada: hoje o jogador pode mandar armas ao aliado, e o aliado às vezes ajuda; falta decidir se rivais aliadas doam armas ao jogador e quanto.
 - Balanço da economia nova: começa com dinheiro negativo por hora até expandir; ver se agrada.
+- Quais construções dão visão na névoa de guerra e de que tamanho; como funciona a espionagem.
 - Eventos com escolha do jogador (hoje acontecem sozinhos).
 - Combate muito letal para os esquadrões iniciais; a metralhadora mata 3x mais que o fuzil em campo aberto (medido no protótipo 11). A Ana ainda não decidiu se quer menos letal.
 - Conserto de prédios danificados.
