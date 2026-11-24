@@ -93,11 +93,11 @@ Recomendação (só sugestão): A para bases e fronteira, combinada com C.
 - Caixa das rivais: 1.200 ou mais em 7,8% das horas, 4.000 ou mais em 0%. Obras prontas: 0. Comida com saldo maior que 4: 74% das horas.
 - Esquadrões com engenheiro: 70% andando, 22% em guarnição, 3% parados, 5% em combate. Engenheiros por rival: 0 a 2. Prédios danificados de rival: 78 prédios-hora em 6 partidas.
 
-# Testes sem o governo antigo (25/11/2026)
+# Testes sem o governo antigo (24/11/2026)
 
 Pergunta do Renan: o governo antigo foi feito só para impedir as facções de crescerem demais. O que muda sem ele, e depois que ele acaba? Nada do jogo foi alterado. O `testes/estresse_ia.js` ganhou a opção `--governo normal|nenhum|fim` (e `--fimgoverno H`, padrão 24). No modo `nenhum`, logo após fundar as facções, os soldados do governo são mortos, as guarnições soltas e todos os prédios dele ficam sem dono (o código já aceita prédio sem dono: cerca de 20% do mapa começa assim). No modo `fim`, a partida é normal até a hora H e aí o governo é removido do mesmo jeito. Sem a opção, a saída é idêntica à de antes (conferido na semente B2, 24 h).
 
-Base dos testes: sementes B2, K7, Q4, A1, C3, D4, dificuldade normal, 3 rivais, 72 h (6 partidas, 18 rivais por modo). Arquivos em `testes/relatorios/2026-11-25-governo-*.json`. Termo: "domínio" é a razão entre os prédios da maior e da menor rival viva, por partida.
+Base dos testes: sementes B2, K7, Q4, A1, C3, D4, dificuldade normal, 3 rivais, 72 h (6 partidas, 18 rivais por modo). Arquivos em `testes/relatorios/2026-11-24-governo-*.json`. Termo: "domínio" é a razão entre os prédios da maior e da menor rival viva, por partida.
 
 | Medida (6 partidas, 72 h) | Normal | Sem governo desde o início | Governo some na hora 24 | Sem governo, todas agressivas | Sem governo, todas comerciantes |
 |---|---|---|---|---|---|

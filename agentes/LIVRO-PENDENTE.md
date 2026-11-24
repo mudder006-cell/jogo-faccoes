@@ -7,6 +7,7 @@
 | 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19 | testador-ia-jogo · Sonnet | ok | comparação com protótipo 18 sem rodar a versão antiga (script novo exige percepcao.js) |
 | 2026-11-24 | Jogo · Código | protótipo 19.2 suprimentos | agente geral · Sonnet | ok | IA rival não usava engenheiro; testes antigos quebravam a cada arquivo novo (lista única criada) |
 | 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19.2 | testador-ia-jogo · Sonnet | ok | — |
-| 2026-11-25 | Jogo · Game design | diagnóstico IA rival e teste sem governo | agente geral · Sonnet | ok | pedido mudou de corrigir para só diagnosticar no meio da tarefa |
-| 2026-11-25 | Jogo · Código | protótipo 19.3 governo, exaustão, coalizão | agente geral · Sonnet | ok | revisão pediu 8 ajustes; refeito na 2ª rodada |
-| 2026-11-25 | Jogo · Testes e balanço | testar IA no protótipo 19.3 | testador-ia-jogo · Sonnet | ok | — |
+| 2026-11-24 | Jogo · Game design | diagnóstico IA rival e teste sem governo | agente geral · Sonnet | ok | pedido mudou de corrigir para só diagnosticar no meio da tarefa |
+| 2026-11-24 | Jogo · Código | protótipo 19.3 governo, exaustão, coalizão | agente geral · Sonnet | ok | revisão pediu 8 ajustes; refeito na 2ª rodada |
+| 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19.3 | testador-ia-jogo · Sonnet | ok | — |
+| 2026-11-24 | Jogo · Game design | decisões zumbi, paz e juntar 19.3 | Claude (sessão principal) · Opus | ok | — |

@@ -1,6 +1,6 @@
 # Salam Aleikum (nome provisório, decidido pelo Renan em 18/11/2026): decisões de design
 
-Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 19/11/2026 (protótipo 18).
+Segundo jogo do projeto, separado do Vapor & Mercado. Última atualização: 24/11/2026 (protótipo 19.3 no main).
 
 ## Ideia
 O jogador comanda uma facção numa zona de guerra. Administra a região que controla (leis, construções, população, modos de produção como fábricas e fazendas) e o exército (recrutamento, squads, arsenal). As tropas agem sozinhas; o jogador dá missões e ordens gerais. A IA rival deve ser esperta. Terá drones, mísseis e blindados.
@@ -181,13 +181,18 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Casa sem fortificação cai com 3 acertos de RPG (hoje ~7); com fortificação 100 aguenta bem mais (número provisório).
 - Fontes: fábricas, compra no mercado, comércio entre facções e tratados com grandes potências pagos com influência.
 
-### Engenheiros e obras (decidido pelo Renan em 25/11/2026)
+### Engenheiros e obras (decidido pelo Renan em 24/11/2026)
 - Dois tipos de engenheiro: equipe de obras separada (2 a 4 engenheiros por batalhão, fora dos esquadrões; só fortifica e conserta; prioridade: bases, fronteira, danificados) e 1 engenheiro de combate no esquadrão (explosivos e fortificar onde o esquadrão para).
 - Obras devem ser mais vantajosas, para valer a pena construir (hoje a rival só constrói com $ 4.000 e falta de comida, e nunca constrói). Quanto e como: a propor.
-- Governo antigo: a função dele é só impedir as facções de crescerem demais. Teste de 25/11 (`propostas/2026-11-25-diagnostico-ia-rival.md`): com ele quase não há guerra entre rivais; sem ele uma rival engole o mapa.
-- Governo antigo revisto (Renan, 25/11): **enfraquece aos poucos** (solta prédios e guarnições com o tempo, sem soltar tudo de uma vez) e **reage a quem cresce demais** (contra-ataca a facção que passar de um tamanho; vale também para o jogador).
-- **Exaustão de guerra** (Renan, 25/11): cada facção tem exaustão por guerra que sobe com o tempo de guerra, as mortes, o dinheiro gasto e as regiões perdidas. Exaustão alta leva a cessar-fogo e paz (efeitos exatos: provisório).
-- **Coalizão** (Renan, 25/11): as outras facções se aproximam e se unem contra a facção que cresce demais, pela diplomacia que já existe.
+- Governo antigo: a função dele é só impedir as facções de crescerem demais. Teste de 24/11 (`propostas/2026-11-24-diagnostico-ia-rival.md`): com ele quase não há guerra entre rivais; sem ele uma rival engole o mapa.
+- Governo antigo revisto (Renan, 24/11): **enfraquece aos poucos** (solta prédios e guarnições com o tempo, sem soltar tudo de uma vez) e **reage a quem cresce demais** (contra-ataca a facção que passar de um tamanho; vale também para o jogador).
+- **Exaustão de guerra** (Renan, 24/11): cada facção tem exaustão por guerra que sobe com o tempo de guerra, as mortes, o dinheiro gasto e as regiões perdidas. Exaustão alta leva a cessar-fogo e paz (efeitos exatos: provisório).
+- **Coalizão** (Renan, 24/11): as outras facções se aproximam e se unem contra a facção que cresce demais, pela diplomacia que já existe.
+
+### Fim das facções e paz (decidido pelo Renan em 24/11/2026)
+- **Facção "zumbi" desmorona:** a facção com menos de 5 prédios e caixa negativo por 12 h seguidas se desfaz (opção A). Vale para o jogador. A fazer no protótipo 19.4.
+- **Paz recente protegida 24 h também contra a coalizão:** depois de uma paz (comum ou vinda de cessar-fogo), ninguém declara guerra àquela facção por 24 h, nem a coalizão. A fazer no protótipo 19.4.
+- 19.3 juntado ao main em 24/11/2026.
 
 ## Em aberto
 - Valores dos bônus do controle total.
@@ -202,7 +207,7 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - Escolher quem recebe a arma melhor (hoje o soldado troca sozinho na base).
 - Nomes das facções (ainda em português).
 
-## Provisório (Claude escolheu só para o protótipo funcionar; a Ana ainda não aprovou)
+## Provisório (Claude escolheu só para o protótipo funcionar; o Renan ainda não aprovou)
 - Zonas: 4 quarteirões da cidade velha, 7 a 9 bairros, 3 vilas e até 8 setores rurais. Cada zona tem pelo menos uma caixa d'água e uma casa de líder.
 - Governo antigo: cor cinza; caixa começa em −$ 250.000 e piora $ 2.000 por hora. Guarnições: 6 soldados nos pontos fortes (cidade velha, quartel, cidadela) e 4 nos outros; metade dos pontos comuns sem guarnição. Coragem 25% menor (sem salário). Soldados levam 50% a mais de munição, mas nunca recarregam.
 - Esquadrão inicial das facções: líder + 5 fuzileiros nível 1 com munição cheia, recrutas (atributos de 25 a 55). Arsenal inicial: 1 kit médico; estoque inicial: 600 balas.
@@ -289,14 +294,14 @@ Origens de armamento: compra, doação de uma nação, doação de facção alia
 - 13: munição (4 tipos, carregada por soldado, recarga na base) e armas e kits com níveis I, II e III; preços novos bem mais altos.
 - 14: evolução corrigida (só combate com tiros conta), bônus de patente, veteranos morrem menos, promoção a líder e esquadrão novo só com líder.
 - 15: batalhões (ordens ao líder, orçamento de armas, munição e soldados, sargentos, sugestões) e diplomacia (neutro, pacto, aliança, guerra; propostas, relação, presentes, fuga do líder da facção).
-- 19: ver ou saber: o soldado só atira em quem vê, em quem um colega avisou (60 m), de onde levou tiro ou onde viu o inimigo se abrigar (os três últimos são tiro de supressão); memória por soldado; última posição conhecida do inimigo no mapa (anel na cor da facção, esmaece em 60 s) e ícones de olho, orelha e interrogação; grade espacial; picos de 125 a 148 ms cortados para ~60 ms; interruptor `PERCEPCAO.ligada`.
-- 19.3: governo antigo revisto (enfraquece aos poucos e reage a quem cresce demais), exaustão de guerra com cessar-fogo e coalizão contra quem cresce demais; `forcaDaFaccao` duplicada corrigida.
-- 19.2: suprimentos (recurso no estoque, fabricação, compra, doação dos países), médico e hospital gastam, engenheiro fortifica, conserta e reconstrói gastando; fortificação 0 a 100 e casa pequena cai com 3 RPG (fortificação 100 aguenta 3x); rivais usam as mesmas regras; governo sem estoque.
-- 18: rivais com as mesmas mecânicas do jogador, personalidades sorteadas, dificuldade no menu, governo com batalhões (rondas e reação rápida).
-- 17: comida (campo produz mais, alimentar por bairro, confiança), obras (fazenda, armazém, plantação, níveis), mercado de comida com preço dinâmico, países doam comida, caminhos a pé fora da estrada.
-- 16: compra automática, economia nova (salários, manutenção, comida comprada, influência 3x), estoque por base, veículos de logística nível I a III (atacar, destruir, capturar), várias ordens por batalhão, rondas na fronteira e reação rápida.
-- 15.2: estoque mínimo dos batalhões, reposição sozinha do depósito, prioridade entre batalhões e recrutamento sozinho.
 - 15.1: quem tem todos os pontos importantes de um bairro leva o bairro inteiro, aos poucos.
+- 15.2: estoque mínimo dos batalhões, reposição sozinha do depósito, prioridade entre batalhões e recrutamento sozinho.
+- 16: compra automática, economia nova (salários, manutenção, comida comprada, influência 3x), estoque por base, veículos de logística nível I a III (atacar, destruir, capturar), várias ordens por batalhão, rondas na fronteira e reação rápida.
+- 17: comida (campo produz mais, alimentar por bairro, confiança), obras (fazenda, armazém, plantação, níveis), mercado de comida com preço dinâmico, países doam comida, caminhos a pé fora da estrada.
+- 18: rivais com as mesmas mecânicas do jogador, personalidades sorteadas, dificuldade no menu, governo com batalhões (rondas e reação rápida).
+- 19: ver ou saber: o soldado só atira em quem vê, em quem um colega avisou (60 m), de onde levou tiro ou onde viu o inimigo se abrigar (os três últimos são tiro de supressão); memória por soldado; última posição conhecida do inimigo no mapa (anel na cor da facção, esmaece em 60 s) e ícones de olho, orelha e interrogação; grade espacial; picos de 125 a 148 ms cortados para ~60 ms; interruptor `PERCEPCAO.ligada`.
+- 19.2: suprimentos (recurso no estoque, fabricação, compra, doação dos países), médico e hospital gastam, engenheiro fortifica, conserta e reconstrói gastando; fortificação 0 a 100 e casa pequena cai com 3 RPG (fortificação 100 aguenta 3x); rivais usam as mesmas regras; governo sem estoque.
+- 19.3: governo antigo revisto (enfraquece aos poucos e reage a quem cresce demais), exaustão de guerra com cessar-fogo e coalizão contra quem cresce demais; `forcaDaFaccao` duplicada corrigida.
 
 ## Ordem de construção sugerida
 1. Mapa + território + combate + recursos + interface (protótipos 1 a 7).
