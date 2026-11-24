@@ -19,6 +19,7 @@ Todas as decisões e números estão em `design.md` (protótipo 17, 18/11/2026).
 - [ ] Plugin 0.5.2: alinhamento DEC-021 do chefe-jogo e agente `testador-ia-jogo` (ver `agentes/CAIXA-DE-SAIDA.md`).
 - [x] IA rival completa (protótipo 18).
 - [ ] Protótipo 19.2 (suprimentos) no ramo `prototipo-19-2`: aguarda o Renan jogar e autorizar juntar ao main.
+- [ ] Protótipo 19.3 (governo que enfraquece e reage, exaustão de guerra, cessar-fogo, coalizão) no ramo `prototipo-19-3`: feito, aguarda teste e revisão; números provisórios no design.md.
 - [ ] Próximos: 19.1 névoa de guerra (aguarda OK), comércio de armas e tratados, 20 marcas e ódio.
 - [ ] Equilíbrio das rivais: guerras raras, domínio de uma rival, personalidade pouco visível.
 - [x] GitHub Pages ligado pelo Renan em 24/11/2026 (ramo main, pasta raiz). Link: https://mudder006-cell.github.io/jogo-faccoes/

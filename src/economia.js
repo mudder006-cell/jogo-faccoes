@@ -108,7 +108,7 @@ function custoConvencer(e) {
 /* Dá para convencer os moradores? (sem defensores, e a facção já tem algo perto) */
 function podeConvencer(P, fac, e, meus) {   // meus (opcional): lista dos prédios da facção, para não varrer o mapa inteiro a cada prédio
   if (e.dono === fac) return "o prédio já é seu";
-  if (e.dono && !e.dono.governo && (estadoEntre(P, fac, e.dono) === "pacto" || estadoEntre(P, fac, e.dono) === "alianca")) return "é de " + e.dono.nome + ", com quem você tem " + ESTADOS[estadoEntre(P, fac, e.dono)].n.toLowerCase();
+  if (e.dono && !e.dono.governo && ["pacto", "alianca", "cessarfogo"].includes(estadoEntre(P, fac, e.dono))) return "é de " + e.dono.nome + ", com quem você tem " + ESTADOS[estadoEntre(P, fac, e.dono)].n.toLowerCase();
   if (defensores(P, e, fac).length) return "tem guarnição inimiga";
   if (!moradoresDe(e) && !TIPOS_CHAVE.includes(e.tipo)) return "não tem moradores para convencer";
   const perto = (meus || P.reg.edificios).some(o => o.dono === fac && (o.zona === e.zona || Math.hypot(o.x - e.x, o.z - e.z) < 150));

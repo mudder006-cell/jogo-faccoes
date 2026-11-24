@@ -127,7 +127,7 @@ function tomaEdificio(P, e, fac, adesao) {
       avisa(P, "estoqueperdido", { e, fac, antes, txt });
     }
   }
-  if (antes && fac && !antes.governo && !fac.governo && !adesao) mudaRelacao(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? DIPLO.tomarChave : DIPLO.tomarPredio);
+  if (antes && fac && !antes.governo && !fac.governo && !adesao) { mudaRelacao(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? DIPLO.tomarChave : DIPLO.tomarPredio); cansa(P, antes, fac, TIPOS_CHAVE.includes(e.tipo) ? EXAUSTAO.chave : EXAUSTAO.predio); }
   if (antes && !antes.governo && (antes.base === e || (P.batalhoes || []).some(b => b.faccao === antes && b.base === e) || basesDe(P, antes).length === 0 || e.tipo === "lider")) baseCaiu(P, e, antes);
   const zn = e.zona, donoAntes = zn.dono;
   atualizaZona(zn);
@@ -383,7 +383,7 @@ function subpasso(P, dt) {
   }
   if (P.tempo >= P.proximaHora) {
     P.proximaHora += HORA;
-    horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDaDiplomacia(P);
+    horaDoMercado(P); horaDaEconomia(P); horaDoRecrutamento(P); horaDasArmas(P); horaDoGoverno(P); horaDaDiplomacia(P);
     for (const f of P.faccoes) if (!f.jogador && !f.governo && !f.eliminada) { economiaRival(P, f); recrutamentoRival(P, f); armasRival(P, f); }
     avisa(P, "hora", {});
   }

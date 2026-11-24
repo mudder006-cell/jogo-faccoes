@@ -383,12 +383,17 @@ function janelaFaccoes(p) {
     p.appendChild(cria("div", "rotulo-peq", "Propostas para você"));
     for (const pr of props) {
       const c = cria("div", "proposta"); c.appendChild(chip(pr.de.cor, pr.de.nome));
-      c.appendChild(cria("span", null, "propõe " + { pacto: "um pacto de não agressão", alianca: "uma aliança", paz: "paz" }[pr.tipo] + " · vence em " + horasAte(pr.expira) + " h"));
+      c.appendChild(cria("span", null, "propõe " + { pacto: "um pacto de não agressão", alianca: "uma aliança", paz: "paz", cessar: "um cessar-fogo (" + EXAUSTAO.cessarHoras + " h; depois vira paz ou volta a guerra)" }[pr.tipo] + " · vence em " + horasAte(pr.expira) + " h"));
       c.appendChild(botao("check", "Aceitar", "principal", () => { respondeProposta(partida, pr, true); desenhaJanela(); mostraNavDiplo(); }));
       c.appendChild(botao("close", "Recusar", null, () => { respondeProposta(partida, pr, false); desenhaJanela(); mostraNavDiplo(); }));
       p.appendChild(c);
     }
   }
+  // 19.3: aviso de alvo do governo, coalizão e a sua exaustão de guerra
+  if (f.alvoDoGoverno) p.appendChild(cria("div", "aviso-diplo perigo", "O governo antigo escolheu você como alvo: está contra-atacando porque você cresceu demais."));
+  const co = partida.coalizao;
+  if (co && !co.alvo.eliminada) p.appendChild(cria("div", "aviso-diplo " + (co.alvo === f ? "perigo" : ""), co.alvo === f ? "Coalizão contra você: as outras facções se aproximam entre si e pioram com você, e podem declarar guerra juntas." : "Coalizão contra " + co.alvo.nome + ": cresceu demais; as outras facções se aproximam entre si e pioram com ela."));
+  if ((f.exaustao || 0) >= 1) p.appendChild(cria("div", "nota", "Sua exaustão de guerra: " + Math.round(f.exaustao) + " de 100" + (f.exaustao > EXAUSTAO.efeito ? " · moral máxima −" + Math.round(moralExaustao(f)) + " e voluntários −" + Math.round(fracaoExaustao(f) * EXAUSTAO.voluntarios * 100) + "%" : " (acima de " + EXAUSTAO.efeito + " a tropa perde moral e voluntários)")));
   p.appendChild(cria("div", "rotulo-peq", "Facções"));
   for (const o of partida.faccoes) {
     if (o === f) continue;
@@ -405,13 +410,20 @@ function janelaFaccoes(p) {
       const ch = cria("i", "val " + (rv.valor >= 0 ? "pos" : "neg")); ch.style.left = (rv.valor >= 0 ? 50 : 50 + rv.valor / 2) + "%"; ch.style.width = Math.abs(rv.valor) / 2 + "%"; barra.appendChild(ch);
       for (const m of [DIPLO.aceitaPacto, DIPLO.aceitaAlianca, DIPLO.declaraGuerra]) { const k = cria("i", "marca"); k.style.left = (50 + m / 2) + "%"; barra.appendChild(k); }
       c.appendChild(barra);
-      c.appendChild(cria("div", "nota", "Relação " + Math.round(rv.valor) + " (−100 a 100) · tendência " + (rv.tendencia > .15 ? "de se aproximar" : rv.tendencia < -.15 ? "de se afastar" : "estável")));
+      c.appendChild(cria("div", "nota", "Relação " + Math.round(rv.valor) + " (−100 a 100) · tendência " + (rv.tendencia > .15 ? "de se aproximar" : rv.tendencia < -.15 ? "de se afastar" : "estável") + (o.alvoDoGoverno ? " · alvo do governo antigo" : "") + (co && co.alvo === o ? " · alvo da coalizão" : "")));
+      const exMeu = exaustaoEm(partida, f, o), exDele = exaustaoEm(partida, o, f);
+      if (est === "guerra" || est === "cessarfogo" || exMeu >= 1 || exDele >= 1) {   // exaustão de guerra: barras da sua e da dele nesta guerra
+        const bx = cria("div", "exa"); for (const [rot, v] of [["Você", exMeu], [o.nome.split(" ")[0], exDele]]) { const l = cria("div", "exa-lin"); l.appendChild(cria("span", null, "Exaustão " + rot.toLowerCase() + " " + Math.round(v))); const b = cria("div", "exa-barra"); const i = cria("i", v >= EXAUSTAO.busca ? "alta" : ""); i.style.width = Math.min(100, v) + "%"; b.appendChild(i); l.appendChild(b); bx.appendChild(l); }
+        c.appendChild(bx);
+      }
+      if (est === "cessarfogo") c.appendChild(cria("div", "nota", "Cessar-fogo: termina em " + horasAte(rv.fimCessar) + " h; depois vira paz (se estiverem cansados ou a relação melhorou) ou volta a guerra."));
       const ac = cria("div", "dip-ac");
       const resultado = rr => { if (!rr.ok) aviso(o.nome + " recusou: " + rr.motivo, "handshake", "info"); desenhaJanela(); mostraNavDiplo(); };
       if (est === "neutro") { ac.appendChild(botao("handshake", "Propor pacto", null, () => resultado(jogadorPropoe(partida, f, o, "pacto")), "Aceita com relação " + DIPLO.aceitaPacto + "+")); ac.appendChild(botao("swords", "Declarar guerra", "perigo", () => { declaraGuerra(partida, f, o); desenhaJanela(); })); }
       if (est === "pacto") { ac.appendChild(botao("shield_home", "Propor aliança", null, () => resultado(jogadorPropoe(partida, f, o, "alianca")), "Aceita com relação " + DIPLO.aceitaAlianca + "+")); ac.appendChild(botao("close", "Romper pacto", null, () => { rompe(partida, f, o); desenhaJanela(); })); ac.appendChild(botao("swords", "Declarar guerra", "perigo", () => { declaraGuerra(partida, f, o); desenhaJanela(); }, "Romper um pacto com guerra pega mal com todas as facções")); }
       if (est === "alianca") ac.appendChild(botao("close", "Romper aliança", null, () => { rompe(partida, f, o); desenhaJanela(); }));
-      if (est === "guerra") ac.appendChild(botao("handshake", "Propor paz", null, () => resultado(jogadorPropoe(partida, f, o, "paz")), "Aceita com relação " + DIPLO.aceitaPaz + "+"));
+      if (est === "guerra") { ac.appendChild(botao("pause_circle", "Propor cessar-fogo", null, () => resultado(jogadorPropoe(partida, f, o, "cessar")), "Aceita se ela já estiver cansada da guerra (exaustão " + Math.round(limiteAceita(partida, o, f)) + "+)")); ac.appendChild(botao("handshake", "Propor paz", null, () => resultado(jogadorPropoe(partida, f, o, "paz")), "Aceita com relação " + DIPLO.aceitaPaz + "+")); }
+      if (est === "cessarfogo") ac.appendChild(botao("swords", "Romper cessar-fogo", "perigo", () => { declaraGuerra(partida, f, o); desenhaJanela(); }, "Volta a guerra na hora"));
       ac.appendChild(botao(ICONE_RECURSO.dinheiro, "Presente $ 500", null, depoisDe(() => presenteia(partida, f, o, "dinheiro", 500)), "Melhora a relação"));
       ac.appendChild(botao(ICONE_RECURSO.comida, "100 de comida", null, depoisDe(() => presenteia(partida, f, o, "comida", 100)), "Melhora a relação"));
       if (est === "alianca") {
@@ -422,7 +434,7 @@ function janelaFaccoes(p) {
     }
     p.appendChild(c);
   }
-  p.appendChild(cria("div", "nota", "Só quem está em guerra luta e toma prédios um do outro. Fronteira e ataques pioram a relação; lutar contra o mesmo inimigo e presentes melhoram; quem cresce demais assusta os outros. O governo antigo está em guerra com todos e tem o caixa negativo."));
+  p.appendChild(cria("div", "nota", "Só quem está em guerra luta e toma prédios um do outro. A guerra cansa (tempo, mortes, prédios perdidos, dinheiro gasto) e quem está cansado aceita cessar-fogo. Fronteira e ataques pioram a relação; lutar contra o mesmo inimigo e presentes melhoram; quem cresce demais assusta os outros. O governo antigo está em guerra com todos e tem o caixa negativo."));
 }
 function mostraNavDiplo() {
   const bt = document.querySelector('[data-janela="faccoes"]'); if (!bt || !partida) return;

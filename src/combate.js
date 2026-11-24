@@ -327,7 +327,7 @@ function atingido(P, o, s, amigo) {
   const fatal = P.r() < Math.min(.6, (medico ? .14 : .3) * (s.arma ? NIVEL.dano[(s.nivel || 1) - 1] : 1) * bonusDe(o).fatal);   // arma melhor mata mais; veterano sabe se proteger   // arma melhor, ferimento pior
   o.ferimentos++; o.caiuEm = P.tempo; o.destino = null;
   const por = amigo ? "fogo amigo de " + s.nome : s.nome + " (" + s.faccao.nome + ")";
-  if (fatal) { o.vida = "morto"; if (!amigo) { s.abates++; aprende(P, s, "pontaria", 3); } anota(P, o, "Morto por " + por); }
+  if (fatal) { o.vida = "morto"; if (!amigo) { s.abates++; aprende(P, s, "pontaria", 3); cansa(P, o.faccao, s.faccao, EXAUSTAO.morte); } anota(P, o, "Morto por " + por); }
   else { o.vida = "ferido"; anota(P, o, "Ferido por " + por + (medico ? "; o médico estancou o sangramento" : "")); }
   if (amigo) { anota(P, s, "Acertou " + o.nome + ", do próprio lado, com uma explosão"); avisa(P, "fogoamigo", { o, s, fatal }); }
   tiraDoEsquadrao(P, o);

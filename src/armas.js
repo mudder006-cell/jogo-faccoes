@@ -47,7 +47,7 @@ function preparaPaises(P, fac) {
 function compra(P, fac, item, n, auto) {
   n = n || 1; const custo = precoDe(item) * n;
   if (fac.recursos.dinheiro < custo) return false;
-  fac.recursos.dinheiro -= custo; guarda(fac, item, n);
+  fac.recursos.dinheiro -= custo; guarda(fac, item, n); gastoDeGuerra(P, fac, custo);
   avisa(P, "comprou", { fac, item, n, auto });
   return true;
 }
@@ -58,7 +58,7 @@ function riscoContrabando(P, fac) {
 function encomenda(P, fac, item, n) {
   n = n || 1; const custo = Math.round(precoDe(item) * CONTRABANDO.desconto) * n;
   if (fac.recursos.dinheiro < custo) return false;
-  fac.recursos.dinheiro -= custo;
+  fac.recursos.dinheiro -= custo; gastoDeGuerra(P, fac, custo);
   fac.cargas.push({ item, n, chega: P.tempo + CONTRABANDO.horas * HORA, risco: riscoContrabando(P, fac) });
   avisa(P, "encomendou", { fac, item, n });
   return true;

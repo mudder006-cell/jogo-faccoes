@@ -30,7 +30,7 @@ function horaDoRecrutamento(P) {
     fac.voluntarios = fac.voluntarios || new Map();
     const mor = new Map();
     for (const e of P.reg.edificios) if (e.dono === fac && confiancaEm(fac, e.zona) >= CONFIANCA.voluntarios) mor.set(e.zona, (mor.get(e.zona) || 0) + moradoresDe(e));
-    const apoio = 1 + Math.min(1, fac.recursos.influencia / 200);
+    const apoio = (1 + Math.min(1, fac.recursos.influencia / 200)) * fatorVoluntarios(fac);   // 19.3: exaustão de guerra alta reduz os voluntários
     for (const [zn, m] of mor) fac.voluntarios.set(zn, Math.min(MAX_VOLUNTARIOS_ZONA, (fac.voluntarios.get(zn) || 0) + m * VOLUNTARIOS_POR_MORADOR * apoio));
     for (const zn of fac.voluntarios.keys()) if (!mor.has(zn)) fac.voluntarios.delete(zn);
   }

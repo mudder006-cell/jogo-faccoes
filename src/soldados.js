@@ -43,7 +43,7 @@ const BONUS_PATENTE = [
   { moral: 15, precisao: 1.15, calma: .7, fatal: .55 }
 ];
 const bonusDe = s => BONUS_PATENTE[nivelPatente(s)];
-const moralMax = s => s.atr.coragem + 30 + bonusDe(s).moral;
+const moralMax = s => s.atr.coragem + 30 + bonusDe(s).moral - moralExaustao(s.faccao);   // 19.3: exaustão de guerra alta tira até 12 de moral máxima
 /* pode comandar um esquadrão: Veterano ou mais, ou liderança 60+ */
 const LIDERANCA_PARA_LIDERAR = 60;
 function podeLiderar(s) { return nivelPatente(s) >= 2 || s.atr.lideranca >= LIDERANCA_PARA_LIDERAR; }

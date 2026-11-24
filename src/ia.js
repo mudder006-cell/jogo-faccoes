@@ -14,6 +14,9 @@
    difícil (a IA pensa rápido e recebe +25% de renda).
    O governo antigo organiza as guarnições em batalhões por região:
    rondas entre os pontos importantes e reação rápida a quem chega perto.
+   Protótipo 19.3: o governo enfraquece aos poucos (solta os bairros mais
+   distantes do centro e corta guarnições) e reage a quem cresce demais
+   (facção grande vira alvo: reação rápida de mais longe e contra-ataques).
    (Números provisórios.)
    ============================================================ */
 const PERSONALIDADES = {
@@ -32,8 +35,8 @@ const dificuldade = P => DIFICULDADES[P.dificuldade || "normal"];
 const pers = f => PERSONALIDADES[f.personalidade || "oportunista"];
 function sorteiaPersonalidade(P, fac) { fac.personalidade = P.r.de(Object.keys(PERSONALIDADES)); }
 
-/* ---------- força de cada facção (soldados prontos) ---------- */
-function forcaDaFaccao(P, f) { let n = 0; for (const s of P.soldados) if (s.faccao === f && s.vida === "ok" && s.arma) n++; return n; }
+/* ---------- soldados prontos de cada facção (a "força" de diplomacia.js é outra conta: prédios + soldados) ---------- */
+function soldadosProntos(P, f) { let n = 0; for (const s of P.soldados) if (s.faccao === f && s.vida === "ok" && s.arma) n++; return n; }
 
 /* ---------- o general de uma rival ---------- */
 function generalRival(P, fac) {
@@ -119,7 +122,7 @@ function ordensDaIA(P, fac, bats) {
   const defesa = minhas.map(z => ({ z, perigo: ameacaNaZona(P, fac, z) * pe.defesa + (z === fac.base.zona ? 2 : 0) + z.chaves.filter(e => e.dono === fac).length * .3 })).sort((a, b) => b.perigo - a.perigo);
   // ataque: zonas perto com pontos importantes que dá para tomar
   const centros = minhas.length ? minhas.map(z => [z.x, z.z]) : [[fac.base.x, fac.base.z]];
-  const minhaForca = forcaDaFaccao(P, fac);
+  const minhaForca = soldadosProntos(P, fac);
   const alvos = [];
   for (const zn of P.reg.zonas) {
     if (zn.dono === fac) continue;
@@ -127,7 +130,7 @@ function ordensDaIA(P, fac, bats) {
     const d = Math.min(...centros.map(([x, z]) => Math.hypot(x - zn.x, z - zn.z))); if (d > IA.alcanceAlvo) continue;
     const def = pontos.reduce((t, e) => t + forcaDefesa(P, e, fac), 0);
     let nota = pe.ataque * (pontos.length + zn.chaves.filter(e => e.dono === fac).length * 1.5) / (1 + def * .5) / (1 + d / 400);
-    if (pe.fracos) { const donos = [...new Set(pontos.map(e => e.dono).filter(Boolean))]; const f = donos.reduce((m, o) => Math.min(m, forcaDaFaccao(P, o) / Math.max(1, minhaForca)), 2); nota *= f < .7 ? 1.8 : f > 1.3 ? .6 : 1; }
+    if (pe.fracos) { const donos = [...new Set(pontos.map(e => e.dono).filter(Boolean))]; const f = donos.reduce((m, o) => Math.min(m, soldadosProntos(P, o) / Math.max(1, minhaForca)), 2); nota *= f < .7 ? 1.8 : f > 1.3 ? .6 : 1; }
     alvos.push({ zn, nota });
   }
   alvos.sort((a, b) => b.nota - a.nota);
@@ -141,7 +144,7 @@ function ordensDaIA(P, fac, bats) {
     const zb = b.base.zona; if (zb.chaves.some(e => e.dono === fac)) pega("proteger", zb);
     const quente = defesa.find(x => !usados.has(x.z) && x.perigo >= 2); if (quente) pega("proteger", quente.z);
     // guerra: o mais forte entre os vizinhos em guerra
-    if (guerras.length && i === 0) { const g = guerras.sort((a, c) => forcaDaFaccao(P, c) - forcaDaFaccao(P, a))[0]; pega(pe.fracos && forcaDaFaccao(P, g) < minhaForca * .7 ? "avancar" : "frente", g); }
+    if (guerras.length && i === 0) { const g = guerras.sort((a, c) => soldadosProntos(P, c) - soldadosProntos(P, a))[0]; pega(pe.fracos && soldadosProntos(P, g) < minhaForca * .7 ? "avancar" : "frente", g); }
     // ataque: alvos mais perto da base deste batalhão
     const meus = alvos.filter(a => !usados.has(a.zn)).sort((a, c) => (c.nota - a.nota) || 0).slice(0, 4).sort((a, c) => Math.hypot(a.zn.x - b.base.x, a.zn.z - b.base.z) - Math.hypot(c.zn.x - b.base.x, c.zn.z - b.base.z));
     for (const a of meus.slice(0, pe.ordensAtaque)) pega("tomar", a.zn);
@@ -158,7 +161,77 @@ function trocaOrdens(P, b, novas) {
 }
 
 /* ---------- governo antigo: batalhões por região, rondas e reação rápida ---------- */
-const GOV = { reacao: 320, volta: 380, rondaEspera: [15, 30], pensa: 10, maxReagindo: 3 };
+const GOV = { reacao: 320, volta: 380, rondaEspera: [15, 30], pensa: 10, maxReagindo: 3,
+  // 19.3 (provisório): enfraquece depois de 4 h, soltando 1,5% dos prédios iniciais por hora (primeiro os bairros entre as facções; a cidade velha e os prédios de força ficam) e cortando 1 soldado de cada guarnição de fora do centro a cada 6 h (mínimo 3); a cidade velha e os prédios de força mantêm a guarnição inteira
+  enfraquece: { inicio: 4, taxa: .015, cortaCada: 6, minimo: 3 },
+  // facção vira alvo com 80+ prédios e (2x a média das outras ou 10% do mapa); deixa de ser abaixo de 80% disso
+  alvo: { minPredios: 80, vezes: 2, parte: .10, sai: .8, reacaoVezes: 2, extraReagindo: 2 } };
+const PREDIOS_DE_FORCA = ["governo", "quartel", "cidadela", "delegacia"];
+/* a cada hora: o governo solta prédios e corta guarnições, e marca quem cresceu demais */
+function horaDoGoverno(P) {
+  const gov = P.governo; if (!gov) return;
+  enfraqueceGoverno(P);
+  marcaAlvosDoGoverno(P);
+}
+function enfraqueceGoverno(P) {
+  const gov = P.governo, E = GOV.enfraquece, h = P.tempo / HORA; if (h < E.inicio) return;
+  if (P.govInicial == null) P.govInicial = P.reg.edificios.filter(e => e.doGovernoNoInicio).length;
+  // guarnições: cada uma perde 1 soldado a cada 6 h, até o mínimo
+  for (const sq of P.esquadroes) {
+    if (sq.faccao !== gov || !sq.guarda || sq.combate) continue;
+    if (sq.guarda.zona.tipo === "velha" || PREDIOS_DE_FORCA.includes(sq.guarda.tipo)) continue;   // o centro mantém a guarnição
+    if (sq.proximoCorte == null) sq.proximoCorte = P.tempo + P.r.entre(1, E.cortaCada) * HORA;
+    if (P.tempo < sq.proximoCorte) continue;
+    sq.proximoCorte = P.tempo + E.cortaCada * HORA;
+    const a = ativos(sq); if (a.length <= E.minimo) continue;
+    const s = a.filter(x => x !== sq.lider).pop(); if (!s) continue;
+    dispensaSoldado(P, s); anota(P, s, "Desertou: o governo antigo deixou de pagar a guarnição");
+  }
+  // prédios: um orçamento por hora (acumula as frações), tirado da zona mais longe do centro; pontos importantes primeiro
+  P.govOrcamento = (P.govOrcamento || 0) + P.govInicial * E.taxa;
+  let n = Math.floor(P.govOrcamento); if (n < 1) return;
+  P.govOrcamento -= n;
+  // o governo recua primeiro dos bairros que ficam entre as facções (soma das distâncias às duas mais perto): todas têm terra livre ao alcance e as fronteiras aparecem cedo
+  const delas = new Map();
+  for (const e of P.reg.edificios) if (e.dono && !e.dono.governo && !e.dono.eliminada) { if (!delas.has(e.dono)) delas.set(e.dono, []); delas.get(e.dono).push(e); }
+  const dist = zn => {
+    const ds = [...delas.values()].map(l => Math.min(...l.map(e => Math.hypot(e.x - zn.x, e.z - zn.z)))).sort((a, b) => a - b);
+    return ds.length ? ds[0] + (ds[1] === undefined ? ds[0] : ds[1]) : Math.hypot(zn.x, zn.z);
+  };
+  const zonas = P.reg.zonas.filter(z => z.tipo !== "velha" && z.edificios.some(e => e.dono === gov && !PREDIOS_DE_FORCA.includes(e.tipo))).map(z => ({ z, d: dist(z) })).sort((a, b) => a.d - b.d).map(x => x.z);
+  for (const zn of zonas) {
+    if (n <= 0) break;
+    const lista = zn.edificios.filter(e => e.dono === gov && !PREDIOS_DE_FORCA.includes(e.tipo)).sort((a, b) => (TIPOS_CHAVE.includes(b.tipo) ? 1 : 0) - (TIPOS_CHAVE.includes(a.tipo) ? 1 : 0));
+    for (const e of lista) {
+      if (n <= 0) break;
+      if (P.esquadroes.some(q => q.guarda === e && q.faccao !== gov && ativos(q).length)) continue;   // inimigo dentro: não solta
+      soltaPredioDoGoverno(P, e); n--;
+    }
+  }
+}
+function dispensaSoldado(P, s) { const sq = s.sq; if (sq) { sq.membros = sq.membros.filter(o => o !== s); if (sq.lider === s) escolheLider(P, sq); } s.sqAntes = sq; s.sq = null; s.vida = "desertou"; s.dentro = null; }
+function soltaPredioDoGoverno(P, e) {
+  const gov = P.governo;
+  for (const sq of P.esquadroes) if (sq.faccao === gov && sq.guarda === e && ativos(sq).length) {   // a guarnição é dispensada
+    if (sq.combate) continue;
+    for (const s of ativos(sq)) dispensaSoldado(P, s);
+    sq.guarda = null;
+  }
+  tomaEdificio(P, e, null);
+}
+/* quem passou de um tamanho vira alvo do governo (o jogador também); aviso quando muda */
+function marcaAlvosDoGoverno(P) {
+  const A = GOV.alvo, vivas = rivaisVivas(P), total = P.reg.edificios.length, preds = new Map(vivas.map(f => [f, 0]));
+  for (const e of P.reg.edificios) if (e.dono && preds.has(e.dono)) preds.set(e.dono, preds.get(e.dono) + 1);
+  const soma = [...preds.values()].reduce((a, b) => a + b, 0);
+  for (const f of vivas) {
+    const p = preds.get(f), outras = vivas.length > 1 ? (soma - p) / (vivas.length - 1) : 0, k = f.alvoDoGoverno ? A.sai : 1;
+    const grande = p >= A.minPredios * k && (p >= A.vezes * outras * k || p >= A.parte * total * k);
+    if (grande !== !!f.alvoDoGoverno) { f.alvoDoGoverno = grande; avisa(P, "governoalvo", { fac: f, alvo: grande, predios: p }); }
+  }
+  for (const f of P.faccoes) if (f.alvoDoGoverno && (f.eliminada || !vivas.includes(f))) f.alvoDoGoverno = false;
+}
+const haAlvoDoGoverno = P => P.faccoes.some(f => f.alvoDoGoverno && !f.eliminada);
 function batalhoesDoGoverno(P) {
   const gov = P.governo; if (!gov || P.govBats) return;
   // uma região por tipo de área do governo (cidade velha, bairros, vilas, campo), cada uma vira um batalhão
@@ -190,12 +263,13 @@ function governoComanda(P) {
     for (const q of P.esquadroes) {
       if (q.faccao === gov || !ativos(q).length || (q.guarda && !q.combate)) continue;
       const [x, z] = centroDoEsquadrao(q);
-      const e = pontos.find(p => Math.hypot(p.x - x, p.z - z) < GOV.reacao); if (e) ameacas.push({ q, e });
+      const raio = GOV.reacao * (q.faccao.alvoDoGoverno ? GOV.alvo.reacaoVezes : 1);   // 19.3: a facção grande é vista de mais longe
+      const e = pontos.find(p => Math.hypot(p.x - x, p.z - z) < raio); if (e) ameacas.push({ q, e });
     }
     // reação rápida: a guarnição mais perto (que não seja do centro) sai e depois volta ao posto
     let reagindo = P.esquadroes.filter(q => q.faccao === gov && q.posto && ativos(q).length).length;
     for (const { q, e } of ameacas) {
-      if (reagindo >= GOV.maxReagindo) break;
+      if (reagindo >= GOV.maxReagindo + (haAlvoDoGoverno(P) ? GOV.alvo.extraReagindo : 0)) break;
       const [x, z] = centroDoEsquadrao(q);
       const cand = P.esquadroes.filter(s => s.faccao === gov && !s.combate && !s.posto && !s.contra && ativos(s).length >= 3 && !semArma(s) && (s === (b.ronda && b.ronda.sq) || (s.guarda && b.pontos.includes(s.guarda) && s.guarda !== e && !["cidadela", "governo"].includes(s.guarda.tipo))))
         .sort((a, c) => Math.hypot(centroDoEsquadrao(a)[0] - x, centroDoEsquadrao(a)[1] - z) - Math.hypot(centroDoEsquadrao(c)[0] - x, centroDoEsquadrao(c)[1] - z))[0];

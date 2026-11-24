@@ -4,13 +4,15 @@
    - Ofensivas das rivais: de tempos em tempos, uma rival manda o
      esquadrão mais forte atacar outra facção (você ou outra rival).
    - Contra-ataque do governo: enquanto tem gente, o governo antigo
-     tira soldados de guarnições e tenta retomar o que perdeu.
+     tira soldados de guarnições e tenta retomar o que perdeu; contra a
+     facção que cresceu demais (19.3) ataca mais e de mais longe.
    - Eventos aleatórios: desertores, armas escondidas, comerciantes,
      protestos, voluntários depois de um funeral.
    (Números provisórios.)
    ============================================================ */
 const OFENSIVA = { aCada: [3, 6], minimo: 4 };            // horas do jogo; soldados mínimos no esquadrão
-const CONTRA = { aCada: [2, 4], maxAoMesmoTempo: 2, raio: 700, minimoGuarnicao: 4 };
+const CONTRA = { aCada: [2, 4], maxAoMesmoTempo: 2, raio: 700, minimoGuarnicao: 4,
+  aCadaAlvo: [.5, 1.5], maxAlvo: 5, raioAlvo: 1400, minimoAlvo: 3, porVez: 2 };   // 19.3: contra a facção grande (provisório)
 const EVENTO = { aCada: [3, 6] };
 
 const horasEntre = (P, [a, b]) => P.r.entre(a, b) * HORA;
@@ -39,25 +41,34 @@ function ofensivaRival(P) {
 }
 
 /* ---------- governo ---------- */
+/* Retoma o que perdeu. 19.3: quem cresceu demais (alvoDoGoverno, ver ia.js) é atacado de mais longe, por mais guarnições (2 por vez, até 5 em curso) e mais seguido. */
 function contraAtaqueGoverno(P) {
   const gov = P.governo; if (!gov) return;
+  for (const q of P.esquadroes) if (q.faccao === gov && q.contra && !q.combate && q.estado !== "andando") q.contra = false;   // 19.3: quem terminou o contra-ataque pode sair de novo
+  const alvos = P.faccoes.filter(f => f.alvoDoGoverno && !f.eliminada);
   const emCurso = P.esquadroes.filter(q => q.faccao === gov && q.contra && ativos(q).length && (q.estado === "andando" || q.combate)).length;
-  if (emCurso >= CONTRA.maxAoMesmoTempo) return;
-  const perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
+  if (emCurso >= (alvos.length ? CONTRA.maxAlvo : CONTRA.maxAoMesmoTempo)) return;
+  let perdidos = P.reg.edificios.filter(e => e.doGovernoNoInicio && e.dono && e.dono !== gov && TIPOS_CHAVE.includes(e.tipo));
+  let raio = CONTRA.raio, minimo = CONTRA.minimoGuarnicao;
+  if (alvos.length) { perdidos = perdidos.concat(P.reg.edificios.filter(e => alvos.includes(e.dono) && !perdidos.includes(e) && TIPOS_CHAVE.includes(e.tipo))); raio = CONTRA.raioAlvo; minimo = CONTRA.minimoAlvo; }
   if (!perdidos.length) return;
-  // a guarnição mais perto de algum ponto perdido sai para retomar
-  let melhor = null, alvo = null, md = CONTRA.raio;
-  for (const sq of P.esquadroes) {
-    if (sq.faccao !== gov || sq.combate || ativos(sq).length < CONTRA.minimoGuarnicao || semArma(sq)) continue;
-    if (sq.guarda && (sq.guarda.tipo === "cidadela" || sq.guarda.tipo === "governo")) continue;   // o centro não sai
-    const [x, z] = centroDoEsquadrao(sq), e = predioMaisPerto(perdidos, x, z);
-    const d = Math.hypot(e.x - x, e.z - z);
-    if (d < md) { md = d; melhor = sq; alvo = e; }
+  // a guarnição mais perto de algum ponto sai para retomar; contra um alvo grande saem duas, para o mesmo ponto
+  let lista = perdidos;
+  for (let i = 0; i < (alvos.length ? CONTRA.porVez : 1); i++) {
+    let melhor = null, alvo = null, md = raio;
+    for (const sq of P.esquadroes) {
+      if (sq.faccao !== gov || sq.contra || sq.combate || ativos(sq).length < minimo || semArma(sq)) continue;
+      if (sq.guarda && (sq.guarda.tipo === "cidadela" || sq.guarda.tipo === "governo")) continue;   // o centro não sai
+      const [x, z] = centroDoEsquadrao(sq), e = predioMaisPerto(lista, x, z);
+      const d = Math.hypot(e.x - x, e.z - z);
+      if (d < md) { md = d; melhor = sq; alvo = e; }
+    }
+    if (!melhor) return;
+    melhor.contra = true;
+    ordenaPredio(P, melhor, alvo, "ataque");
+    avisa(P, "contraataque", { sq: melhor, e: alvo, contra: alvo.dono });
+    lista = [alvo];
   }
-  if (!melhor) return;
-  melhor.contra = true;
-  ordenaPredio(P, melhor, alvo, "ataque");
-  avisa(P, "contraataque", { sq: melhor, e: alvo, contra: alvo.dono });
 }
 
 /* ---------- eventos aleatórios ---------- */
@@ -112,6 +123,6 @@ function eventoAleatorio(P) {
 
 /* chamado a cada segundo de simulação */
 function acaoNoMapa(P) {
-  if (P.tempo >= P.proximoContra) { P.proximoContra = P.tempo + horasEntre(P, CONTRA.aCada); contraAtaqueGoverno(P); }
+  if (P.tempo >= P.proximoContra) { P.proximoContra = P.tempo + horasEntre(P, P.faccoes.some(f => f.alvoDoGoverno && !f.eliminada) ? CONTRA.aCadaAlvo : CONTRA.aCada); contraAtaqueGoverno(P); }
   if (P.tempo >= P.proximoEvento) { P.proximoEvento = P.tempo + horasEntre(P, EVENTO.aCada); eventoAleatorio(P); }
 }
