@@ -11,3 +11,6 @@
 | 2026-11-24 | Jogo · Código | protótipo 19.3 governo, exaustão, coalizão | agente geral · Sonnet | ok | revisão pediu 8 ajustes; refeito na 2ª rodada |
 | 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19.3 | testador-ia-jogo · Sonnet | ok | — |
 | 2026-11-24 | Jogo · Game design | decisões zumbi, paz e juntar 19.3 | Claude (sessão principal) · Opus | ok | — |
+| 2026-11-24 | Jogo · Código | protótipo 19.4 obras, zumbi, paz | agente geral · Sonnet | ok | 3 rodadas: caixa das rivais caiu e foi corrigido |
+| 2026-11-24 | Jogo · Testes e balanço | testar 19.4 e caixa das rivais | testador-ia-jogo · Sonnet | ok | — |
+| 2026-11-24 | Jogo · Código | revisão independente do 19.4 (3x) | agente geral · Sonnet | ok | achou brecha de revenda de comida; corrigida |

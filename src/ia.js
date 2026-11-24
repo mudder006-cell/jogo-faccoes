@@ -17,13 +17,15 @@
    Protótipo 19.3: o governo enfraquece aos poucos (solta os bairros mais
    distantes do centro e corta guarnições) e reage a quem cresce demais
    (facção grande vira alvo: reação rápida de mais longe e contra-ataques).
+   Protótipo 19.4: o estoque mínimo guarda 1 explosivo por esquadrão com 4+ soldados;
+   obras de comida com reserva de caixa por personalidade (reservaObras, obrasJuntas).
    (Números provisórios.)
    ============================================================ */
 const PERSONALIDADES = {
-  agressiva:   { n: "Agressiva", ataque: 1.5, defesa: .8, ordensAtaque: 2, postura: "agressivo", guerra: 15, acordo: 12, soldados: 12, armasPesadas: 5000 },
-  defensiva:   { n: "Defensiva", ataque: .7, defesa: 1.5, ordensAtaque: 1, postura: "cauteloso", guerra: -15, acordo: -8, soldados: 10, armasPesadas: 9000 },
-  comerciante: { n: "Comerciante", ataque: .85, defesa: 1.1, ordensAtaque: 1, postura: "equilibrado", guerra: -20, acordo: -15, soldados: 9, armasPesadas: 10000, vendeAcima: 120, guarda: 80, obras: 2500 },
-  oportunista: { n: "Oportunista", ataque: 1.1, defesa: 1, ordensAtaque: 2, postura: "equilibrado", guerra: 0, acordo: 0, soldados: 10, armasPesadas: 7000, fracos: true }
+  agressiva:   { n: "Agressiva", ataque: 1.5, defesa: .8, ordensAtaque: 2, postura: "agressivo", guerra: 15, acordo: 12, soldados: 12, armasPesadas: 5000, reservaObras: 1000 },
+  defensiva:   { n: "Defensiva", ataque: .7, defesa: 1.5, ordensAtaque: 1, postura: "cauteloso", guerra: -15, acordo: -8, soldados: 10, armasPesadas: 9000, reservaObras: 500 },
+  comerciante: { n: "Comerciante", ataque: .85, defesa: 1.1, ordensAtaque: 1, postura: "equilibrado", guerra: -20, acordo: -15, soldados: 9, armasPesadas: 10000, vendeAcima: 120, guarda: 80, reservaObras: 300, obrasJuntas: 2 },
+  oportunista: { n: "Oportunista", ataque: 1.1, defesa: 1, ordensAtaque: 2, postura: "equilibrado", guerra: 0, acordo: 0, soldados: 10, armasPesadas: 7000, fracos: true, reservaObras: 700 }
 };
 const DIFICULDADES = {
   facil:   { n: "Fácil", pensa: 45, erra: .3, renda: 1 },
@@ -81,11 +83,12 @@ function minimoDaIA(P, fac, b) {
     fuzil: dinheiro > 1200 ? 2 : 1,
     kit: 1
   };
-  if (sold.length >= 5) b.minimo.explosivo = 1;   // 19.2: com 5 ou mais o líder põe um engenheiro (fortifica e conserta) se houver explosivos no estoque
+  const grandes = esquadroesDe(P, b).filter(q => ativos(q).length >= 4).length;
+  if (grandes) b.minimo.explosivo = grandes;   // 19.4: 1 explosivo por esquadrão com 4 ou mais soldados (o líder põe um engenheiro de combate em cada)
   if (ar || sold.length >= 8) { b.minimo.metralhadora = 1; b.minimo["cx-cinta"] = Math.max(1, ar) * 400 * fator; }
   if (noArsenal(b, "rpg") || sold.some(s => s.arma === "rpg")) b.minimo["cx-foguete"] = 3;
   // suprimentos (19.2): mesma regra do jogador: o suficiente para encher a mochila de cada médico e engenheiro, mais uma folga de 20
-  b.minimo["cx-suprimento"] = 20 + sold.reduce((t, s) => t + cargaSuprimento(s), 0);
+  b.minimo["cx-suprimento"] = 20 + sold.reduce((t, s) => t + cargaSuprimento(s), 0) + (b.equipeObras || []).length * SUPRIMENTO.carga.engenheiro;   // 19.4: inclui a mochila da equipe de obras
 }
 function alimentacaoDaIA(P, fac) {
   const c = contas(P, fac), R = fac.recursos;
