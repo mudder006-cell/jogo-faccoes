@@ -39,6 +39,8 @@ Provar que o jogo funciona e medir se os números estão bons, antes de o Renan 
 - Comparar sementes diferentes.
 
 ## Pendências
+- `estresse_ia.js` não roda versões sem `src/percepcao.js` (protótipo 18): tornar o arquivo opcional na lista.
+- Protótipo 19: menos combate (K7: 77→51 combates), domínio de 42x a 988x com 6 rivais no difícil, guerras raras, personalidade pouco visível.
 - IA rival (estresse 24/11, 9 partidas, 72 h): 6 de 9 sem guerra entre rivais, quase nenhum veículo, domínio de 5x a 14x, defensiva e oportunista com caixa negativo; rival eliminada ainda com 6 soldados (K7 difícil).
 - Atualizar as listas de arquivos dos testes antigos.
 - Protótipo 18: medir de novo depois de corrigir o caixa das rivais, nas 3 dificuldades.
