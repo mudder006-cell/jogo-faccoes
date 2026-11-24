@@ -5,3 +5,5 @@
 | 2026-11-24 | Jogo · Game design | proposta soldados com vivência | agente geral · Sonnet | ok | — |
 | 2026-11-24 | Jogo · Código | protótipo 19 percepção do soldado | agente geral · Sonnet | ok | revisão pediu 6 ajustes; refeito na 2ª rodada |
 | 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19 | testador-ia-jogo · Sonnet | ok | comparação com protótipo 18 sem rodar a versão antiga (script novo exige percepcao.js) |
+| 2026-11-24 | Jogo · Código | protótipo 19.2 suprimentos | agente geral · Sonnet | ok | IA rival não usava engenheiro; testes antigos quebravam a cada arquivo novo (lista única criada) |
+| 2026-11-24 | Jogo · Testes e balanço | testar IA no protótipo 19.2 | testador-ia-jogo · Sonnet | ok | — |
